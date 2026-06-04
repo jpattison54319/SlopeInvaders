@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+
+# Production and preview builds
+dist/
+dist-ssr/
+build/
+
+# Test and tooling output
+coverage/
+.nyc_output/
+.vite/
+.vitest/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Environment and local secrets
+.env
+.env.*
+!.env.example
+*.local
+.vercel/
+.netlify/
+
+# Claude/Codex local machine state
+.claude/settings.local.json
+.claude/*.local.json
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary scratch files
+tmp/
+temp/
+.cache/
