@@ -50,6 +50,29 @@ input {
   font: inherit;
 }
 
+button {
+  --button-lift: 3px;
+  --button-press: 3px;
+  --button-shadow: 0 var(--button-lift) 0 #05091c, 0 10px 18px -16px #000;
+  --button-shadow-pressed: 0 1px 0 #05091c, 0 5px 12px -14px #000;
+}
+
+button:not(:disabled) {
+  box-shadow: var(--button-shadow);
+  transform: translateY(0);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+
+button:not(:disabled):active {
+  box-shadow: var(--button-shadow-pressed);
+  transform: translateY(var(--button-press)) scale(0.985);
+}
+
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--cyan);
@@ -69,15 +92,20 @@ input:focus-visible {
   border: 1px solid var(--panel-border);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: inset 0 0 18px rgba(94, 241, 255, 0.06), 0 8px 20px -16px #000;
-  transition: transform 0.08s, filter 0.12s, border-color 0.12s;
+  box-shadow:
+    inset 0 0 18px rgba(94, 241, 255, 0.06),
+    0 var(--button-lift) 0 #05091c,
+    0 10px 20px -14px #000;
 }
 .icon-btn:hover:not(:disabled) {
   border-color: rgba(94, 241, 255, 0.55);
   filter: brightness(1.12);
 }
 .icon-btn:active:not(:disabled) {
-  transform: translateY(1px);
+  box-shadow:
+    inset 0 0 18px rgba(94, 241, 255, 0.12),
+    0 1px 0 #05091c,
+    0 5px 12px -12px #000;
 }
 .icon-btn:disabled {
   opacity: 0.48;
@@ -92,6 +120,30 @@ input:focus-visible {
   font-family: var(--pixel-font);
   font-size: 9px;
   line-height: 1;
+}
+.chrome-icon-btn {
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  gap: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+.chrome-icon-btn:not(:disabled) {
+  box-shadow: none;
+}
+.chrome-icon-btn:hover:not(:disabled) {
+  border-color: transparent;
+  filter: brightness(1.18) drop-shadow(0 0 8px rgba(94, 241, 255, 0.35));
+}
+.chrome-icon-btn:active:not(:disabled) {
+  box-shadow: none;
+}
+.chrome-icon-btn .icon-btn__img {
+  width: 34px;
+  height: 34px;
 }
 
 .modal-overlay {
@@ -235,13 +287,14 @@ input:focus-visible {
   color: #061913;
   background: linear-gradient(180deg, #9fffd0, #48de91);
   border: 1px solid #41d68d;
-  box-shadow: 0 0 22px rgba(124, 255, 178, 0.32);
+  --button-shadow: 0 4px 0 #178d5c, 0 0 22px rgba(124, 255, 178, 0.32);
+  --button-shadow-pressed: 0 1px 0 #178d5c, 0 0 14px rgba(124, 255, 178, 0.22);
 }
 .menu__play:hover:not(:disabled) {
   filter: brightness(1.08);
 }
 .menu__play:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(var(--button-press)) scale(0.985);
 }
 .menu__play:disabled {
   opacity: 0.45;
@@ -336,7 +389,8 @@ input:focus-visible {
   border: 1px solid rgba(94, 241, 255, 0.22);
   border-radius: 8px;
   cursor: pointer;
-  box-shadow: inset 0 0 24px rgba(94, 241, 255, 0.04);
+  --button-shadow: inset 0 0 24px rgba(94, 241, 255, 0.04), 0 4px 0 #05091c, 0 12px 24px -18px #000;
+  --button-shadow-pressed: inset 0 0 24px rgba(94, 241, 255, 0.08), 0 1px 0 #05091c, 0 7px 14px -16px #000;
 }
 .level-card:hover:not(:disabled) {
   border-color: rgba(124, 255, 178, 0.58);
@@ -348,7 +402,8 @@ input:focus-visible {
 }
 .level-card--selected {
   border-color: rgba(255, 209, 102, 0.72);
-  box-shadow: inset 0 0 28px rgba(255, 209, 102, 0.08), 0 0 18px rgba(255, 209, 102, 0.12);
+  --button-shadow: inset 0 0 28px rgba(255, 209, 102, 0.08), 0 4px 0 #4a3210, 0 0 18px rgba(255, 209, 102, 0.12);
+  --button-shadow-pressed: inset 0 0 28px rgba(255, 209, 102, 0.12), 0 1px 0 #4a3210, 0 0 12px rgba(255, 209, 102, 0.1);
 }
 .level-card__number {
   display: grid;
@@ -571,6 +626,11 @@ input:focus-visible {
     width: 100%;
   }
 
+  .menu__actions .chrome-icon-btn {
+    width: auto;
+    justify-self: end;
+  }
+
   .menu__cta-row,
   .controls__actions {
     flex-direction: column;
@@ -605,12 +665,22 @@ input:focus-visible {
 
 .app__board {
   position: relative;
+  width: min(584px, calc(100vw - 40px));
   padding: 10px;
   background: var(--panel);
   border: 2px solid var(--panel-border);
   border-radius: 12px;
   box-shadow: 0 0 0 2px #0006, 0 18px 40px -20px #000a, inset 0 0 40px rgba(94, 241, 255, 0.06);
   line-height: 0;
+}
+.app__board .konvajs-content {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1;
+}
+.app__board .konvajs-content canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .app__sidebar {
@@ -780,13 +850,14 @@ input:focus-visible {
   border: 1px solid var(--panel-border);
   border-radius: 7px;
   cursor: pointer;
-  transition: background 0.12s, transform 0.05s;
+  --button-shadow: 0 3px 0 #05091c, inset 0 0 14px rgba(94, 241, 255, 0.05);
+  --button-shadow-pressed: 0 1px 0 #05091c, inset 0 0 14px rgba(94, 241, 255, 0.12);
 }
 .stepper__btn:hover:not(:disabled) {
   background: #14204a;
 }
 .stepper__btn:active:not(:disabled) {
-  transform: translateY(1px);
+  box-shadow: var(--button-shadow-pressed);
 }
 .stepper__input {
   flex: 1;
@@ -818,10 +889,11 @@ input:focus-visible {
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: filter 0.12s, transform 0.05s;
+  --button-shadow: 0 4px 0 #05091c, 0 10px 20px -16px #000;
+  --button-shadow-pressed: 0 1px 0 #05091c, 0 5px 12px -14px #000;
 }
 .btn:active:not(:disabled) {
-  transform: translateY(1px);
+  box-shadow: var(--button-shadow-pressed);
 }
 .btn:disabled {
   opacity: 0.45;
@@ -831,7 +903,8 @@ input:focus-visible {
   color: #04201a;
   background: linear-gradient(180deg, #8effc0, #38d98a);
   border-color: #2fcf80;
-  box-shadow: 0 0 16px rgba(124, 255, 178, 0.35);
+  --button-shadow: 0 4px 0 #178d5c, 0 0 16px rgba(124, 255, 178, 0.35);
+  --button-shadow-pressed: 0 1px 0 #178d5c, 0 0 12px rgba(124, 255, 178, 0.24);
 }
 .btn--fire:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -968,7 +1041,7 @@ input:focus-visible {
   cursor: pointer;
   font-size: 13px;
   line-height: 1.4;
-  transition: filter 0.12s, border-color 0.12s;
+  transition: filter 0.12s, border-color 0.12s, transform 0.08s ease, box-shadow 0.08s ease;
 }
 .reflection__option:hover:not(:disabled) {
   border-color: rgba(94, 241, 255, 0.55);
@@ -1084,4 +1157,171 @@ input:focus-visible {
   width: auto;
   padding-left: 22px;
   padding-right: 22px;
+}
+
+/* ---------- Game bar right-side actions + calculator toggle ---------- */
+.game-bar__right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-self: end;
+}
+.calc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  min-width: 44px;
+  padding: 8px 12px;
+  background: linear-gradient(180deg, #172456, #10193e);
+  border: 1px solid rgba(94, 241, 255, 0.48);
+  border-radius: 8px;
+  color: var(--cyan);
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  cursor: pointer;
+  --button-shadow:
+    inset 0 0 18px rgba(94, 241, 255, 0.08),
+    0 3px 0 #05091c,
+    0 0 14px rgba(94, 241, 255, 0.18);
+  --button-shadow-pressed:
+    inset 0 0 20px rgba(94, 241, 255, 0.2),
+    0 1px 0 #05091c,
+    0 0 12px rgba(94, 241, 255, 0.24);
+}
+.calc-btn:hover,
+.calc-btn[aria-pressed='true'] {
+  border-color: var(--cyan);
+  filter: brightness(1.14);
+  --button-shadow:
+    inset 0 0 18px rgba(94, 241, 255, 0.14),
+    0 3px 0 #05091c,
+    0 0 18px rgba(94, 241, 255, 0.34);
+}
+.calc-btn:active {
+  box-shadow: var(--button-shadow-pressed);
+}
+.calc-btn__glyph {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* ---------- Floating calculator (non-modal, board stays visible) ---------- */
+.calculator {
+  position: fixed;
+  z-index: 10;
+  width: 220px;
+  padding: 12px;
+  background: rgba(10, 14, 39, 0.97);
+  border: 2px solid var(--panel-border);
+  border-radius: 12px;
+  box-shadow: 0 0 0 2px #0007, 0 18px 40px -16px #000c;
+  line-height: normal;
+}
+.calculator--measuring {
+  visibility: hidden;
+}
+.calculator__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.calculator__drag-handle {
+  flex: 1;
+  min-width: 0;
+  padding: 3px 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.calculator--dragging .calculator__drag-handle {
+  cursor: grabbing;
+}
+.calculator__title {
+  color: var(--cyan);
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+.calculator__close {
+  width: 26px;
+  height: 26px;
+  background: transparent;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+.calculator__close:hover {
+  border-color: var(--rose);
+  color: var(--rose);
+}
+.calculator__display {
+  width: 100%;
+  padding: 8px 10px;
+  background: #060818;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  text-align: right;
+}
+.calculator__result {
+  min-height: 18px;
+  margin: 6px 2px 10px;
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 14px;
+  text-align: right;
+}
+.calculator__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.calculator__key {
+  padding: 10px 0;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.calculator__key:hover {
+  border-color: var(--cyan);
+  background: rgba(94, 241, 255, 0.12);
+}
+.calculator__key:active {
+  background: rgba(94, 241, 255, 0.22);
+}
+.calculator__key--equals {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #1a1300;
+  font-weight: 700;
+}
+.calculator__key--equals:hover {
+  background: #ffd980;
+}
+
+@media (max-width: 640px) {
+  .calculator {
+    width: min(240px, calc(100vw - 56px));
+    padding: 10px;
+  }
+
+  .calculator__display {
+    font-size: 14px;
+  }
+
+  .calculator__key {
+    padding: 8px 0;
+    font-size: 14px;
+  }
 }

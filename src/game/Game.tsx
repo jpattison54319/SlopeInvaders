@@ -9,7 +9,9 @@ import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
 import { IconButton } from './components/IconButton';
 import { Callout } from './components/Callout';
+import { Calculator } from './components/Calculator';
 import { useSfx } from './audio/sfxContext';
+import { scorePerformance, type DifficultyTier, type LevelStats } from './campaign/difficulty';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
@@ -36,10 +38,13 @@ interface GameProps {
   levelNumberLabel: string;
   /** Whether a next level exists (controls the advance button label). */
   hasNext: boolean;
+  /** Difficulty tier this level is being played at (recorded into stats). */
+  tier?: DifficultyTier;
   onExit: () => void;
   onSettings: () => void;
   onAdvance: () => void;
-  onComplete: (levelId: string) => void;
+  /** Called once when the level is first won, with the full visit stats. */
+  onComplete: (levelId: string, stats: LevelStats) => void;
 }
 
 /** The single-level gameplay screen. */
@@ -48,6 +53,7 @@ export function Game({
   title,
   levelNumberLabel,
   hasNext,
+  tier = 'standard',
   onExit,
   onSettings,
   onAdvance,
@@ -72,9 +78,28 @@ export function Game({
   const [feedback, setFeedback] = useState<ShotFeedback | null>(null);
   const [shot, setShot] = useState<ShotState | null>(null);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
+  const [calcOpen, setCalcOpen] = useState(false);
 
   const shotCtx = useRef<ShotContext | null>(null);
   const rafId = useRef<number | null>(null);
+
+  // --- stats instrumentation: cumulative across retries within this visit;
+  // refs (not state) so they survive handleReset and don't trigger re-renders.
+  const shotsRef = useRef(0);
+  const hitsRef = useRef(0);
+  const missesRef = useRef(0);
+  const offBoardRef = useRef(0);
+  const multiHitRef = useRef(0);
+  const heartsLostRef = useRef(0);
+  const lossesRef = useRef(0);
+  const manualResetsRef = useRef(0);
+  const calcOpensRef = useRef(0);
+  const tweaksRef = useRef(0);
+  const mountPerfRef = useRef(0);
+  const mountEpochRef = useRef(0);
+  const firstShotMsRef = useRef<number | null>(null);
+  const firstHitMsRef = useRef<number | null>(null);
+  const lostRef = useRef(false);
 
   const remaining = total - destroyed.size;
   const won = remaining === 0;
@@ -94,30 +119,80 @@ export function Game({
     : undefined;
   const activeTargetId = activeAsteroid ? activeAsteroid.id : null;
 
-  // Cancel any running animation when the component unmounts.
+  // Stamp the level start time and cancel any running animation on unmount.
   useEffect(() => {
+    mountPerfRef.current = performance.now();
+    mountEpochRef.current = Date.now();
     return () => {
       if (rafId.current !== null) cancelAnimationFrame(rafId.current);
     };
   }, []);
+
+  // Count each time the player runs out of hearts (a "loss" before winning).
+  useEffect(() => {
+    if (lost && !lostRef.current) {
+      lostRef.current = true;
+      lossesRef.current += 1;
+    } else if (!lost && lostRef.current) {
+      lostRef.current = false;
+    }
+  }, [lost]);
 
   // Record completion once when the level is first won (resets on replay).
   const completedRef = useRef(false);
   useEffect(() => {
     if (won && !completedRef.current) {
       completedRef.current = true;
-      onComplete(level.id);
+      const startHearts = level.hearts ?? Infinity;
+      const shots = shotsRef.current;
+      const hits = hitsRef.current;
+      const losses = lossesRef.current;
+      const manualResets = manualResetsRef.current;
+      const partial = {
+        levelId: level.id,
+        tier,
+        targets: total,
+        shots,
+        hits,
+        misses: missesRef.current,
+        offBoardShots: offBoardRef.current,
+        multiHits: multiHitRef.current,
+        accuracy: shots > 0 ? hits / shots : 1,
+        startHearts,
+        heartsLost: heartsLostRef.current,
+        heartsRemaining: hasHearts ? hearts : Infinity,
+        losses,
+        manualResets,
+        attempts: 1 + losses + manualResets,
+        passedFirstTry: losses === 0,
+        calculatorOpens: calcOpensRef.current,
+        tweaks: tweaksRef.current,
+        durationMs: performance.now() - mountPerfRef.current,
+        timeToFirstShotMs: firstShotMsRef.current,
+        timeToFirstHitMs: firstHitMsRef.current,
+        firstPlayedAt: mountEpochRef.current,
+        completedAt: Date.now(),
+      };
+      const stats: LevelStats = { ...partial, score: scorePerformance(partial) };
+      onComplete(level.id, stats);
     } else if (!won && completedRef.current) {
       completedRef.current = false;
     }
-  }, [won, onComplete, level.id]);
+  }, [won, onComplete, level.id, level.hearts, tier, total, hasHearts, hearts]);
 
   const loseHeart = useCallback(() => {
-    if (hasHearts) setHearts((h) => h - 1);
+    if (hasHearts) {
+      heartsLostRef.current += 1;
+      setHearts((h) => h - 1);
+    }
   }, [hasHearts]);
 
   const applyHit = useCallback(
     (asteroid: AsteroidSpec) => {
+      hitsRef.current += 1;
+      if (firstHitMsRef.current === null) {
+        firstHitMsRef.current = performance.now() - mountPerfRef.current;
+      }
       setDestroyed((prev) => {
         const next = new Set(prev);
         next.add(asteroid.id);
@@ -138,11 +213,15 @@ export function Game({
       const destroyedSpecs = ctx.hits.map((h) => h.asteroid);
       // Add the multi-hit bonus on top of the per-hit base points already given.
       if (destroyedSpecs.length > 1) {
+        multiHitRef.current += 1;
         const base = destroyedSpecs.reduce((s, a) => s + pointsForAsteroid(a), 0);
         setScore((s) => s + (scoreShot(destroyedSpecs) - base));
       }
       // A shot that destroyed nothing is a miss → costs a heart.
-      if (destroyedSpecs.length === 0) loseHeart();
+      if (destroyedSpecs.length === 0) {
+        missesRef.current += 1;
+        loseHeart();
+      }
       setFeedback(buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById));
       setShotsFired((s) => s + 1);
     },
@@ -183,6 +262,10 @@ export function Game({
 
   const handleFire = useCallback(() => {
     if (firing || outcome !== 'playing') return;
+    shotsRef.current += 1;
+    if (firstShotMsRef.current === null) {
+      firstShotMsRef.current = performance.now() - mountPerfRef.current;
+    }
     playLaser();
 
     const alive = level.asteroids.filter((a) => !destroyed.has(a.id));
@@ -201,6 +284,8 @@ export function Game({
           'Your line doesn’t cross the play area from the cannon. Try a smaller slope or y-intercept.',
       });
       setShotsFired((s) => s + 1);
+      offBoardRef.current += 1;
+      missesRef.current += 1;
       loseHeart();
       return;
     }
@@ -242,23 +327,54 @@ export function Game({
     startLoop,
   ]);
 
-  const handleReset = useCallback(() => {
-    if (rafId.current !== null) {
-      cancelAnimationFrame(rafId.current);
-      rafId.current = null;
-    }
-    shotCtx.current = null;
-    setM(level.defaults.m);
-    setB(level.defaults.b);
-    setXOffset(level.defaults.xOffset ?? 0);
-    setDestroyed(new Set());
-    setScore(0);
-    setShotsFired(0);
-    setHearts(level.hearts ?? Infinity);
-    setFeedback(null);
-    setShot(null);
-    setExplosions([]);
-  }, [level]);
+  const resetState = useCallback(
+    (countAsManual: boolean) => {
+      if (countAsManual) manualResetsRef.current += 1;
+      if (rafId.current !== null) {
+        cancelAnimationFrame(rafId.current);
+        rafId.current = null;
+      }
+      shotCtx.current = null;
+      setM(level.defaults.m);
+      setB(level.defaults.b);
+      setXOffset(level.defaults.xOffset ?? 0);
+      setDestroyed(new Set());
+      setScore(0);
+      setShotsFired(0);
+      setHearts(level.hearts ?? Infinity);
+      setFeedback(null);
+      setShot(null);
+      setExplosions([]);
+    },
+    [level],
+  );
+
+  // Manual "Reset Level" / post-win "Replay" count as voluntary resets; a
+  // post-loss "Retry" does not (the loss itself already marks the attempt).
+  const handleReset = useCallback(() => resetState(true), [resetState]);
+  const handleRetry = useCallback(() => resetState(false), [resetState]);
+
+  // Wrap the equation setters so we can record a coarse "tweaks" engagement
+  // count. (Not used by scoring — purely for the future profile page.)
+  const handleChangeM = useCallback((v: number) => {
+    tweaksRef.current += 1;
+    setM(v);
+  }, []);
+  const handleChangeB = useCallback((v: number) => {
+    tweaksRef.current += 1;
+    setB(v);
+  }, []);
+  const handleChangeXOffset = useCallback((v: number) => {
+    tweaksRef.current += 1;
+    setXOffset(v);
+  }, []);
+
+  const toggleCalculator = useCallback(() => {
+    setCalcOpen((open) => {
+      if (!open) calcOpensRef.current += 1; // free tool: counted, never scored
+      return !open;
+    });
+  }, []);
 
   const handleExplosionDone = useCallback((id: string) => {
     setExplosions((prev) => prev.filter((e) => e.id !== id));
@@ -270,12 +386,24 @@ export function Game({
   return (
     <div className="app">
       <header className="game-bar">
-        <IconButton icon="back" label="Back to levels" text="Levels" className="bar-btn" onClick={onExit} />
+        <IconButton icon="back" label="Back to levels" className="bar-btn chrome-icon-btn" onClick={onExit} />
         <div className="game-bar__title">
           <span className="game-bar__level">{levelNumberLabel}</span>
           <h1>{title}</h1>
         </div>
-        <IconButton icon="settings" label="Settings" className="bar-btn" onClick={onSettings} />
+        <div className="game-bar__right">
+          <button
+            type="button"
+            className="bar-btn calc-btn"
+            aria-label="Calculator"
+            aria-pressed={calcOpen}
+            title="Calculator"
+            onClick={toggleCalculator}
+          >
+            <span className="calc-btn__glyph" aria-hidden="true">🧮</span>
+          </button>
+          <IconButton icon="settings" label="Settings" className="bar-btn chrome-icon-btn" onClick={onSettings} />
+        </div>
       </header>
 
       {level.callout && <Callout text={level.callout} />}
@@ -324,7 +452,7 @@ export function Game({
                 <strong>Out of Hearts</strong>
                 <p>Your cannon’s shields are down. Try again!</p>
                 <div className="game-overlay__actions">
-                  <button type="button" className="btn btn--fire" onClick={handleReset}>
+                  <button type="button" className="btn btn--fire" onClick={handleRetry}>
                     ↺ Retry
                   </button>
                   <button type="button" className="btn btn--reset" onClick={onExit}>
@@ -334,6 +462,8 @@ export function Game({
               </div>
             </div>
           )}
+
+          {calcOpen && <Calculator onClose={() => setCalcOpen(false)} />}
         </div>
 
         <aside className="app__sidebar">
@@ -352,9 +482,9 @@ export function Game({
             m={m}
             b={b}
             xOffset={xOffset}
-            onChangeM={setM}
-            onChangeB={setB}
-            onChangeXOffset={setXOffset}
+            onChangeM={handleChangeM}
+            onChangeB={handleChangeB}
+            onChangeXOffset={handleChangeXOffset}
             onFire={handleFire}
             onReset={handleReset}
             disabled={firing || outcome !== 'playing'}

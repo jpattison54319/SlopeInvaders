@@ -196,6 +196,7 @@ export function EquationControls({
         <button
           type="button"
           className="btn btn--fire"
+          data-button-sfx="none"
           onClick={onFire}
           disabled={disabled || won}
         >

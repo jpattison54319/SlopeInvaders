@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { SfxProvider } from '../game/audio/sfx';
+import { useButtonClickSfx } from '../game/audio/buttonClick';
 import { Game } from '../game/Game';
 import { modes, type GameModeId } from '../game/modes';
 import {
@@ -11,6 +12,7 @@ import {
   nextLevel,
   firstCampaignLevel,
 } from '../game/campaign/zones';
+import { configForTier } from '../game/campaign/difficulty';
 import { MenuScreen } from './MenuScreen';
 import { CampaignMapScreen } from './CampaignMapScreen';
 import { ZoneLevelsScreen } from './ZoneLevelsScreen';
@@ -28,6 +30,11 @@ type Screen =
 
 const DEFAULT_MUSIC_VOLUME = 0.65;
 const DEFAULT_SFX_VOLUME = 0.7;
+
+function ButtonClickSfx() {
+  useButtonClickSfx();
+  return null;
+}
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>({ name: 'mode-select' });
@@ -121,10 +128,14 @@ export default function App() {
         const { zone, level, index } = ctx;
         const label =
           zone.number === 0 ? 'Tutorial' : `Zone ${zone.number} · Level ${index + 1}`;
+        // Rolling adaptivity: pick the tier from prior performance, then derive
+        // the playable config (hearts/scaffolds/variants) for that tier.
+        const tier = progress.tierForLevel(zone, index);
         return (
           <Game
             key={level.id}
-            level={level.config}
+            level={configForTier(level, tier)}
+            tier={tier}
             title={level.name}
             levelNumberLabel={label}
             hasNext={!!nextLevel(level.id)}
@@ -143,6 +154,7 @@ export default function App() {
 
   return (
     <SfxProvider volume={sfxVolume} muted={sfxMuted}>
+      <ButtonClickSfx />
       {renderScreen()}
 
       {settingsOpen && (

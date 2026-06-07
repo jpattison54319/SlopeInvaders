@@ -2,29 +2,60 @@
 
 This repository contains **Slope Invaders**, a browser-based educational math game built as a greenfield prototype. The repo folder is named `SlopeBlasters`, but the game title and UI copy use **Slope Invaders**.
 
-Use this guide for Claude Code, OpenAI Codex, and other coding agents. The same project guidance is mirrored from the top-level `AGENTS.md`/`CLAUDE.md` files so agents that do not read `.claude/` still get oriented.
+Use this guide for Claude Code, OpenAI Codex, and other coding agents. Keep it aligned with the root `AGENTS.md` and `CLAUDE.md` files so every agent starts from the same project truth.
+
+## Keep Agent Guidance Current
+
+Any time an agent changes architecture, user flows, learning design, storage keys, dependencies, major files, commands, testing expectations, or implementation rules, it must update the agent-facing guidance as part of the same change:
+
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.claude/CLAUDE.md`
+- relevant files under `docs/agent/`
+
+Do not leave these files stale. If a change affects how future agents should reason about the project, document it here and in the appropriate root agent file.
+
+## Foundational Design Docs
+
+The `docs/agent/` directory is the foundational theory behind decisions in Slope Invaders. It is rooted in source material summarized in `docs/agent/sources.md`, and should guide game, pedagogy, adaptivity, UI, audio, and accessibility decisions.
+
+Important docs:
+
+- `docs/agent/00-agent-principles.md`: core rules for keeping the game educational rather than a worksheet with decoration.
+- `docs/agent/01-learning-design.md`: learning goals, campaign sequencing, feedback, and reflection.
+- `docs/agent/02-adaptivity-personalization.md`: adaptivity, customization, learner supports, and non-stigmatizing personalization.
+- `docs/agent/03-gamification-multiplayer.md`: XP, badges, stars, cosmetics, and multiplayer guardrails.
+- `docs/agent/04-ui-audio-visual-design.md`: interface clarity, cognitive load, visual style, audio, and accessibility.
+- `docs/agent/05-prototype-scope-zone-1.md`: concrete prototype scope for Tutorial + Zone 1.
+- `docs/agent/sources.md`: source notes and bibliography-style references.
+
+Before adding or changing gameplay mechanics, level sequencing, scaffolds, feedback, adaptivity, stats, UI, audio, gamification, or multiplayer behavior, consult the relevant doc and keep the implementation aligned with that source-backed theory.
 
 ## Current Product
 
-Slope Invaders teaches linear equations by letting students aim a cannon/ship with `y = mx + b`. The player adjusts slope `m` and y-intercept `b`, watches the dashed line on a coordinate plane, and fires through asteroid weak points.
+Slope Invaders teaches linear equations by letting students aim a cannon/ship with graphed equations. The player adjusts equation controls, watches or infers a trajectory on a coordinate plane, and fires through asteroid weak points.
 
 Current user-facing flow:
 
-1. The app opens on a pixel-art arcade menu.
-2. The menu shows a top-right Settings button, a Play Level 1 button, and a future-proof level select grid.
-3. Only Level 1 is playable. Future levels are visible as coming-soon entries.
-4. Settings controls music volume and mute state. There is no separate Audio button beside Play.
-5. Menu music uses `src/assets/homescreen_background.mp3`.
-6. Gameplay music uses `src/assets/in_game.mp3`.
-7. Gameplay can return to the menu with the Menu button in the game bar.
+1. The app opens on a pixel-art mode-select menu.
+2. Campaign is available; Arcade and Versus are visible as coming-soon modes.
+3. Campaign map shows Tutorial first, then Zone 1 after Tutorial is cleared.
+4. Tutorial teaches slope, firing, grid reading, hearts, and feedback.
+5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
+6. Settings controls music and SFX volume/mute. There is no separate Audio button beside Play.
+7. Menu music uses `src/assets/homescreen_background.mp3`.
+8. Gameplay music uses `src/assets/in_game.mp3`.
+9. SFX use `src/assets/laser.wav` and `src/assets/explosion.wav`.
+10. Gameplay can return to the level/zone screens with the game bar navigation.
 
 ## Tech Stack
 
 - Vite + React + TypeScript
 - React 19
 - Konva + React Konva for the coordinate-plane game board
+- `expr-eval` for calculator expression parsing
 - Plain CSS in `src/styles/global.css`
-- Vitest for unit and app-shell tests
+- Vitest for unit/app-shell/hook tests
 - ESLint flat config
 
 Use npm scripts:
@@ -39,42 +70,67 @@ npm run build
 ## Important Files
 
 - `src/main.tsx` mounts the React app and imports global styles.
-- `src/app/App.tsx` owns app-level screen state, selected level, settings modal state, and music volume/mute state.
-- `src/app/MenuScreen.tsx` renders the arcade main menu and level select.
-- `src/app/SettingsModal.tsx` renders music volume/mute controls.
-- `src/app/App.test.tsx` covers menu rendering, settings behavior, and menu/game music switching.
-- `src/game/Game.tsx` owns live gameplay state: equation values, score, destroyed asteroids, shot animation, feedback, reset, and back/settings callbacks.
-- `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock after user interaction.
-- `src/game/levels/index.ts` is the level registry used by the menu.
-- `src/game/levels/levelOne.ts` is the only playable level today.
-- `src/game/levels/types.ts` defines the future-ready level model.
+- `src/app/App.tsx` owns app-level screen state, mode/zone/level/game routing, settings modal state, music/SFX state, and adaptive tier wiring.
+- `src/app/MenuScreen.tsx` renders the mode-select menu.
+- `src/app/CampaignMapScreen.tsx` renders the campaign zone map.
+- `src/app/ZoneLevelsScreen.tsx` renders level select within a zone.
+- `src/app/DebriefScreen.tsx` renders end-of-zone reflection/debrief.
+- `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls.
+- `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, unlock rules, and adaptive tier selection.
+- `src/app/App.test.tsx` covers menu/settings/game shell behavior.
+- `src/app/useCampaignProgress.test.tsx` covers progress/stats/adaptive-tier persistence behavior.
+- `src/game/Game.tsx` owns live gameplay state: equation values, score, hearts, destroyed asteroids, shot animation, calculator toggle, feedback, reset/retry, and rich stats instrumentation.
+- `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock.
+- `src/game/audio/sfx.tsx` and `src/game/audio/sfxContext.ts` provide SFX playback.
+- `src/game/audio/buttonClick.ts` provides delegated global button-click SFX and respects `data-button-sfx="none"` for buttons with their own sound.
+- `src/game/campaign/difficulty.ts` defines `DifficultyTier`, `LevelStats`, scoring, tier selection, and tier-based config transforms.
+- `src/game/campaign/levels/tutorial.ts` defines the Tutorial level.
+- `src/game/campaign/levels/zone1.ts` defines Zone 1 and adaptive flags/variants.
+- `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
+- `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
+- `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts` implement the floating calculator, safe evaluator, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/` contains Konva canvas components and DOM controls.
 - `src/game/logic/` contains pure math, scoring, hit detection, and feedback logic with tests.
-- `src/assets/assetMap.ts` is the source of truth for sprite/icon/audio imports.
+- `src/assets/assetMap.ts` is the source of truth for sprite/icon/heart/audio imports.
 - `src/styles/global.css` contains all app styling.
 
 ## Architecture Notes
 
-Keep rendering, game state, level data, and pure math separate.
+Keep rendering, game state, level data, progress, and pure math separate.
 
-- App shell concerns belong in `src/app/`.
+- App shell, routing, progress, and settings belong in `src/app/`.
 - Gameplay screen state belongs in `src/game/Game.tsx`.
+- Campaign sequencing and pedagogy live in `src/game/campaign/`.
 - Reusable gameplay UI belongs in `src/game/components/`.
 - Math and hit/scoring rules belong in `src/game/logic/` and should stay framework-free.
-- Level definitions belong in `src/game/levels/`.
 - Asset imports belong in `src/assets/assetMap.ts`.
 
-The level registry is intentionally future-proof. Add a level by adding a `LevelEntry` in `src/game/levels/index.ts`; make it playable by setting `status: 'available'` and providing a real `LevelConfig`.
+The campaign model is intentionally future-ready. Add zones/levels through `src/game/campaign/zones.ts` and `src/game/campaign/levels/*`, and keep the teaching progression aligned with `docs/agent/01-learning-design.md` and `docs/agent/05-prototype-scope-zone-1.md`.
+
+## Adaptive Difficulty and Stats
+
+- Zone 1 level 1 is a fixed `standard` diagnostic.
+- Later Zone 1 levels set `adaptive: true`.
+- `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats.
+- `configForTier(level, tier)` applies hearts/scaffold deltas and challenge variants.
+- Do not render a visible difficulty badge; adaptivity should be invisible and non-stigmatizing.
+- `LevelStats` captures rich per-level visit data for future profile work.
+- `slope-invaders:level-stats` stores the latest stats per level.
+- `slope-invaders:profile-stats` accumulates lifetime totals per completion, including replays.
+- `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
+- Calculator opens and tweaks are recorded but not scored.
 
 ## UI and Design Guidance
 
 - Preserve the 8-bit arcade space vibe.
-- Use existing sliced UI icon assets before adding new art.
+- Keep math readability above visual spectacle.
+- Use existing sliced UI/audio assets before adding new art.
+- Keep the shared 3D press treatment and generic click SFX on buttons; opt out only for buttons with their own dedicated sound, such as the actual Fire button using laser SFX.
 - Keep Settings as the single menu entry point for audio controls.
-- Keep the level-select grid future-proof: Level 1 playable, later levels visible but disabled until configured.
-- Avoid adding marketing/landing-page sections; the first screen is the actual game menu.
+- Avoid adding marketing/landing-page sections; the first screen should remain the actual game/mode experience.
 - Maintain responsive behavior. Check desktop and a narrow mobile viewport after visible UI changes.
 - Avoid text overflow with the pixel font. Prefer shorter labels and stable button dimensions.
+- For gameplay, keep controls and feedback close enough to the graph to reduce cognitive load.
 
 ## Testing Expectations
 
@@ -94,17 +150,18 @@ npm run dev -- --host 127.0.0.1
 
 Minimum UI smoke flow:
 
-1. Menu loads with Play Level 1 and Level Select.
-2. No standalone Audio button appears next to Play.
-3. Top-right Settings opens the music controls.
-4. Volume slider and mute toggle update state.
-5. Play Level 1 opens gameplay.
-6. Game Menu button returns to the menu.
-7. Console has no relevant errors.
+1. Mode-select menu loads.
+2. Campaign opens the campaign map.
+3. Tutorial/Zone level navigation works according to unlock rules.
+4. Top-right Settings opens music/SFX controls.
+5. A playable level opens and shows graph, hearts, equation controls, feedback, and game bar.
+6. Calculator opens, computes `(6-2)/(3-1) = 2`, closes, and leaves the board visible.
+7. Mobile/narrow viewport has no horizontal overflow.
+8. Console has no relevant errors.
 
 ## Git Hygiene
 
-Commit source, config, lockfile, assets, tests, and agent instruction docs.
+Commit source, config, lockfile, assets, tests, docs, and agent instruction files.
 
 Do not commit:
 
@@ -124,3 +181,4 @@ Do not commit:
 - Do not replace existing asset imports with hardcoded URLs.
 - Keep comments useful and sparse.
 - If adding dependencies, make sure they are justified for a prototype and reflected in `package-lock.json`.
+- If a change affects future-agent understanding, update the agent docs immediately.

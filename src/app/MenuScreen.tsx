@@ -27,8 +27,8 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings }: MenuScreenPr
           <span>Slope Invaders</span>
         </div>
         <div className="menu__actions">
-          <IconButton icon="trophy" label="Achievements" text="Stats" disabled />
-          <IconButton icon="settings" label="Settings" text="Settings" onClick={onOpenSettings} />
+          <IconButton icon="trophy" label="Achievements" className="chrome-icon-btn" disabled />
+          <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
         </div>
       </nav>
 

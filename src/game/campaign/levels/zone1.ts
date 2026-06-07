@@ -9,6 +9,12 @@ import { slopeLevel } from './helpers';
  *
  * Every level requires changing the slope away from the default (m = 1) — no
  * target is reachable without doing the thing the level teaches.
+ *
+ * Adaptivity: the first level (`z1-l1`) is a fixed diagnostic; the rest are
+ * `adaptive`, so their hearts/scaffolds shift with the learner's recent
+ * performance (see ../difficulty.ts). Most need no per-tier `variants` — the
+ * rule transform derives the deltas — except `z1-l2`, which adds a third
+ * fractional target at the challenge tier.
  */
 export const zoneOne: Zone = {
   id: 'zone-1',
@@ -39,6 +45,17 @@ export const zoneOne: Zone = {
       id: 'z1-l2',
       name: 'Fractional Slopes',
       subtitle: 'Flatter lines (m = ½)',
+      adaptive: true,
+      // Challenge adds a steeper-than-½ extra target needing a second shot.
+      variants: {
+        challenge: {
+          asteroids: [
+            { id: 'a1', weakPoint: { x: 4, y: 2 }, points: 100 }, // m = 1/2
+            { id: 'a2', weakPoint: { x: 6, y: 3 }, points: 100 }, // m = 1/2
+            { id: 'a3', weakPoint: { x: 4, y: 3 }, points: 100 }, // m = 3/4
+          ],
+        },
+      },
       config: slopeLevel({
         id: 'z1-l2',
         name: 'Fractional Slopes',
@@ -57,6 +74,7 @@ export const zoneOne: Zone = {
       id: 'z1-l3',
       name: 'Mixed Slope Practice',
       subtitle: 'One target at a time',
+      adaptive: true,
       config: slopeLevel({
         id: 'z1-l3',
         name: 'Mixed Slope Practice',
@@ -79,6 +97,7 @@ export const zoneOne: Zone = {
       id: 'z1-l4',
       name: 'Zone 1 Mastery Check',
       subtitle: 'No preview — prove it',
+      adaptive: true,
       config: slopeLevel({
         id: 'z1-l4',
         name: 'Zone 1 Mastery Check',

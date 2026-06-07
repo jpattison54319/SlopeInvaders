@@ -38,6 +38,7 @@ import musicGameUrl from './in_game.mp3';
 // One-shot sound effects (provided by the user).
 import sfxLaserUrl from './laser.wav';
 import sfxExplosionUrl from './explosion.wav';
+import sfxButtonUrl from './button-click.wav';
 
 export const assets = {
   /** Player cannon (green pixel-art ship). */
@@ -78,6 +79,7 @@ export const music = {
 export const sfx = {
   laser: sfxLaserUrl,
   explosion: sfxExplosionUrl,
+  button: sfxButtonUrl,
 } as const;
 
 export type AssetKey = keyof typeof assets;
