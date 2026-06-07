@@ -1,3 +1,4 @@
+import { sprites } from '../../assets/assetMap';
 import type { ShotFeedback } from '../logic/hints';
 
 interface HudProps {
@@ -8,11 +9,27 @@ interface HudProps {
   shotsFired: number;
   feedback: ShotFeedback | null;
   won: boolean;
+  /** Current hearts; omit (with maxHearts) for no lives display. */
+  hearts?: number;
+  /** Total hearts; when finite, a hearts row is shown. */
+  maxHearts?: number;
 }
 
-/** Score, progress, the learning goal, and the post-shot feedback panel. */
-export function Hud({ learningGoal, score, remaining, total, shotsFired, feedback, won }: HudProps) {
+/** Score, progress, hearts, the learning goal, and the post-shot feedback panel. */
+export function Hud({
+  learningGoal,
+  score,
+  remaining,
+  total,
+  shotsFired,
+  feedback,
+  won,
+  hearts,
+  maxHearts,
+}: HudProps) {
   const destroyedCount = total - remaining;
+  const showHearts = typeof maxHearts === 'number' && Number.isFinite(maxHearts) && maxHearts > 0;
+  const heartCount = typeof hearts === 'number' ? hearts : 0;
 
   return (
     <div className="hud">
@@ -20,6 +37,20 @@ export function Hud({ learningGoal, score, remaining, total, shotsFired, feedbac
         <span className="hud__goal-label">Mission</span>
         <p>{learningGoal}</p>
       </div>
+
+      {showHearts && (
+        <div className="hud__hearts" role="img" aria-label={`${heartCount} of ${maxHearts} hearts remaining`}>
+          {Array.from({ length: maxHearts }).map((_, i) => (
+            <img
+              key={i}
+              className="hud__heart"
+              src={i < heartCount ? sprites.heartFull : sprites.heartEmpty}
+              alt=""
+              draggable={false}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="hud__stats">
         <div className="stat">

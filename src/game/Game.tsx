@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AsteroidSpec } from './levels/types';
-import type { LevelEntry } from './levels';
+import type { AsteroidSpec, LevelConfig } from './levels/types';
 import { evaluateShot } from './logic/hitDetection';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
@@ -9,6 +8,8 @@ import { GameBoard, type ExplosionInstance, type ShotState } from './components/
 import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
 import { IconButton } from './components/IconButton';
+import { Callout } from './components/Callout';
+import { useSfx } from './audio/sfxContext';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
@@ -25,21 +26,40 @@ interface ShotContext {
   b: number;
 }
 
+type Outcome = 'playing' | 'won' | 'lost';
+
 interface GameProps {
-  entry: LevelEntry;
+  level: LevelConfig;
+  /** Display title (level name). */
+  title: string;
+  /** e.g. "Zone 1 · Level 3" or "Tutorial". */
+  levelNumberLabel: string;
+  /** Whether a next level exists (controls the advance button label). */
+  hasNext: boolean;
   onExit: () => void;
   onSettings: () => void;
+  onAdvance: () => void;
+  onComplete: (levelId: string) => void;
 }
 
 /** The single-level gameplay screen. */
-export function Game({ entry, onExit, onSettings }: GameProps) {
-  // The router only routes here for playable (config !== null) levels.
-  const level = entry.config!;
+export function Game({
+  level,
+  title,
+  levelNumberLabel,
+  hasNext,
+  onExit,
+  onSettings,
+  onAdvance,
+  onComplete,
+}: GameProps) {
   const total = level.asteroids.length;
   const asteroidsById = useMemo(
     () => new Map(level.asteroids.map((a) => [a.id, a])),
     [level],
   );
+  const hasHearts = level.hearts !== undefined;
+  const { playLaser, playExplosion } = useSfx();
 
   const [m, setM] = useState(level.defaults.m);
   const [b, setB] = useState(level.defaults.b);
@@ -48,6 +68,7 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
   const [destroyed, setDestroyed] = useState<ReadonlySet<string>>(new Set());
   const [score, setScore] = useState(0);
   const [shotsFired, setShotsFired] = useState(0);
+  const [hearts, setHearts] = useState(level.hearts ?? Infinity);
   const [feedback, setFeedback] = useState<ShotFeedback | null>(null);
   const [shot, setShot] = useState<ShotState | null>(null);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
@@ -57,12 +78,21 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
 
   const remaining = total - destroyed.size;
   const won = remaining === 0;
+  // Win takes precedence over a loss on the same shot.
+  const lost = hasHearts && hearts <= 0 && !won;
+  const outcome: Outcome = won ? 'won' : lost ? 'lost' : 'playing';
   const firing = shot !== null;
   // Effective cannon x: the ship rides the line at this x (base + offset).
   const shipX = level.ship.position.x + xOffset;
   // The displayed line y = m(x - xOffset) + b is the same line as
   // y = m·x + bEff, so the whole geometry pipeline uses this single intercept.
   const bEff = b - m * xOffset;
+
+  // In sequential levels, the only currently-targetable asteroid (array order).
+  const activeAsteroid = level.sequentialTargets
+    ? level.asteroids.find((a) => !destroyed.has(a.id))
+    : undefined;
+  const activeTargetId = activeAsteroid ? activeAsteroid.id : null;
 
   // Cancel any running animation when the component unmounts.
   useEffect(() => {
@@ -71,18 +101,37 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
     };
   }, []);
 
-  const applyHit = useCallback((asteroid: AsteroidSpec) => {
-    setDestroyed((prev) => {
-      const next = new Set(prev);
-      next.add(asteroid.id);
-      return next;
-    });
-    setScore((s) => s + pointsForAsteroid(asteroid));
-    setExplosions((prev) => [
-      ...prev,
-      { id: `${asteroid.id}-${performance.now()}`, point: asteroid.weakPoint },
-    ]);
-  }, []);
+  // Record completion once when the level is first won (resets on replay).
+  const completedRef = useRef(false);
+  useEffect(() => {
+    if (won && !completedRef.current) {
+      completedRef.current = true;
+      onComplete(level.id);
+    } else if (!won && completedRef.current) {
+      completedRef.current = false;
+    }
+  }, [won, onComplete, level.id]);
+
+  const loseHeart = useCallback(() => {
+    if (hasHearts) setHearts((h) => h - 1);
+  }, [hasHearts]);
+
+  const applyHit = useCallback(
+    (asteroid: AsteroidSpec) => {
+      setDestroyed((prev) => {
+        const next = new Set(prev);
+        next.add(asteroid.id);
+        return next;
+      });
+      setScore((s) => s + pointsForAsteroid(asteroid));
+      setExplosions((prev) => [
+        ...prev,
+        { id: `${asteroid.id}-${performance.now()}`, point: asteroid.weakPoint },
+      ]);
+      playExplosion();
+    },
+    [playExplosion],
+  );
 
   const finalizeShot = useCallback(
     (ctx: ShotContext) => {
@@ -92,10 +141,12 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
         const base = destroyedSpecs.reduce((s, a) => s + pointsForAsteroid(a), 0);
         setScore((s) => s + (scoreShot(destroyedSpecs) - base));
       }
+      // A shot that destroyed nothing is a miss → costs a heart.
+      if (destroyedSpecs.length === 0) loseHeart();
       setFeedback(buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById));
       setShotsFired((s) => s + 1);
     },
-    [asteroidsById],
+    [asteroidsById, loseHeart],
   );
 
   const startLoop = useCallback(() => {
@@ -131,10 +182,15 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
   }, [applyHit, finalizeShot]);
 
   const handleFire = useCallback(() => {
-    if (firing || won) return;
+    if (firing || outcome !== 'playing') return;
+    playLaser();
 
     const alive = level.asteroids.filter((a) => !destroyed.has(a.id));
-    const results = evaluateShot(m, bEff, alive, shipX);
+    // Sequential levels: only the active target can be hit; everything else is inert.
+    const targetable = level.sequentialTargets
+      ? alive.filter((a) => a.id === activeTargetId)
+      : alive;
+    const results = evaluateShot(m, bEff, targetable, shipX);
     const seg = lineBoardSegment(m, bEff, level.bounds, shipX);
 
     if (!seg) {
@@ -142,9 +198,10 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
         hit: false,
         headline: 'Off the board',
         detail:
-          'Your line doesn’t cross the play area from the cannon. Try a smaller y-intercept or a positive slope.',
+          'Your line doesn’t cross the play area from the cannon. Try a smaller slope or y-intercept.',
       });
       setShotsFired((s) => s + 1);
+      loseHeart();
       return;
     }
 
@@ -152,7 +209,7 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
     const hits = results
       .filter((r) => r.hit)
       .map((r) => {
-        const asteroid = alive.find((a) => a.id === r.asteroidId)!;
+        const asteroid = targetable.find((a) => a.id === r.asteroidId)!;
         const frac = dx === 0 ? 1 : (r.weakPoint.x - seg.start.x) / dx;
         return { asteroid, frac: Math.max(0, Math.min(1, frac)) };
       })
@@ -171,7 +228,19 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
     setFeedback(null);
     setShot({ start: seg.start, end: seg.end, progress: 0 });
     startLoop();
-  }, [firing, won, level, destroyed, m, bEff, shipX, startLoop]);
+  }, [
+    firing,
+    outcome,
+    playLaser,
+    level,
+    destroyed,
+    activeTargetId,
+    m,
+    bEff,
+    shipX,
+    loseHeart,
+    startLoop,
+  ]);
 
   const handleReset = useCallback(() => {
     if (rafId.current !== null) {
@@ -185,6 +254,7 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
     setDestroyed(new Set());
     setScore(0);
     setShotsFired(0);
+    setHearts(level.hearts ?? Infinity);
     setFeedback(null);
     setShot(null);
     setExplosions([]);
@@ -194,16 +264,21 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
     setExplosions((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
+  const showWinOverlay = outcome === 'won';
+  const showLoseOverlay = outcome === 'lost';
+
   return (
     <div className="app">
       <header className="game-bar">
-        <IconButton icon="back" label="Back to menu" text="Menu" className="bar-btn" onClick={onExit} />
+        <IconButton icon="back" label="Back to levels" text="Levels" className="bar-btn" onClick={onExit} />
         <div className="game-bar__title">
-          <span className="game-bar__level">Level {entry.number}</span>
-          <h1>{level.name}</h1>
+          <span className="game-bar__level">{levelNumberLabel}</span>
+          <h1>{title}</h1>
         </div>
         <IconButton icon="settings" label="Settings" className="bar-btn" onClick={onSettings} />
       </header>
+
+      {level.callout && <Callout text={level.callout} />}
 
       <main className="app__main">
         <div className="app__board">
@@ -218,7 +293,47 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
             shot={shot}
             explosions={explosions}
             onExplosionDone={handleExplosionDone}
+            trajectoryPreview={level.trajectoryPreview}
+            trajectoryStyle={level.trajectoryStyle}
+            showCoordinates={level.showCoordinates}
+            activeTargetId={activeTargetId}
           />
+
+          {showWinOverlay && (
+            <div className="game-overlay" role="dialog" aria-label="Level complete">
+              <div className="game-overlay__panel game-overlay__panel--win">
+                <strong>Level Complete!</strong>
+                <p>
+                  Cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'} · Score {score}
+                </p>
+                <div className="game-overlay__actions">
+                  <button type="button" className="btn btn--fire" onClick={onAdvance}>
+                    {hasNext ? '▶ Next Level' : '✓ Continue'}
+                  </button>
+                  <button type="button" className="btn btn--reset" onClick={handleReset}>
+                    ↺ Replay
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showLoseOverlay && (
+            <div className="game-overlay" role="dialog" aria-label="Out of hearts">
+              <div className="game-overlay__panel game-overlay__panel--lose">
+                <strong>Out of Hearts</strong>
+                <p>Your cannon’s shields are down. Try again!</p>
+                <div className="game-overlay__actions">
+                  <button type="button" className="btn btn--fire" onClick={handleReset}>
+                    ↺ Retry
+                  </button>
+                  <button type="button" className="btn btn--reset" onClick={onExit}>
+                    ← Levels
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <aside className="app__sidebar">
@@ -229,7 +344,9 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
             total={total}
             shotsFired={shotsFired}
             feedback={feedback}
-            won={won}
+            won={outcome === 'won'}
+            hearts={hasHearts ? hearts : undefined}
+            maxHearts={hasHearts ? level.hearts : undefined}
           />
           <EquationControls
             m={m}
@@ -240,8 +357,8 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
             onChangeXOffset={setXOffset}
             onFire={handleFire}
             onReset={handleReset}
-            disabled={firing}
-            won={won}
+            disabled={firing || outcome !== 'playing'}
+            won={outcome !== 'playing'}
             controls={level.allowedControls}
             equationForm={level.equationForm}
           />
@@ -249,7 +366,7 @@ export function Game({ entry, onExit, onSettings }: GameProps) {
       </main>
 
       <footer className="app__footer">
-        Level {entry.number} · {level.name} — a Slope Invaders prototype.
+        {levelNumberLabel} · {title} — Slope Invaders
       </footer>
     </div>
   );

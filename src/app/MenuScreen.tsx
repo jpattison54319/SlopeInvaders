@@ -1,28 +1,18 @@
 import { assets, icons } from '../assets/assetMap';
 import { IconButton } from '../game/components/IconButton';
-import type { LevelEntry } from '../game/levels';
+import type { GameModeId, ModeDescriptor } from '../game/modes';
 
 interface MenuScreenProps {
-  levels: LevelEntry[];
-  selectedLevelId: string;
-  onSelectLevel: (levelId: string) => void;
-  onPlayLevel: (entry: LevelEntry) => void;
+  modes: ModeDescriptor[];
+  onSelectMode: (id: GameModeId) => void;
   onOpenSettings: () => void;
 }
 
-function statusText(entry: LevelEntry): string {
-  return entry.status === 'available' ? 'Ready' : 'Coming Soon';
-}
-
-export function MenuScreen({
-  levels,
-  selectedLevelId,
-  onSelectLevel,
-  onPlayLevel,
-  onOpenSettings,
-}: MenuScreenProps) {
-  const selectedLevel = levels.find((level) => level.id === selectedLevelId) ?? levels[0];
-  const canPlaySelected = selectedLevel.status === 'available' && selectedLevel.config;
+/** The landing screen: title, how-to, and the game-mode selector. */
+export function MenuScreen({ modes, onSelectMode, onOpenSettings }: MenuScreenProps) {
+  const campaign = modes.find((m) => m.id === 'campaign');
+  const campaignReady = campaign?.status === 'available';
+  const availableCount = modes.filter((m) => m.status === 'available').length;
 
   return (
     <main
@@ -52,64 +42,55 @@ export function MenuScreen({
             <button
               type="button"
               className="menu__play"
-              disabled={!canPlaySelected}
-              onClick={() => onPlayLevel(selectedLevel)}
+              disabled={!campaignReady}
+              onClick={() => onSelectMode('campaign')}
             >
               <img src={icons.play} alt="" draggable={false} />
-              Play Level {selectedLevel.number}
+              Play Campaign
             </button>
           </div>
         </div>
 
-        <div className="menu__briefing" aria-label="Selected mission briefing">
-          <span className="menu__panel-label">Mission Briefing</span>
-          <h2>{selectedLevel.name}</h2>
-          <p>{selectedLevel.learningGoal}</p>
-          <dl>
-            <div>
-              <dt>Status</dt>
-              <dd>{statusText(selectedLevel)}</dd>
-            </div>
-            <div>
-              <dt>Focus</dt>
-              <dd>{selectedLevel.subtitle}</dd>
-            </div>
-          </dl>
+        <div className="menu__briefing" aria-label="How to play">
+          <span className="menu__panel-label">How to Play</span>
+          <h2>Aim with slope</h2>
+          <p>
+            Set your slope (and later, the y-intercept) so the dashed line passes through each
+            asteroid&rsquo;s glowing core, then Fire. Clear every asteroid to advance — but watch
+            your hearts!
+          </p>
         </div>
       </section>
 
-      <section className="level-select" aria-labelledby="level-select-title">
+      <section className="level-select" aria-labelledby="modes-title">
         <div className="level-select__header">
           <div>
-            <span className="menu__panel-label">Campaign</span>
-            <h2 id="level-select-title">Level Select</h2>
+            <span className="menu__panel-label">Game Modes</span>
+            <h2 id="modes-title">Choose a Mode</h2>
           </div>
-          <p>{levels.filter((level) => level.status === 'available').length} available now</p>
+          <p>{availableCount} available now</p>
         </div>
 
         <div className="level-grid">
-          {levels.map((entry) => {
-            const selected = entry.id === selectedLevelId;
-            const playable = entry.status === 'available' && entry.config;
-
+          {modes.map((mode) => {
+            const playable = mode.status === 'available';
             return (
               <button
                 type="button"
-                key={entry.id}
-                className={`level-card ${selected ? 'level-card--selected' : ''}`}
+                key={mode.id}
+                className={`level-card ${playable ? 'level-card--selected' : ''}`}
                 disabled={!playable}
-                aria-pressed={selected}
-                onClick={() => {
-                  onSelectLevel(entry.id);
-                }}
+                onClick={() => onSelectMode(mode.id)}
               >
-                <span className="level-card__number">{entry.number}</span>
+                <span className="level-card__number" aria-hidden>
+                  {playable ? '▶' : '🔒'}
+                </span>
                 <span className="level-card__body">
-                  <strong>{entry.name}</strong>
-                  <span>{entry.subtitle}</span>
+                  <strong>{mode.name}</strong>
+                  <span>{mode.tagline}</span>
                 </span>
                 <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
-                  {statusText(entry)}
+                  {playable ? 'Ready' : 'Coming Soon'}
                 </span>
               </button>
             );

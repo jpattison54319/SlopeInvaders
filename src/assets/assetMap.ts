@@ -26,9 +26,18 @@ import iconTrophyUrl from './icon-trophy.png';
 import iconNextUrl from './icon-next.png';
 import iconBackUrl from './icon-back.png';
 
+// Heart/life sprites (sliced from the pixel heart sheet).
+import heartFullUrl from './heart-full.png';
+import heartHalfUrl from './heart-half.png';
+import heartEmptyUrl from './heart-empty.png';
+
 // Background music tracks (provided by the user).
 import musicMenuUrl from './homescreen_background.mp3';
 import musicGameUrl from './in_game.mp3';
+
+// One-shot sound effects (provided by the user).
+import sfxLaserUrl from './laser.wav';
+import sfxExplosionUrl from './explosion.wav';
 
 export const assets = {
   /** Player cannon (green pixel-art ship). */
@@ -52,11 +61,26 @@ export const icons = {
   back: iconBackUrl,
 } as const;
 
+/** Heart/life sprites (full, half, empty). */
+export const sprites = {
+  heartFull: heartFullUrl,
+  heartHalf: heartHalfUrl,
+  heartEmpty: heartEmptyUrl,
+} as const;
+
 /** Looping background music. */
 export const music = {
   menu: musicMenuUrl,
   game: musicGameUrl,
 } as const;
 
+/** One-shot sound effects. */
+export const sfx = {
+  laser: sfxLaserUrl,
+  explosion: sfxExplosionUrl,
+} as const;
+
 export type AssetKey = keyof typeof assets;
 export type IconKey = keyof typeof icons;
+export type SpriteKey = keyof typeof sprites;
+export type SfxKey = keyof typeof sfx;
