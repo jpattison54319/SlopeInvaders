@@ -8,16 +8,18 @@ interface AxesProps {
   vp: Viewport;
   bounds: Bounds;
   step?: number;
+  /** Show numeric tick labels + the origin "0". Default true. */
+  showLabels?: boolean;
 }
 
-/** The x and y axes with numeric tick labels. */
-export function Axes({ vp, bounds, step = 1 }: AxesProps) {
+/** The x and y axes with optional numeric tick labels. */
+export function Axes({ vp, bounds, step = 1, showLabels = true }: AxesProps) {
   const origin = graphToScreen({ x: 0, y: 0 }, vp);
   const xEnd = graphToScreen({ x: bounds.maxX, y: 0 }, vp);
   const yEnd = graphToScreen({ x: 0, y: bounds.maxY }, vp);
 
   const labels: ReactNode[] = [];
-  for (let x = bounds.minX; x <= bounds.maxX + 1e-9; x += step) {
+  for (let x = bounds.minX; showLabels && x <= bounds.maxX + 1e-9; x += step) {
     if (x === 0) continue;
     const p = graphToScreen({ x, y: 0 }, vp);
     labels.push(
@@ -32,7 +34,7 @@ export function Axes({ vp, bounds, step = 1 }: AxesProps) {
       />,
     );
   }
-  for (let y = bounds.minY; y <= bounds.maxY + 1e-9; y += step) {
+  for (let y = bounds.minY; showLabels && y <= bounds.maxY + 1e-9; y += step) {
     if (y === 0) continue;
     const p = graphToScreen({ x: 0, y }, vp);
     labels.push(
@@ -58,7 +60,9 @@ export function Axes({ vp, bounds, step = 1 }: AxesProps) {
       <Text x={xEnd.x - 4} y={xEnd.y + 8} text="x" fontSize={14} fontStyle="bold" fontFamily="monospace" fill={COLORS.axis} />
       <Text x={yEnd.x - 16} y={yEnd.y - 4} text="y" fontSize={14} fontStyle="bold" fontFamily="monospace" fill={COLORS.axis} />
       {/* origin label */}
-      <Text x={origin.x - 14} y={origin.y + 6} text="0" fontSize={11} fontFamily="monospace" fill={COLORS.axisLabel} />
+      {showLabels && (
+        <Text x={origin.x - 14} y={origin.y + 6} text="0" fontSize={11} fontFamily="monospace" fill={COLORS.axisLabel} />
+      )}
       {labels}
     </>
   );

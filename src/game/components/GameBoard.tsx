@@ -1,5 +1,5 @@
 import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
-import type { LevelConfig } from '../levels/types';
+import type { LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 import type { Point } from '../logic/lineMath';
 import { getYAtX } from '../logic/lineMath';
 import { createViewport, graphToScreen } from '../logic/coordinateTransform';
@@ -39,6 +39,13 @@ interface GameBoardProps {
   shot: ShotState | null;
   explosions: ExplosionInstance[];
   onExplosionDone: (id: string) => void;
+  /** Trajectory-preview visibility + style (campaign per-level toggles). */
+  trajectoryPreview?: TrajectoryMode;
+  trajectoryStyle?: TrajectoryStyle;
+  /** Show coordinate labels (axis ticks + asteroid coords). Default true. */
+  showCoordinates?: boolean;
+  /** In sequential-target levels, the only currently-hittable asteroid id. */
+  activeTargetId?: string | null;
 }
 
 function lerp(a: Point, b: Point, t: number): Point {
@@ -57,6 +64,10 @@ export function GameBoard({
   shot,
   explosions,
   onExplosionDone,
+  trajectoryPreview = 'always',
+  trajectoryStyle = 'normal',
+  showCoordinates = true,
+  activeTargetId = null,
 }: GameBoardProps) {
   const vp = createViewport(width, height, level.bounds);
   const starfield = useImage(assets.starfield);
@@ -94,18 +105,33 @@ export function GameBoard({
         <Rect x={0} y={0} width={width} height={height} fill="rgba(7,11,32,0.45)" listening={false} />
 
         <Grid vp={vp} bounds={level.bounds} />
-        <Axes vp={vp} bounds={level.bounds} />
+        <Axes vp={vp} bounds={level.bounds} showLabels={showCoordinates} />
 
         {level.walls.map((w) => (
           <Wall key={w.id} vp={vp} wall={w} />
         ))}
 
-        <EquationLine vp={vp} bounds={level.bounds} m={m} b={b} fromX={shipX} faded={!!shot} />
+        <EquationLine
+          vp={vp}
+          bounds={level.bounds}
+          m={m}
+          b={b}
+          fromX={shipX}
+          faded={!!shot}
+          mode={trajectoryPreview}
+          style={trajectoryStyle}
+        />
 
         {level.asteroids
           .filter((a) => !destroyed.has(a.id))
           .map((a) => (
-            <Asteroid key={a.id} vp={vp} asteroid={a} />
+            <Asteroid
+              key={a.id}
+              vp={vp}
+              asteroid={a}
+              showCoordinates={showCoordinates}
+              active={activeTargetId == null || a.id === activeTargetId}
+            />
           ))}
 
         {/* Firing beam */}

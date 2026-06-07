@@ -21,6 +21,12 @@ export type ControlKey = 'slope' | 'yIntercept' | 'xOffset';
 /** Visual/behavioural flavour of an asteroid (mostly future-facing). */
 export type AsteroidType = 'standard' | 'armored' | 'special';
 
+/** When the dashed aiming/trajectory preview is shown. */
+export type TrajectoryMode = 'always' | 'after-fire' | 'off';
+
+/** Visual weight of the trajectory preview. */
+export type TrajectoryStyle = 'normal' | 'dimmed';
+
 /**
  * An asteroid the player must hit. The `weakPoint` is the exact coordinate the
  * shot's line has to pass through.
@@ -76,4 +82,25 @@ export interface LevelConfig {
   linkedGroups: LinkedGroupSpec[];
   /** Use Infinity for relaxed, exploration-style levels. */
   maxShots: number;
+
+  // --- Campaign-mode options (all optional; omitting reproduces legacy behavior) ---
+
+  /**
+   * Hearts the player starts with. Each miss costs one; losing all loses the
+   * level. Omit (undefined) for no lose condition (legacy / sandbox levels).
+   */
+  hearts?: number;
+  /** When the trajectory preview line is shown. Default 'always'. */
+  trajectoryPreview?: TrajectoryMode;
+  /** Visual weight of the preview line ('dimmed' = subtle). Default 'normal'. */
+  trajectoryStyle?: TrajectoryStyle;
+  /** Show axis tick numbers and per-asteroid coordinate labels. Default true. */
+  showCoordinates?: boolean;
+  /**
+   * Only one asteroid is targetable at a time, advancing in array order as each
+   * is destroyed. Non-active asteroids render but cannot be hit. Default false.
+   */
+  sequentialTargets?: boolean;
+  /** A short teaching banner shown above the board for this level. */
+  callout?: string;
 }

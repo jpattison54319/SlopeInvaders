@@ -2,23 +2,81 @@ import { icons } from '../assets/assetMap';
 import { Modal } from '../game/components/Modal';
 
 interface SettingsModalProps {
-  volume: number;
-  muted: boolean;
+  musicVolume: number;
+  musicMuted: boolean;
+  sfxVolume: number;
+  sfxMuted: boolean;
   activeTrack: 'menu' | 'game';
-  onChangeVolume: (value: number) => void;
-  onChangeMuted: (value: boolean) => void;
+  onChangeMusicVolume: (value: number) => void;
+  onChangeMusicMuted: (value: boolean) => void;
+  onChangeSfxVolume: (value: number) => void;
+  onChangeSfxMuted: (value: boolean) => void;
   onClose: () => void;
 }
 
-export function SettingsModal({
+interface VolumeControlProps {
+  label: string;
+  ariaLabel: string;
+  volume: number;
+  muted: boolean;
+  muteLabel: string;
+  unmuteLabel: string;
+  onChangeVolume: (value: number) => void;
+  onChangeMuted: (value: boolean) => void;
+}
+
+function VolumeControl({
+  label,
+  ariaLabel,
   volume,
   muted,
-  activeTrack,
+  muteLabel,
+  unmuteLabel,
   onChangeVolume,
   onChangeMuted,
+}: VolumeControlProps) {
+  const percent = Math.round(volume * 100);
+  return (
+    <div className="settings-group">
+      <label className="volume-control">
+        <span>
+          {label} <strong>{percent}%</strong>
+        </span>
+        <input
+          aria-label={ariaLabel}
+          type="range"
+          min="0"
+          max="100"
+          step="5"
+          value={percent}
+          onInput={(event) => onChangeVolume(Number(event.currentTarget.value) / 100)}
+          onChange={(event) => onChangeVolume(Number(event.currentTarget.value) / 100)}
+        />
+      </label>
+      <button
+        type="button"
+        className="settings-panel__mute"
+        aria-pressed={muted}
+        onClick={() => onChangeMuted(!muted)}
+      >
+        {muted ? unmuteLabel : muteLabel}
+      </button>
+    </div>
+  );
+}
+
+export function SettingsModal({
+  musicVolume,
+  musicMuted,
+  sfxVolume,
+  sfxMuted,
+  activeTrack,
+  onChangeMusicVolume,
+  onChangeMusicMuted,
+  onChangeSfxVolume,
+  onChangeSfxMuted,
   onClose,
 }: SettingsModalProps) {
-  const volumePercent = Math.round(volume * 100);
   const trackLabel = activeTrack === 'game' ? 'In-game music' : 'Menu music';
 
   return (
@@ -32,31 +90,27 @@ export function SettingsModal({
           </div>
         </div>
 
-        <label className="volume-control">
-          <span>
-            Music Volume <strong>{volumePercent}%</strong>
-          </span>
-          <input
-            aria-label="Music volume"
-            type="range"
-            min="0"
-            max="100"
-            step="5"
-            value={volumePercent}
-            onInput={(event) => onChangeVolume(Number(event.currentTarget.value) / 100)}
-            onChange={(event) => onChangeVolume(Number(event.currentTarget.value) / 100)}
-          />
-        </label>
+        <VolumeControl
+          label="Music Volume"
+          ariaLabel="Music volume"
+          volume={musicVolume}
+          muted={musicMuted}
+          muteLabel="Mute music"
+          unmuteLabel="Unmute music"
+          onChangeVolume={onChangeMusicVolume}
+          onChangeMuted={onChangeMusicMuted}
+        />
 
-        <button
-          type="button"
-          className="settings-panel__mute"
-          aria-pressed={muted}
-          onClick={() => onChangeMuted(!muted)}
-        >
-          <img src={icons.music} alt="" draggable={false} />
-          {muted ? 'Unmute music' : 'Mute music'}
-        </button>
+        <VolumeControl
+          label="Sound FX Volume"
+          ariaLabel="Sound effects volume"
+          volume={sfxVolume}
+          muted={sfxMuted}
+          muteLabel="Mute sound effects"
+          unmuteLabel="Unmute sound effects"
+          onChangeVolume={onChangeSfxVolume}
+          onChangeMuted={onChangeSfxMuted}
+        />
       </div>
     </Modal>
   );

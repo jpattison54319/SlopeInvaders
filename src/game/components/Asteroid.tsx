@@ -11,6 +11,10 @@ interface AsteroidProps {
   asteroid: AsteroidSpec;
   /** Size of the rock in graph units. */
   size?: number;
+  /** Show the "(x, y)" coordinate label under the rock. Default true. */
+  showCoordinates?: boolean;
+  /** Whether this asteroid is currently targetable (sequential mode). Default true. */
+  active?: boolean;
 }
 
 // 7×7 pixel mask for a chunky, roundish 8-bit rock.
@@ -31,11 +35,19 @@ const CRATERS = new Set(['1,4', '3,2', '4,5', '2,1']);
  * exact coordinate the equation line must pass through; a small label shows the
  * target coordinates so students can connect the picture to the numbers.
  */
-export function Asteroid({ vp, asteroid, size = 1.0 }: AsteroidProps) {
+export function Asteroid({
+  vp,
+  asteroid,
+  size = 1.0,
+  showCoordinates = true,
+  active = true,
+}: AsteroidProps) {
   const coreRef = useRef<Konva.Group>(null);
 
-  // Self-contained pulse for the weak-point core (no React re-render).
+  // Self-contained pulse for the weak-point core (no React re-render). Only the
+  // active target pulses; inactive (sequential) asteroids stay still.
   useEffect(() => {
+    if (!active) return;
     const node = coreRef.current;
     const layer = node?.getLayer();
     if (!node || !layer) return;
@@ -50,7 +62,7 @@ export function Asteroid({ vp, asteroid, size = 1.0 }: AsteroidProps) {
     return () => {
       anim.stop();
     };
-  }, []);
+  }, [active]);
 
   const center = graphToScreen(asteroid.weakPoint, vp);
   const rockPx = size * vp.unit;
@@ -83,7 +95,7 @@ export function Asteroid({ vp, asteroid, size = 1.0 }: AsteroidProps) {
   const coreR = rockPx * 0.16;
 
   return (
-    <Group listening={false}>
+    <Group listening={false} opacity={active ? 1 : 0.4}>
       {pixels}
       {/* Pulsing weak-point core at the exact target coordinate. */}
       <Group ref={coreRef} x={center.x} y={center.y}>
@@ -92,16 +104,18 @@ export function Asteroid({ vp, asteroid, size = 1.0 }: AsteroidProps) {
         <Circle radius={coreR * 0.4} fill="#ffffff" />
       </Group>
       {/* Target coordinate label. */}
-      <Text
-        x={center.x - rockPx / 2}
-        y={center.y + rockPx / 2 + 2}
-        width={rockPx}
-        align="center"
-        text={`(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`}
-        fontSize={11}
-        fontFamily="monospace"
-        fill={COLORS.weakPointGlow}
-      />
+      {showCoordinates && (
+        <Text
+          x={center.x - rockPx / 2}
+          y={center.y + rockPx / 2 + 2}
+          width={rockPx}
+          align="center"
+          text={`(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`}
+          fontSize={11}
+          fontFamily="monospace"
+          fill={COLORS.weakPointGlow}
+        />
+      )}
     </Group>
   );
 }

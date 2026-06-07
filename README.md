@@ -45,22 +45,33 @@ Rendering, math, and level data are deliberately separated:
 
 ```
 src/
-  app/App.tsx                  # app shell: menu/game routing + shared music settings
-  app/MenuScreen.tsx           # arcade menu + future-proof level select
-  app/SettingsModal.tsx        # music volume / mute controls
+  app/App.tsx                  # app shell: mode/zone/level/game router + music + SFX + settings
+  app/MenuScreen.tsx           # landing: game-mode select (Campaign + coming-soon modes)
+  app/CampaignMapScreen.tsx    # zone map (sequential unlock)
+  app/ZoneLevelsScreen.tsx     # level select within a zone
+  app/DebriefScreen.tsx        # end-of-zone reflection (MC + open-ended prompts)
+  app/ScreenChrome.tsx         # shared starfield page wrapper + top bar
+  app/SettingsModal.tsx        # music + sound-FX volume / mute controls
+  app/useCampaignProgress.ts   # localStorage progress + unlock rules
+  app/usePersistentState.ts    # tiny localStorage-backed useState
   game/
-    Game.tsx                   # gameplay state machine: equation, fire animation, scoring, feedback
+    Game.tsx                   # gameplay: equation, fire animation, hearts/lose, scoring, advance
     audio/useMusic.ts          # menu/game background music hook
+    audio/sfx.tsx              # SfxProvider; audio/sfxContext.ts # useSfx hook (laser/explosion)
+    modes/                     # GameMode registry (campaign available; arcade/versus coming soon)
+    campaign/                  # zones + levels (tutorial, zone1) + nav helpers (nextLevel, …)
     components/                # React Konva + DOM UI
-      GameBoard.tsx            #   Stage/Layer that composes the board + firing beam
-      Grid.tsx  Axes.tsx       #   coordinate plane
-      EquationLine.tsx         #   dashed aiming-line preview
-      Asteroid.tsx Ship.tsx    #   sprites & pixel-art placeholders
+      GameBoard.tsx            #   Stage/Layer: board + beam + preview/coords/active-target toggles
+      Grid.tsx  Axes.tsx       #   coordinate plane (Axes: showLabels toggle)
+      EquationLine.tsx         #   preview line (always / after-fire / off, normal / dimmed)
+      Asteroid.tsx Ship.tsx    #   sprites & pixel-art placeholders (Asteroid: coords + active)
       Wall.tsx                 #   wall/shield placeholder (future)
       Explosion.tsx            #   self-animating hit burst
-      Hud.tsx                  #   score / progress / feedback panel
-      EquationControls.tsx     #   slope & intercept steppers, Fire / Reset
-      useImage.ts colors.ts    #   helpers
+      Hud.tsx                  #   score / progress / hearts / feedback panel
+      EquationControls.tsx     #   slope / intercept / x-offset steppers, Fire / Reset
+      Callout.tsx              #   teaching banner
+      ReflectionQuestionCard.tsx #  inline multiple-choice reflection
+      IconButton.tsx Modal.tsx useImage.ts colors.ts  # helpers
     logic/                     # pure, unit-tested — no React/Konva
       lineMath.ts              #   getYAtX, isPointOnLine, getMissDistance,
                                #   calculateSlopeBetweenPoints, calculateInterceptFromPoint
@@ -68,11 +79,29 @@ src/
       hitDetection.ts          #   evaluate shots against asteroids
       scoring.ts hints.ts      #   points + educational feedback
     levels/
-      types.ts                 #   future-ready level model
-      levelOne.ts              #   the playable level
-  assets/assetMap.ts           # sprite URLs (sliced from the asset pack)
+      types.ts                 #   level model (+ optional campaign fields)
+      levelOne.ts index.ts     #   legacy standalone level + flat registry
+  assets/assetMap.ts           # sprite / icon / heart / music / SFX URLs
   styles/global.css
 ```
+
+### Campaign mode
+
+Campaign is the playable game mode (Arcade and Versus are stubbed as "coming
+soon"). It is ordered **zones** of **levels** defined in `src/game/campaign/`:
+
+- **Tutorial** — one forgiving level that teaches the grid, firing, hearts, and
+  that slope sets the laser's angle (the target is off the default line, so you
+  *must* change the slope).
+- **Zone 1: Slope Training** — steeper integer slopes, fractional slopes, a
+  sequential "one target at a time" level, and a no-preview Mastery Check, then a
+  **Mission Debrief** (multiple-choice + open-ended reflection) at the zone's end.
+
+Per-level options live on `LevelConfig` (all optional, backward-compatible):
+`hearts`, `trajectoryPreview` (`always`/`after-fire`/`off`), `trajectoryStyle`,
+`showCoordinates`, `sequentialTargets`, `callout`. Progress (completed levels)
+persists in `localStorage`; the next level unlocks when the previous is cleared,
+and the next zone when the previous zone is fully complete.
 
 ### Core math (all unit-tested in `src/game/logic/*.test.ts`)
 
@@ -93,14 +122,15 @@ match the 8-bit vibe.
 
 ## Future-readiness
 
-The level model and code already make room for later milestones (look for
-`TODO` comments):
+The mode/zone/level model and code already make room for later milestones (look
+for `TODO` comments and the `coming-soon` zones/modes):
 
+- later campaign zones: y-intercept, negative slopes, full coordinate grid,
+  hidden trajectory, shields/walls, linked asteroids, friendly ships, x-offset
+  (each new mechanic carries forward into later zones)
+- Arcade and Multiplayer-Versus modes (registry entries already stubbed)
 - walls / shields that block shot paths (and shield gaps)
 - linked asteroid groups destroyed by a single line
-- all four quadrants and negative slopes
-- an x-offset / movable cannon
 - alternate equation forms (`y = mx`, point-slope)
-- multiplayer duel mode
 
 Only single-player Level 1 is wired up in this prototype.
