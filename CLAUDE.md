@@ -11,6 +11,8 @@ Quick orientation:
 - `src/game/` contains gameplay, campaign data, components, audio, and pure game logic.
 - Zone 1 uses invisible rolling adaptive difficulty after its first diagnostic level.
 - The in-level calculator is a free tool and must not penalize scoring/adaptivity; its dragged viewport position persists in `slope-invaders:calculator-position`.
+- The learning goal sits in a full-width mission banner above the board (the old per-level teaching "callout" is gone).
+- Levels can opt into a one-time guided spotlight tour on first open; the Tutorial uses it.
 - Buttons use a shared 3D press treatment and generic click SFX; the actual Fire button opts out because it plays the laser SFX.
 - Audio settings are opened from the top-right Settings button.
 - `docs/agent/` contains the foundational source-backed theory for game, pedagogy, adaptivity, UI/audio, and Zone 1 decisions. Consult it before changing design behavior.

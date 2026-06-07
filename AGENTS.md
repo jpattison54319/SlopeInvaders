@@ -69,6 +69,7 @@ npm run dev -- --host 127.0.0.1
 - `src/app/SettingsModal.tsx`: music and SFX controls.
 - `src/app/useCampaignProgress.ts`: localStorage progress, rich stats, profile aggregate, unlock rules, adaptive tier selection.
 - `src/game/Game.tsx`: gameplay state machine, hearts/losses, calculator toggle, stats instrumentation.
+- `src/game/components/GuidedTour.tsx`: first-visit spotlight walkthrough used by levels that opt in.
 - `src/game/audio/buttonClick.ts`: delegated global button-click SFX; respect `data-button-sfx="none"` for buttons with their own sound.
 - `src/game/campaign/difficulty.ts`: adaptive tiers, `LevelStats`, scoring, tier config transforms.
 - `src/game/campaign/levels/tutorial.ts`: Tutorial campaign level.
@@ -91,6 +92,8 @@ npm run dev -- --host 127.0.0.1
 - Do not display adaptive tier labels to learners; adaptation should be invisible/non-stigmatizing.
 - The calculator is a free tool: record opens, but never penalize scoring/adaptivity for it.
 - The calculator position is stored in `slope-invaders:calculator-position`; clamp restored positions to the current viewport so it cannot reopen off-screen.
+- The learning goal shows in a full-width mission banner above the board (the old per-level teaching "callout" is gone).
+- Levels can opt into a one-time guided spotlight tour on first open; the Tutorial uses it.
 - Buttons should keep the shared 3D press feel and generic click SFX; the actual Fire button opts out because it plays the laser SFX.
 - Do not commit `node_modules/`, `dist/`, caches, local secrets, or local Claude settings.
 - Run `npm test`, `npm run lint`, and `npm run build` before claiming completion.

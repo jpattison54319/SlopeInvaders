@@ -153,7 +153,7 @@ export function EquationControls({
   equationForm,
 }: EquationControlsProps) {
   return (
-    <div className="controls">
+    <div className="controls" data-tour="command">
       <div className="controls__equation" aria-live="polite">
         {equationString(m, b, xOffset, equationForm)}
       </div>
@@ -195,15 +195,17 @@ export function EquationControls({
       <div className="controls__actions">
         <button
           type="button"
-          className="btn btn--fire"
+          className="btn btn--fire btn--split"
           data-button-sfx="none"
           onClick={onFire}
           disabled={disabled || won}
         >
-          ▶ Fire
+          <span className="btn__icon" aria-hidden="true">▶</span>
+          <span className="btn__label">Fire</span>
         </button>
-        <button type="button" className="btn btn--reset" onClick={onReset}>
-          ↺ Reset Level
+        <button type="button" className="btn btn--reset btn--split" onClick={onReset}>
+          <span className="btn__icon" aria-hidden="true">↺</span>
+          <span className="btn__label">Reset Level</span>
         </button>
       </div>
     </div>

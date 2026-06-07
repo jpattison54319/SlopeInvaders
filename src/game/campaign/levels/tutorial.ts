@@ -28,8 +28,7 @@ export const tutorialZone: Zone = {
           'Your laser follows the dashed line. Raise the slope (m) until the line passes through the asteroid at (2, 4), then Fire.',
         asteroids: [{ id: 't1', weakPoint: { x: 2, y: 4 }, points: 100 }],
         hearts: 5,
-        callout:
-          'The dashed line shows your shot. Right now (m = 1) it falls short. Increase the slope to tilt the line up onto the asteroid, then Fire! Watch your hearts ♥ on the right — running out restarts the level.',
+        guidedTour: true,
       }),
     },
   ],
