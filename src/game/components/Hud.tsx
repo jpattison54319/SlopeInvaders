@@ -2,7 +2,6 @@ import { sprites } from '../../assets/assetMap';
 import type { ShotFeedback } from '../logic/hints';
 
 interface HudProps {
-  learningGoal: string;
   score: number;
   remaining: number;
   total: number;
@@ -17,7 +16,6 @@ interface HudProps {
 
 /** Score, progress, hearts, the learning goal, and the post-shot feedback panel. */
 export function Hud({
-  learningGoal,
   score,
   remaining,
   total,
@@ -33,13 +31,13 @@ export function Hud({
 
   return (
     <div className="hud">
-      <div className="hud__goal">
-        <span className="hud__goal-label">Mission</span>
-        <p>{learningGoal}</p>
-      </div>
-
       {showHearts && (
-        <div className="hud__hearts" role="img" aria-label={`${heartCount} of ${maxHearts} hearts remaining`}>
+        <div
+          className="hud__hearts"
+          data-tour="hearts"
+          role="img"
+          aria-label={`${heartCount} of ${maxHearts} hearts remaining`}
+        >
           {Array.from({ length: maxHearts }).map((_, i) => (
             <img
               key={i}
@@ -52,7 +50,7 @@ export function Hud({
         </div>
       )}
 
-      <div className="hud__stats">
+      <div className="hud__stats" data-tour="stats">
         <div className="stat">
           <span className="stat__value">{score}</span>
           <span className="stat__label">Score</span>
@@ -70,7 +68,7 @@ export function Hud({
       </div>
 
       {won ? (
-        <div className="feedback feedback--win" role="status">
+        <div className="feedback feedback--win" data-tour="hint" role="status">
           <strong>Level Complete!</strong>
           <p>
             All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final score:{' '}
@@ -80,13 +78,14 @@ export function Hud({
       ) : feedback ? (
         <div
           className={`feedback ${feedback.hit ? 'feedback--hit' : 'feedback--miss'}`}
+          data-tour="hint"
           role="status"
         >
           <strong>{feedback.headline}</strong>
           <p>{feedback.detail}</p>
         </div>
       ) : (
-        <div className="feedback feedback--idle" role="status">
+        <div className="feedback feedback--idle" data-tour="hint" role="status">
           <strong>Ready.</strong>
           <p>Set your slope and y-intercept, watch the dashed aiming line, then Fire!</p>
         </div>

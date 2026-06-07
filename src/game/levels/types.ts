@@ -103,4 +103,9 @@ export interface LevelConfig {
   sequentialTargets?: boolean;
   /** A short teaching banner shown above the board for this level. */
   callout?: string;
+  /**
+   * Run the step-by-step spotlight tour the first time this level is opened
+   * (persisted per level in localStorage). Used by the Tutorial.
+   */
+  guidedTour?: boolean;
 }

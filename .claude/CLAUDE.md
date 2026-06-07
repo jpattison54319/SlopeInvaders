@@ -40,7 +40,7 @@ Current user-facing flow:
 1. The app opens on a pixel-art mode-select menu.
 2. Campaign is available; Arcade and Versus are visible as coming-soon modes.
 3. Campaign map shows Tutorial first, then Zone 1 after Tutorial is cleared.
-4. Tutorial teaches slope, firing, grid reading, hearts, and feedback.
+4. Tutorial opens with a one-time guided spotlight tour, then teaches slope, firing, grid reading, hearts, and feedback.
 5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
 6. Settings controls music and SFX volume/mute. There is no separate Audio button beside Play.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
@@ -79,7 +79,8 @@ npm run build
 - `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, unlock rules, and adaptive tier selection.
 - `src/app/App.test.tsx` covers menu/settings/game shell behavior.
 - `src/app/useCampaignProgress.test.tsx` covers progress/stats/adaptive-tier persistence behavior.
-- `src/game/Game.tsx` owns live gameplay state: equation values, score, hearts, destroyed asteroids, shot animation, calculator toggle, feedback, reset/retry, and rich stats instrumentation.
+- `src/game/Game.tsx` owns live gameplay state: equation values, score, hearts, destroyed asteroids, shot animation, calculator toggle, feedback, reset/retry, the mission banner, and rich stats instrumentation.
+- `src/game/components/GuidedTour.tsx` renders the first-visit spotlight walkthrough used by levels that opt in.
 - `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock.
 - `src/game/audio/sfx.tsx` and `src/game/audio/sfxContext.ts` provide SFX playback.
 - `src/game/audio/buttonClick.ts` provides delegated global button-click SFX and respects `data-button-sfx="none"` for buttons with their own sound.
@@ -119,6 +120,11 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:profile-stats` accumulates lifetime totals per completion, including replays.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - Calculator opens and tweaks are recorded but not scored.
+
+## Guided Tour and Mission Banner
+
+- The learning goal renders in a full-width mission banner above the board; the old per-level teaching "callout" banner has been removed.
+- A level can opt into a one-time spotlight walkthrough that runs on first open (the Tutorial uses it). See `GuidedTour` and `Game.tsx` for how steps and targets are wired.
 
 ## UI and Design Guidance
 

@@ -8,13 +8,71 @@ import { GameBoard, type ExplosionInstance, type ShotState } from './components/
 import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
 import { IconButton } from './components/IconButton';
-import { Callout } from './components/Callout';
 import { Calculator } from './components/Calculator';
+import { GuidedTour, type TourStep } from './components/GuidedTour';
+import { CalculatorIcon } from './components/CalculatorIcon';
 import { useSfx } from './audio/sfxContext';
 import { scorePerformance, type DifficultyTier, type LevelStats } from './campaign/difficulty';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
+
+const TOUR_SEEN_KEY = 'slope-invaders:tour-seen';
+
+/** The guided-tour walkthrough shown the first time the Tutorial is opened. */
+const TOUR_STEPS: TourStep[] = [
+  {
+    selector: '[data-tour="grid"]',
+    title: 'The Grid',
+    body: 'This is your coordinate plane. Your cannon sits at the origin and asteroids float on the grid — read each one by its (x, y) position.',
+  },
+  {
+    selector: '[data-tour="mission"]',
+    title: 'Your Mission',
+    body: 'Every level shows its objective here. It tells you exactly what to aim for and which controls you have.',
+  },
+  {
+    selector: '[data-tour="hearts"]',
+    title: 'Your Hearts',
+    body: 'These are your lives. Each missed shot costs one heart — run out and the level restarts. Take your time and aim carefully.',
+  },
+  {
+    selector: '[data-tour="stats"]',
+    title: 'Score & Progress',
+    body: 'Track your Score, how many Asteroids are left to clear, and the number of Shots you have fired so far.',
+  },
+  {
+    selector: '[data-tour="hint"]',
+    title: 'Hints & Feedback',
+    body: 'After each shot this panel tells you whether you hit and nudges you toward the fix — read it to learn from every attempt.',
+  },
+  {
+    selector: '[data-tour="command"]',
+    title: 'Command Center',
+    body: 'Change the equation here to aim the dashed line, press Fire to shoot, and use Reset Level to start the level over any time.',
+  },
+  {
+    selector: null,
+    title: 'Ready to begin?',
+    body: 'That is everything! Raise the slope until the dashed line lands on the asteroid, then Fire. Good luck, pilot.',
+  },
+];
+
+function tourSeen(levelId: string): boolean {
+  try {
+    return localStorage.getItem(`${TOUR_SEEN_KEY}:${levelId}`) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markTourSeen(levelId: string): void {
+  try {
+    localStorage.setItem(`${TOUR_SEEN_KEY}:${levelId}`, '1');
+  } catch {
+    /* ignore storage failures */
+  }
+}
 
 /** Context for the shot currently animating, kept in a ref to avoid stale closures. */
 interface ShotContext {
@@ -79,6 +137,15 @@ export function Game({
   const [shot, setShot] = useState<ShotState | null>(null);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
   const [calcOpen, setCalcOpen] = useState(false);
+  // Show the spotlight walkthrough on the first visit to a guided level.
+  const [showTour, setShowTour] = useState(
+    () => Boolean(level.guidedTour) && !tourSeen(level.id),
+  );
+
+  const closeTour = useCallback(() => {
+    setShowTour(false);
+    markTourSeen(level.id);
+  }, [level.id]);
 
   const shotCtx = useRef<ShotContext | null>(null);
   const rafId = useRef<number | null>(null);
@@ -394,22 +461,25 @@ export function Game({
         <div className="game-bar__right">
           <button
             type="button"
-            className="bar-btn calc-btn"
+            className="bar-btn chrome-icon-btn calc-btn"
             aria-label="Calculator"
             aria-pressed={calcOpen}
             title="Calculator"
             onClick={toggleCalculator}
           >
-            <span className="calc-btn__glyph" aria-hidden="true">🧮</span>
+            <CalculatorIcon className="calc-btn__icon" />
           </button>
           <IconButton icon="settings" label="Settings" className="bar-btn chrome-icon-btn" onClick={onSettings} />
         </div>
       </header>
 
-      {level.callout && <Callout text={level.callout} />}
+      <div className="mission-banner" data-tour="mission" role="note">
+        <span className="mission-banner__label">Mission</span>
+        <p>{level.learningGoal}</p>
+      </div>
 
       <main className="app__main">
-        <div className="app__board">
+        <div className="app__board" data-tour="grid">
           <GameBoard
             width={BOARD_SIZE}
             height={BOARD_SIZE}
@@ -468,7 +538,6 @@ export function Game({
 
         <aside className="app__sidebar">
           <Hud
-            learningGoal={level.learningGoal}
             score={score}
             remaining={remaining}
             total={total}
@@ -498,6 +567,8 @@ export function Game({
       <footer className="app__footer">
         {levelNumberLabel} · {title} — Slope Invaders
       </footer>
+
+      {showTour && <GuidedTour steps={TOUR_STEPS} onClose={closeTour} />}
     </div>
   );
 }
