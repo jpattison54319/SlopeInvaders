@@ -21,7 +21,7 @@ export function ScreenChrome({ onBack, backLabel = 'Back', onOpenSettings, child
       <nav className="menu__topbar" aria-label="Navigation">
         <div className="menu__brand">
           {onBack ? (
-            <IconButton icon="back" label={backLabel} text={backLabel} onClick={onBack} />
+            <IconButton icon="back" label={backLabel} className="chrome-icon-btn" onClick={onBack} />
           ) : (
             <>
               <img src={assets.ship} alt="" draggable={false} />
@@ -30,7 +30,7 @@ export function ScreenChrome({ onBack, backLabel = 'Back', onOpenSettings, child
           )}
         </div>
         <div className="menu__actions">
-          <IconButton icon="settings" label="Settings" text="Settings" onClick={onOpenSettings} />
+          <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
         </div>
       </nav>
       {children}

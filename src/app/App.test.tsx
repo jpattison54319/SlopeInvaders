@@ -110,7 +110,10 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Arcade');
     expect(host.textContent).toContain('Versus');
     expect(host.textContent).toContain('Coming Soon');
-    expect(buttonLabels.some((l) => l === 'Settings')).toBe(true);
+    expect(host.querySelector('button[aria-label="Settings"]')).toBeTruthy();
+    expect(host.querySelector('button[aria-label="Achievements"]')?.textContent?.trim()).toBe('');
+    expect(buttonLabels.some((l) => l === 'Settings')).toBe(false);
+    expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
   });
 
@@ -135,6 +138,24 @@ describe('App shell', () => {
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.3, true);
 
     expect(host.querySelector('input[aria-label="Sound effects volume"]')).toBeTruthy();
+  });
+
+  test('campaign chrome keeps back and settings controls icon-only but accessible', async () => {
+    await renderApp();
+    await click('Play Campaign');
+
+    const nav = host.querySelector('nav[aria-label="Navigation"]');
+    expect(nav).toBeTruthy();
+
+    const modes = nav!.querySelector<HTMLButtonElement>('button[aria-label="Modes"]');
+    const settings = nav!.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
+
+    expect(modes).toBeTruthy();
+    expect(settings).toBeTruthy();
+    expect(modes!.textContent?.trim()).toBe('');
+    expect(settings!.textContent?.trim()).toBe('');
+    expect(modes!.title).toBe('Modes');
+    expect(settings!.title).toBe('Settings');
   });
 
   test('navigates mode → zone → level, swaps to game music, and back', async () => {

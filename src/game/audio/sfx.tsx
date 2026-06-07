@@ -24,6 +24,7 @@ export function SfxProvider({ volume, muted, children }: SfxProviderProps) {
     const play = (key: SfxKey) => {
       const { volume: vol, muted: isMuted } = settings.current;
       if (isMuted || vol <= 0 || typeof Audio === 'undefined') return;
+      if (typeof navigator !== 'undefined' && navigator.userAgent.includes('jsdom')) return;
       try {
         const audio = new Audio(sfxUrls[key]);
         audio.volume = Math.min(1, Math.max(0, vol));
@@ -32,7 +33,12 @@ export function SfxProvider({ volume, muted, children }: SfxProviderProps) {
         /* ignore playback errors (e.g. unsupported environment) */
       }
     };
-    return { play, playLaser: () => play('laser'), playExplosion: () => play('explosion') };
+    return {
+      play,
+      playLaser: () => play('laser'),
+      playExplosion: () => play('explosion'),
+      playButton: () => play('button'),
+    };
   }, []);
 
   return <SfxContext.Provider value={api}>{children}</SfxContext.Provider>;

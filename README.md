@@ -36,6 +36,7 @@ npm run preview  # preview the production build
 
 - **Vite** + **React** + **TypeScript**
 - **React Konva** (`konva` + `react-konva`) for the 2D canvas board
+- **expr-eval** for the in-level calculator's expression parsing
 - Plain CSS (`src/styles/global.css`)
 - **Vitest** for the core math/game-logic tests
 
@@ -60,6 +61,7 @@ src/
     audio/sfx.tsx              # SfxProvider; audio/sfxContext.ts # useSfx hook (laser/explosion)
     modes/                     # GameMode registry (campaign available; arcade/versus coming soon)
     campaign/                  # zones + levels (tutorial, zone1) + nav helpers (nextLevel, …)
+      difficulty.ts            #   rolling adaptive tiers + LevelStats + scorePerformance
     components/                # React Konva + DOM UI
       GameBoard.tsx            #   Stage/Layer: board + beam + preview/coords/active-target toggles
       Grid.tsx  Axes.tsx       #   coordinate plane (Axes: showLabels toggle)
@@ -70,6 +72,7 @@ src/
       Hud.tsx                  #   score / progress / hearts / feedback panel
       EquationControls.tsx     #   slope / intercept / x-offset steppers, Fire / Reset
       Callout.tsx              #   teaching banner
+      Calculator.tsx calc.ts   #   floating in-level calculator (+ expr-eval helper)
       ReflectionQuestionCard.tsx #  inline multiple-choice reflection
       IconButton.tsx Modal.tsx useImage.ts colors.ts  # helpers
     logic/                     # pure, unit-tested — no React/Konva
@@ -103,6 +106,45 @@ Per-level options live on `LevelConfig` (all optional, backward-compatible):
 persists in `localStorage`; the next level unlocks when the previous is cleared,
 and the next zone when the previous zone is fully complete.
 
+#### Adaptive difficulty (Zone 1)
+
+Every Zone 1 level **except the first** adapts to the learner
+(`src/game/campaign/difficulty.ts`). The first level of a zone is a fixed
+`standard` diagnostic; from then on the tier is chosen by a **rolling**
+exponential-moving-average of recent per-level scores within that zone:
+
+- **support** — full scaffolds restored + **one extra heart** (for a learner
+  who is struggling).
+- **standard** — the level exactly as authored.
+- **challenge** — one fewer heart and the next rung up the *scaffold ladder*
+  (`always/normal → always/dimmed → after-fire → off`); a level may also add an
+  extra asteroid via a per-tier `variant`.
+
+A level is marked adaptive with `adaptive: true` on its `CampaignLevel`; the
+tier deltas are derived automatically, so most levels need no per-tier data.
+The performance **score** uses only shot accuracy, hearts kept, and whether the
+learner passed without dying — **the calculator is a free tool and never counts
+against the score.**
+
+#### In-level calculator
+
+A small, non-modal floating calculator (the **🧮 Calc** button in the game bar)
+lets students do quick slope math like `(6−2)÷(3−1)` without leaving the level
+or hiding the board. Expression parsing is delegated to `expr-eval`
+(`src/game/components/calc.ts`); the panel itself is `Calculator.tsx`.
+
+#### Captured stats (for a future profile page)
+
+Each played level records its latest rich `LevelStats` blob (shots, hits,
+misses, off-board shots, multi-hits, accuracy, hearts lost/remaining, losses,
+attempts, first-try, calculator opens, control tweaks, durations,
+time-to-first-shot/hit, and timestamps) under
+`localStorage['slope-invaders:level-stats']`. A separate lifetime
+`profile-stats` aggregate accumulates every completion, including replays, for
+future profile-page totals. Most of these don't feed today's adaptivity score —
+they're stored for a planned learner profile / statistics page. Read them via
+`useCampaignProgress`'s `getLevelStats` / `getProfileStats`.
+
 ### Core math (all unit-tested in `src/game/logic/*.test.ts`)
 
 `getYAtX` · `isPointOnLine` · `getMissDistance` ·
@@ -133,4 +175,5 @@ for `TODO` comments and the `coming-soon` zones/modes):
 - linked asteroid groups destroyed by a single line
 - alternate equation forms (`y = mx`, point-slope)
 
-Only single-player Level 1 is wired up in this prototype.
+Campaign mode is the playable path today; Arcade and Multiplayer-Versus remain
+stubbed as coming-soon modes.
