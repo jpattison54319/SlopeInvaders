@@ -276,14 +276,30 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Playing Fractional Slopes');
   });
 
-  test('galaxy can switch to the classic list view and back', async () => {
+  test('view toggle switches between galaxy and classic list views', async () => {
+    await renderApp();
+
+    await click('Play Campaign');
+    expect(host.textContent).toContain('Choose your destination');
+
+    // The top-bar toggle (not the back button) switches to the list view.
+    await click('List view');
+    expect(host.textContent).toContain('Choose a Zone');
+
+    // Toggling back returns to the galaxy planet view.
+    await click('Planet view');
+    expect(host.textContent).toContain('Choose your destination');
+  });
+
+  test('back from the classic list view exits to the mode select, not the galaxy', async () => {
     await renderApp();
 
     await click('Play Campaign');
     await click('List view');
     expect(host.textContent).toContain('Choose a Zone');
 
-    await click('Galaxy');
-    expect(host.textContent).toContain('Choose your destination');
+    // The back control just goes back (to modes) rather than toggling views.
+    await click('Modes');
+    expect(host.textContent).toContain('Choose a Mode');
   });
 });

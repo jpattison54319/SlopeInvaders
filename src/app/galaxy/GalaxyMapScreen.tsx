@@ -14,8 +14,8 @@ interface GalaxyMapScreenProps {
   onPlayLevel: (levelId: string) => void;
   onBack: () => void;
   onOpenSettings: () => void;
-  /** Switch to the classic zone/level list screens. */
-  // onOpenClassic: () => void;
+  /** Toggle to the classic zone/level list screens. */
+  onToggleView: () => void;
 }
 
 type SurfacePhase = 'space' | 'approach' | 'surface' | 'leaving';
@@ -37,7 +37,7 @@ export function GalaxyMapScreen({
   onPlayLevel,
   onBack,
   onOpenSettings,
-  // onOpenClassic,
+  onToggleView,
 }: GalaxyMapScreenProps) {
   const initialIndex = useMemo(() => {
     const fromId = initialZoneId ? zones.findIndex((z) => z.id === initialZoneId) : -1;
@@ -119,6 +119,8 @@ export function GalaxyMapScreen({
       onBack={backFromSurface}
       backLabel={surfacePhase === 'space' ? 'Modes' : 'Planets'}
       onOpenSettings={onOpenSettings}
+      onToggleView={onToggleView}
+      toggleViewLabel="List view"
     >
       <section
         className={`galaxy ${showingSurface ? 'galaxy--surface' : ''}`}
@@ -130,9 +132,6 @@ export function GalaxyMapScreen({
               <span className="menu__panel-label">Campaign · Galaxy</span>
               <h2 id="galaxy-title">Choose your destination</h2>
             </div>
-            {/* <button type="button" className="galaxy__classic" onClick={onOpenClassic}>
-              ☰ List view
-            </button> */}
           </div>
         )}
 

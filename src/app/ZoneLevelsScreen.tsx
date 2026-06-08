@@ -8,6 +8,8 @@ interface ZoneLevelsScreenProps {
   onSelectLevel: (levelId: string) => void;
   onBack: () => void;
   onOpenSettings: () => void;
+  /** Toggle back to the galaxy planet view. */
+  onToggleView: () => void;
 }
 
 /** Level select within a zone, with sequential unlocking + completion ticks. */
@@ -17,11 +19,18 @@ export function ZoneLevelsScreen({
   onSelectLevel,
   onBack,
   onOpenSettings,
+  onToggleView,
 }: ZoneLevelsScreenProps) {
   const zoneLabel = zone.number === 0 ? 'Tutorial' : `Zone ${zone.number}`;
 
   return (
-    <ScreenChrome onBack={onBack} backLabel="Campaign" onOpenSettings={onOpenSettings}>
+    <ScreenChrome
+      onBack={onBack}
+      backLabel="Campaign"
+      onOpenSettings={onOpenSettings}
+      onToggleView={onToggleView}
+      toggleViewLabel="Planet view"
+    >
       <section className="level-select" aria-labelledby="zone-title">
         <div className="level-select__header">
           <div>

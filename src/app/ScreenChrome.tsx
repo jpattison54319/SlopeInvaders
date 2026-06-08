@@ -7,6 +7,10 @@ interface ScreenChromeProps {
   onBack?: () => void;
   backLabel?: string;
   onOpenSettings: () => void;
+  /** Optional view toggle in the top bar (e.g. switch between galaxy and list). */
+  onToggleView?: () => void;
+  /** Label shown on the view-toggle button (switches with the active view). */
+  toggleViewLabel?: string;
   children: ReactNode;
 }
 
@@ -15,7 +19,14 @@ const BG_STYLE = {
 };
 
 /** Shared starfield page wrapper with a top bar (brand/back + settings). */
-export function ScreenChrome({ onBack, backLabel = 'Back', onOpenSettings, children }: ScreenChromeProps) {
+export function ScreenChrome({
+  onBack,
+  backLabel = 'Back',
+  onOpenSettings,
+  onToggleView,
+  toggleViewLabel,
+  children,
+}: ScreenChromeProps) {
   return (
     <main className="menu" style={BG_STYLE}>
       <nav className="menu__topbar" aria-label="Navigation">
@@ -30,6 +41,11 @@ export function ScreenChrome({ onBack, backLabel = 'Back', onOpenSettings, child
           )}
         </div>
         <div className="menu__actions">
+          {onToggleView && (
+            <button type="button" className="chrome-toggle-btn" onClick={onToggleView}>
+              {toggleViewLabel}
+            </button>
+          )}
           <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
         </div>
       </nav>

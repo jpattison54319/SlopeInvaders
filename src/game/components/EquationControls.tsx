@@ -174,7 +174,7 @@ export function EquationControls({
             label="y-intercept"
             symbol="b"
             value={b}
-            step={1}
+            step={0.5}
             disabled={disabled}
             onChange={onChangeB}
           />

@@ -8,6 +8,7 @@
 import type { CampaignLevel, Zone } from './types';
 import { tutorialZone } from './levels/tutorial';
 import { zoneOne } from './levels/zone1';
+import { zoneTwo } from './levels/zone2';
 
 function comingSoonZone(id: string, number: number, name: string, theme: string): Zone {
   return { id, number, name, theme, status: 'coming-soon', levels: [] };
@@ -16,7 +17,7 @@ function comingSoonZone(id: string, number: number, name: string, theme: string)
 export const zones: Zone[] = [
   tutorialZone,
   zoneOne,
-  comingSoonZone('zone-2', 2, 'Intercepts', 'Meet the y-intercept (b)'),
+  zoneTwo,
   comingSoonZone('zone-3', 3, 'Negative Slopes', 'Lines that fall'),
   comingSoonZone('zone-4', 4, 'Four Quadrants', 'The full coordinate grid'),
 ];
@@ -47,4 +48,18 @@ export function nextLevel(levelId: string): { zone: Zone; level: CampaignLevel }
   const idx = orderedLevels.findIndex((e) => e.level.id === levelId);
   if (idx < 0 || idx + 1 >= orderedLevels.length) return undefined;
   return orderedLevels[idx + 1];
+}
+
+/**
+ * The next level within the SAME zone; undefined at a zone's last level. Used to
+ * keep "Next Level" inside a zone so the end-of-zone learning check runs before
+ * crossing into the next zone.
+ */
+export function nextLevelInZone(
+  levelId: string,
+): { zone: Zone; level: CampaignLevel } | undefined {
+  const ctx = findCampaignLevel(levelId);
+  if (!ctx) return undefined;
+  const next = ctx.zone.levels[ctx.index + 1];
+  return next ? { zone: ctx.zone, level: next } : undefined;
 }
