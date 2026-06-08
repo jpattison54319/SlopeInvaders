@@ -13,16 +13,24 @@ import {
   firstCampaignLevel,
 } from '../game/campaign/zones';
 import { configForTier } from '../game/campaign/difficulty';
+import { planetSrcForZone } from '../game/campaign/planets';
 import { MenuScreen } from './MenuScreen';
+import { GalaxyMapScreen } from './galaxy/GalaxyMapScreen';
+import { LaunchTransition } from './LaunchTransition';
+import { MissionFadeTransition } from './MissionFadeTransition';
 import { CampaignMapScreen } from './CampaignMapScreen';
 import { ZoneLevelsScreen } from './ZoneLevelsScreen';
 import { DebriefScreen } from './DebriefScreen';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
+import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
 
 type Screen =
   | { name: 'mode-select' }
+  | { name: 'galaxy'; zoneId?: string }
+  | { name: 'launch'; levelId: string }
+  | { name: 'fade'; levelId: string }
   | { name: 'campaign-map' }
   | { name: 'zone-levels'; zoneId: string }
   | { name: 'game'; levelId: string }
@@ -46,6 +54,7 @@ export default function App() {
   const [sfxMuted, setSfxMuted] = usePersistentState('slope-invaders:sfx-muted', false);
 
   const progress = useCampaignProgress();
+  const reducedMotion = usePrefersReducedMotion();
 
   useMusic(screen.name === 'game' ? music.game : music.menu, musicVolume, musicMuted);
 
@@ -56,7 +65,7 @@ export default function App() {
   const openSettings = () => setSettingsOpen(true);
 
   const selectMode = (id: GameModeId) => {
-    if (id === 'campaign') setScreen({ name: 'campaign-map' });
+    if (id === 'campaign') setScreen({ name: 'galaxy' });
     // Arcade / Versus are coming soon — no-op for now.
   };
 
@@ -70,15 +79,13 @@ export default function App() {
     if (current?.zone.debrief) {
       setScreen({ name: 'debrief', zoneId: current.zone.id });
     } else {
-      setScreen({ name: 'campaign-map' });
+      setScreen({ name: 'galaxy', zoneId: current?.zone.id });
     }
   };
 
   const exitToZone = (levelId: string) => {
     const current = findCampaignLevel(levelId);
-    setScreen(
-      current ? { name: 'zone-levels', zoneId: current.zone.id } : { name: 'campaign-map' },
-    );
+    setScreen({ name: 'galaxy', zoneId: current?.zone.id });
   };
 
   function renderScreen() {
@@ -86,13 +93,47 @@ export default function App() {
       case 'mode-select':
         return <MenuScreen modes={modes} onSelectMode={selectMode} onOpenSettings={openSettings} />;
 
+      case 'galaxy':
+        return (
+          <GalaxyMapScreen
+            zones={zones}
+            progress={progress}
+            initialZoneId={screen.zoneId}
+            onPlayLevel={(levelId) => setScreen({ name: 'fade', levelId })}
+            onBack={() => setScreen({ name: 'mode-select' })}
+            onOpenSettings={openSettings}
+            onOpenClassic={() => setScreen({ name: 'campaign-map' })}
+          />
+        );
+
+      case 'launch': {
+        const ctx = findCampaignLevel(screen.levelId);
+        const planetSrc = ctx ? planetSrcForZone(ctx.zone.id) : '';
+        return (
+          <LaunchTransition
+            planetSrc={planetSrc}
+            reducedMotion={reducedMotion}
+            onDone={() => setScreen({ name: 'game', levelId: screen.levelId })}
+          />
+        );
+      }
+
+      case 'fade':
+        return (
+          <MissionFadeTransition
+            reducedMotion={reducedMotion}
+            onDone={() => setScreen({ name: 'game', levelId: screen.levelId })}
+          />
+        );
+
       case 'campaign-map':
         return (
           <CampaignMapScreen
             zones={zones}
             progress={progress}
+            backLabel="Galaxy"
             onSelectZone={(zoneId) => setScreen({ name: 'zone-levels', zoneId })}
-            onBack={() => setScreen({ name: 'mode-select' })}
+            onBack={() => setScreen({ name: 'galaxy' })}
             onOpenSettings={openSettings}
           />
         );

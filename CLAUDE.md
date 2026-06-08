@@ -7,6 +7,7 @@ Quick orientation:
 - This is **Slope Invaders**, a Vite + React + TypeScript + React Konva educational math game.
 - The repo folder is `SlopeBlasters`, but the game title is `Slope Invaders`.
 - Campaign is the playable mode today; Arcade and Versus are coming soon.
+- Campaign opens an atmospheric galaxy where zones are planets on a rotating dial and the active planet's "hotspots" are its levels (a "List view" toggle keeps the classic zone/level screens). Planet art is in `src/assets/planets/`.
 - `src/app/` contains app shell, mode/zone routing, settings, progress, stats, and adaptive tier wiring.
 - `src/game/` contains gameplay, campaign data, components, audio, and pure game logic.
 - Zone 1 uses invisible rolling adaptive difficulty after its first diagnostic level.

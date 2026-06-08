@@ -39,7 +39,7 @@ Current user-facing flow:
 
 1. The app opens on a pixel-art mode-select menu.
 2. Campaign is available; Arcade and Versus are visible as coming-soon modes.
-3. Campaign map shows Tutorial first, then Zone 1 after Tutorial is cleared.
+3. Campaign opens a galaxy planet-dial (zones are planets; the active planet's hotspots are its levels, with a launch warp into gameplay). A "List view" toggle keeps the classic zone/level-list screens.
 4. Tutorial opens with a one-time guided spotlight tour, then teaches slope, firing, grid reading, hearts, and feedback.
 5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
 6. Settings controls music and SFX volume/mute. There is no separate Audio button beside Play.
@@ -72,8 +72,9 @@ npm run build
 - `src/main.tsx` mounts the React app and imports global styles.
 - `src/app/App.tsx` owns app-level screen state, mode/zone/level/game routing, settings modal state, music/SFX state, and adaptive tier wiring.
 - `src/app/MenuScreen.tsx` renders the mode-select menu.
-- `src/app/CampaignMapScreen.tsx` renders the campaign zone map.
-- `src/app/ZoneLevelsScreen.tsx` renders level select within a zone.
+- `src/app/galaxy/` renders the galaxy planet-dial campaign screen (planet dial, level hotspots, mission popup); `src/app/LaunchTransition.tsx` plays the warp into gameplay.
+- `src/app/CampaignMapScreen.tsx` and `src/app/ZoneLevelsScreen.tsx` are the classic zone/level-list screens, kept as a "List view" fallback.
+- `src/game/campaign/planets.ts` maps zones to planet sprites and lays out level hotspots.
 - `src/app/DebriefScreen.tsx` renders end-of-zone reflection/debrief.
 - `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls.
 - `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, unlock rules, and adaptive tier selection.
@@ -92,7 +93,7 @@ npm run build
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts` implement the floating calculator, safe evaluator, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/` contains Konva canvas components and DOM controls.
 - `src/game/logic/` contains pure math, scoring, hit detection, and feedback logic with tests.
-- `src/assets/assetMap.ts` is the source of truth for sprite/icon/heart/audio imports.
+- `src/assets/assetMap.ts` is the source of truth for sprite/icon/heart/planet/audio imports.
 - `src/styles/global.css` contains all app styling.
 
 ## Architecture Notes
@@ -157,8 +158,8 @@ npm run dev -- --host 127.0.0.1
 Minimum UI smoke flow:
 
 1. Mode-select menu loads.
-2. Campaign opens the campaign map.
-3. Tutorial/Zone level navigation works according to unlock rules.
+2. Campaign opens the galaxy planet-dial; rotating and a level hotspot's mission popup work.
+3. Tutorial/Zone navigation works according to unlock rules (galaxy and the "List view" fallback).
 4. Top-right Settings opens music/SFX controls.
 5. A playable level opens and shows graph, hearts, equation controls, feedback, and game bar.
 6. Calculator opens, computes `(6-2)/(3-1) = 2`, closes, and leaves the board visible.
