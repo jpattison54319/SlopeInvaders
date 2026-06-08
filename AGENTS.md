@@ -35,7 +35,8 @@ Current product flow:
 
 - App starts on a pixel-art arcade mode-select menu.
 - Campaign is the available mode; Arcade and Versus are coming soon.
-- Campaign map shows Tutorial unlocked, Zone 1 unlocked after Tutorial, and later zones locked/coming soon.
+- Campaign opens an atmospheric galaxy where each zone is a planet on a rotating dial; the active planet's level "hotspots" replace the level list, and a "List view" toggle keeps the classic zone/level screens. Launching a level plays a brief warp transition into gameplay.
+- Planet art lives in `src/assets/planets/` (wired via `assetMap`); Tutorial is unlocked, Zone 1 unlocks after Tutorial, later zones are locked/coming soon.
 - Tutorial and Zone 1 levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
 - Zone 1 uses rolling adaptive difficulty after its first diagnostic level.
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
@@ -63,8 +64,8 @@ npm run dev -- --host 127.0.0.1
 
 - `src/app/App.tsx`: app shell, mode/zone/level/game routing, music/SFX settings, adaptive tier wiring.
 - `src/app/MenuScreen.tsx`: mode select landing screen.
-- `src/app/CampaignMapScreen.tsx`: campaign zone map.
-- `src/app/ZoneLevelsScreen.tsx`: level select inside a zone.
+- `src/app/galaxy/`: the galaxy planet-dial campaign screen (planets, hotspots, mission popup).
+- `src/app/CampaignMapScreen.tsx`, `src/app/ZoneLevelsScreen.tsx`: the classic zone/level-list screens, kept as a "List view" fallback.
 - `src/app/DebriefScreen.tsx`: end-of-zone reflection/debrief.
 - `src/app/SettingsModal.tsx`: music and SFX controls.
 - `src/app/useCampaignProgress.ts`: localStorage progress, rich stats, profile aggregate, unlock rules, adaptive tier selection.
@@ -78,7 +79,7 @@ npm run dev -- --host 127.0.0.1
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/`: Konva board and DOM gameplay UI.
 - `src/game/logic/`: pure, tested math/game logic.
-- `src/assets/assetMap.ts`: source of truth for sprite/icon/audio imports.
+- `src/assets/assetMap.ts`: source of truth for sprite/icon/planet/audio imports.
 - `src/styles/global.css`: global styling.
 
 ## Working Rules

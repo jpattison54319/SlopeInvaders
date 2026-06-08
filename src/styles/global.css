@@ -57,7 +57,9 @@ button {
   --button-shadow-pressed: 0 1px 0 #05091c, 0 5px 12px -14px #000;
 }
 
-button:not(:disabled) {
+/* The shared 3D press treatment — excluded on dial planets, which own their
+   slot transforms (see .planet) and would be reset by these rules. */
+button:not(:disabled):not(.planet):not(.surface-banner) {
   box-shadow: var(--button-shadow);
   transform: translateY(0);
   transition:
@@ -68,7 +70,7 @@ button:not(:disabled) {
     background 0.12s ease;
 }
 
-button:not(:disabled):active {
+button:not(:disabled):not(.planet):not(.surface-banner):active {
   box-shadow: var(--button-shadow-pressed);
   transform: translateY(var(--button-press)) scale(0.985);
 }
@@ -1405,4 +1407,585 @@ input:focus-visible {
 .tour__btn {
   font-size: 10px;
   padding: 12px 8px;
+}
+
+/* ---------- Galaxy mission select (planet dial) ---------- */
+.galaxy {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.galaxy__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.galaxy__header h2 {
+  margin: 6px 0 0;
+  font-family: var(--pixel-font);
+  font-size: clamp(15px, 2.6vw, 22px);
+  color: var(--amber);
+  text-shadow: 0 0 14px rgba(255, 209, 102, 0.3);
+}
+.galaxy__classic {
+  flex: 0 0 auto;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  background: rgba(13, 20, 48, 0.75);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.galaxy__classic:hover {
+  filter: brightness(1.2);
+  border-color: rgba(94, 241, 255, 0.5);
+}
+
+.galaxy__stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.galaxy-nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--cyan);
+  background: rgba(13, 20, 48, 0.78);
+  border: 1px solid var(--panel-border);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: filter 0.12s ease, border-color 0.12s ease;
+}
+.galaxy-nav-arrow--left {
+  left: 2px;
+}
+.galaxy-nav-arrow--right {
+  right: 2px;
+}
+.galaxy-nav-arrow:hover:not(:disabled) {
+  filter: brightness(1.25);
+  border-color: var(--cyan);
+}
+.galaxy-nav-arrow:disabled {
+  opacity: 0.28;
+  cursor: not-allowed;
+}
+
+.planet-dial {
+  position: relative;
+  width: 100%;
+  max-width: 820px;
+  height: clamp(300px, 44vh, 430px);
+  margin: 0 auto;
+  --planet-size: clamp(140px, 30vw, 250px);
+}
+.planet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--planet-size);
+  height: var(--planet-size);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transform-origin: center center;
+  transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.55s ease,
+    filter 0.55s ease;
+}
+.planet__img {
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.55));
+}
+.planet--center {
+  transform: translate(-50%, -58%) scale(1);
+  z-index: 3;
+}
+.planet--center:not(:disabled):hover .planet__img {
+  filter: brightness(1.12) drop-shadow(0 0 22px rgba(94, 241, 255, 0.52))
+    drop-shadow(0 12px 22px rgba(0, 0, 0, 0.55));
+}
+.planet--center:disabled {
+  cursor: not-allowed;
+}
+.planet--left {
+  transform: translate(-146%, -34%) scale(0.56);
+  z-index: 2;
+}
+.planet--right {
+  transform: translate(46%, -34%) scale(0.56);
+  z-index: 2;
+}
+.planet--left .planet__img,
+.planet--right .planet__img {
+  filter: brightness(0.6) saturate(0.82) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+}
+.planet--left:hover .planet__img,
+.planet--right:hover .planet__img {
+  filter: brightness(0.85) saturate(0.95) drop-shadow(0 8px 18px rgba(0, 0, 0, 0.55));
+}
+.planet--far-left {
+  transform: translate(-210%, -28%) scale(0.4);
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.planet--far-right {
+  transform: translate(110%, -28%) scale(0.4);
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+.planet--locked .planet__img {
+  filter: grayscale(0.55) brightness(0.55) drop-shadow(0 10px 18px rgba(0, 0, 0, 0.5));
+}
+.galaxy__stage--approach .planet--center {
+  animation: planetApproach 0.56s ease-in forwards;
+  pointer-events: none;
+}
+.galaxy__stage--approach .planet--left,
+.galaxy__stage--approach .planet--right,
+.galaxy__stage--approach .planet--far-left,
+.galaxy__stage--approach .planet--far-right,
+.galaxy__stage--approach .galaxy-nav-arrow {
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes planetApproach {
+  0% {
+    transform: translate(-50%, -58%) scale(1);
+    filter: brightness(1);
+  }
+  62% {
+    transform: translate(-50%, -58%) scale(2.8);
+    opacity: 1;
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: translate(-50%, -58%) scale(5.8);
+    opacity: 0;
+    filter: brightness(1.8);
+  }
+}
+.planet__badge,
+.planet__lock {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  transform: translateX(-50%);
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  white-space: nowrap;
+  background: rgba(6, 10, 30, 0.88);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  color: var(--cyan);
+}
+.planet__lock {
+  color: #cdd6ee;
+  font-size: 12px;
+  padding: 3px 8px;
+}
+
+.galaxy__caption {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  text-align: center;
+}
+.galaxy__caption strong {
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: var(--cyan);
+}
+.galaxy__caption span {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.galaxy__status {
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 1px;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+/* ---------- Planet surface mission map ---------- */
+.galaxy--surface {
+  max-width: 1050px;
+}
+.planet-surface {
+  position: relative;
+  min-height: clamp(470px, 68vh, 660px);
+  overflow: hidden;
+  animation: surfaceIn 0.44s ease both;
+}
+.planet-surface--leaving {
+  animation: surfaceOut 0.42s ease both;
+}
+.planet-surface__hud {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  padding-top: 8px;
+  text-align: center;
+}
+.planet-surface__hud h2 {
+  margin: 0;
+  font-family: var(--pixel-font);
+  font-size: clamp(13px, 2.4vw, 19px);
+  line-height: 1.35;
+  color: var(--amber);
+  text-shadow: 0 0 14px rgba(255, 209, 102, 0.36);
+}
+.planet-surface__globe {
+  position: absolute;
+  left: 50%;
+  bottom: -15%;
+  width: min(980px, 122vw);
+  height: min(600px, 70vh);
+  min-height: 420px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  border: 2px solid rgba(255, 209, 102, 0.58);
+  border-bottom: 0;
+  border-radius: 52% 52% 0 0 / 28% 28% 0 0;
+  background-image:
+    radial-gradient(ellipse at 50% 12%, rgba(111, 250, 255, 0.2), transparent 24%),
+    linear-gradient(rgba(11, 22, 34, 0.1), rgba(4, 8, 13, 0.66)),
+    var(--planet-texture);
+  background-position: center 8%, center, center;
+  background-size: 160% 160%, cover, cover;
+  box-shadow:
+    inset 0 32px 80px rgba(199, 251, 255, 0.1),
+    inset 0 -120px 180px rgba(0, 0, 0, 0.72),
+    0 -10px 42px rgba(94, 241, 255, 0.12);
+}
+.planet-surface__globe::before,
+.planet-surface__globe::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.planet-surface__globe::before {
+  opacity: 0.58;
+  background-image:
+    linear-gradient(rgba(255, 209, 102, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 209, 102, 0.16) 1px, transparent 1px);
+  background-size: 100% 42px, 52px 100%;
+  transform: perspective(560px) rotateX(43deg) translateY(-40px) scale(1.2);
+  transform-origin: center bottom;
+}
+.planet-surface__globe::after {
+  background:
+    radial-gradient(ellipse at 50% 0%, transparent 0 47%, rgba(0, 0, 0, 0.26) 73%, rgba(0, 0, 0, 0.64) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.48), transparent 18% 82%, rgba(0, 0, 0, 0.48));
+}
+.planet-surface__regions {
+  position: absolute;
+  inset: 7% 4% 13%;
+  z-index: 1;
+  width: 92%;
+  height: 80%;
+  overflow: visible;
+}
+.surface-region {
+  stroke: rgba(255, 190, 55, 0.95);
+  stroke-width: 0.56;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 2px rgba(255, 190, 55, 0.72));
+}
+.surface-region--ready {
+  fill: rgba(255, 209, 102, 0.22);
+  stroke: #ffd166;
+  stroke-width: 0.9;
+}
+.surface-region--cleared {
+  fill: rgba(62, 222, 123, 0.16);
+  stroke: rgba(116, 255, 159, 0.9);
+}
+.surface-region--locked {
+  fill: rgba(3, 8, 14, 0.36);
+  opacity: 0.58;
+}
+.surface-banner {
+  position: absolute;
+  z-index: 2;
+  width: clamp(38px, 5.6vw, 58px);
+  height: clamp(56px, 8.2vw, 84px);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  pointer-events: auto;
+  box-shadow: none;
+}
+.surface-banner:not(:disabled):active {
+  transform: translate(-50%, -50%) translateY(2px) scale(0.98);
+}
+.surface-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 9px 10px rgba(0, 0, 0, 0.7));
+}
+.surface-banner__label {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  color: #fff6cf;
+  text-shadow: 0 1px 2px #000;
+}
+.surface-banner--ready {
+  z-index: 4;
+  width: clamp(50px, 7.2vw, 74px);
+  height: clamp(72px, 10.4vw, 108px);
+  animation: surfaceBannerReady 2.2s ease-in-out infinite;
+}
+.surface-banner--ready img {
+  filter: drop-shadow(0 0 10px rgba(255, 209, 102, 0.95)) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.72));
+}
+.surface-banner--ready::before {
+  content: '';
+  position: absolute;
+  inset: 10% 4% 18%;
+  border: 2px solid rgba(255, 209, 102, 0.9);
+  border-radius: 4px;
+  box-shadow: 0 0 14px rgba(255, 209, 102, 0.8);
+}
+.surface-banner--cleared img {
+  filter: saturate(0.88) brightness(0.86) drop-shadow(0 7px 9px rgba(0, 0, 0, 0.66));
+}
+.surface-banner--locked {
+  cursor: not-allowed;
+}
+.surface-banner--locked img {
+  opacity: 0.42;
+  filter: grayscale(0.86) brightness(0.55) drop-shadow(0 7px 9px rgba(0, 0, 0, 0.62));
+}
+.surface-check {
+  position: absolute;
+  right: -4px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+  border: 2px solid #cbffe0;
+  border-radius: 4px;
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: #042816;
+  background: #3ede7b;
+  box-shadow: 0 0 10px rgba(62, 222, 123, 0.82), inset 0 -3px 0 rgba(0, 0, 0, 0.18);
+}
+@keyframes surfaceBannerReady {
+  0%,
+  18%,
+  74%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  38% {
+    transform: translate(-50%, calc(-50% - 7px)) scale(1.03);
+  }
+  54% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes surfaceIn {
+  from {
+    opacity: 0;
+    transform: scale(1.06);
+    filter: brightness(1.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+@keyframes surfaceOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+/* ---------- Launch warp transition ---------- */
+.launch-warp {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 50%, #0a1a3a 0%, #02030c 72%);
+}
+.launch-warp__stars {
+  position: absolute;
+  inset: -25%;
+  background-image:
+    radial-gradient(2px 2px at 20% 30%, #fff, transparent),
+    radial-gradient(2px 2px at 70% 60%, #cfe9ff, transparent),
+    radial-gradient(1px 1px at 45% 80%, #fff, transparent),
+    radial-gradient(1px 1px at 85% 25%, #bfe6ff, transparent),
+    radial-gradient(2px 2px at 35% 55%, #fff, transparent),
+    radial-gradient(1px 1px at 60% 15%, #fff, transparent);
+  background-repeat: repeat;
+  animation: warpStreak 0.98s ease-in forwards;
+}
+.launch-warp__planet {
+  width: 120px;
+  height: 120px;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 30px rgba(94, 241, 255, 0.5));
+  animation: warpDive 0.98s ease-in forwards;
+}
+.launch-warp__flash {
+  position: absolute;
+  inset: 0;
+  background: #aef9ff;
+  opacity: 0;
+  animation: warpFlash 0.98s ease-in forwards;
+}
+.launch-warp__label {
+  position: absolute;
+  bottom: 12%;
+  margin: 0;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(94, 241, 255, 0.6);
+}
+@keyframes warpDive {
+  0% {
+    transform: scale(0.5) translateY(24px);
+    opacity: 0.25;
+  }
+  70% {
+    transform: scale(3.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(7);
+    opacity: 0;
+  }
+}
+@keyframes warpFlash {
+  0%,
+  82% {
+    opacity: 0;
+  }
+  95% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes warpStreak {
+  from {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+.launch-warp--reduced {
+  animation: faceIn 0.16s ease;
+}
+.launch-warp--reduced .launch-warp__planet,
+.launch-warp--reduced .launch-warp__stars,
+.launch-warp--reduced .launch-warp__flash {
+  animation: none;
+}
+
+.mission-fade {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #02030c;
+  animation: missionFade 0.32s ease both;
+}
+.mission-fade--reduced {
+  animation-duration: 0.09s;
+}
+@keyframes missionFade {
+  from {
+    opacity: 0;
+  }
+  55% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .planet-dial {
+    --planet-size: clamp(128px, 42vw, 190px);
+    height: clamp(260px, 40vh, 320px);
+  }
+  .galaxy-nav-arrow {
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+  }
+  .planet-surface {
+    min-height: 560px;
+  }
+  .planet-surface__globe {
+    bottom: 2%;
+    width: 126vw;
+    height: 470px;
+  }
+}
+
+/* Honor reduced-motion for the CSS-driven dial/planet/surface motion. */
+@media (prefers-reduced-motion: reduce) {
+  .planet {
+    transition: none;
+  }
+  .planet__img,
+  .surface-banner--ready,
+  .planet-surface {
+    animation: none;
+  }
 }

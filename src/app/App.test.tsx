@@ -11,6 +11,8 @@ import App from './App';
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
+const PROGRESS_KEY = 'slope-invaders:campaign-progress';
+
 vi.mock('../game/audio/useMusic', () => ({
   useMusic: vi.fn(),
 }));
@@ -37,6 +39,31 @@ vi.mock('../game/Game', () => ({
   ),
 }));
 
+// Skip the launch warp's timed animation in tests — advance straight to gameplay.
+vi.mock('./LaunchTransition', async () => {
+  const { useEffect } = await import('react');
+  return {
+    LaunchTransition: ({ onDone }: { onDone: () => void }) => {
+      useEffect(() => {
+        onDone();
+      }, [onDone]);
+      return null;
+    },
+  };
+});
+
+vi.mock('./MissionFadeTransition', async () => {
+  const { useEffect } = await import('react');
+  return {
+    MissionFadeTransition: ({ onDone }: { onDone: () => void }) => {
+      useEffect(() => {
+        onDone();
+      }, [onDone]);
+      return null;
+    },
+  };
+});
+
 let host: HTMLDivElement;
 let root: Root;
 
@@ -55,6 +82,12 @@ async function click(label: string | RegExp) {
   expect(button, `button matching ${label}`).toBeTruthy();
   await act(async () => {
     button!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+}
+
+async function waitForUi(ms = 650) {
+  await act(async () => {
+    await new Promise((resolve) => window.setTimeout(resolve, ms));
   });
 }
 
@@ -78,6 +111,10 @@ function installMemoryStorage() {
   };
   Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: ls });
   Object.defineProperty(window, 'localStorage', { configurable: true, value: ls });
+}
+
+function seedCompletedLevels(levelIds: string[]) {
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify({ completedLevels: levelIds }));
 }
 
 beforeEach(() => {
@@ -158,14 +195,17 @@ describe('App shell', () => {
     expect(settings!.title).toBe('Settings');
   });
 
-  test('navigates mode → zone → level, swaps to game music, and back', async () => {
+  test('navigates mode → galaxy → mission → game, swaps to game music, and back', async () => {
     await renderApp();
 
     await click('Play Campaign');
-    expect(host.textContent).toContain('Choose a Zone');
+    expect(host.textContent).toContain('Choose your destination');
 
-    await click('Tutorial');
-    expect(host.textContent).toContain('Tutorial Shot');
+    expect(host.querySelectorAll('.hotspot')).toHaveLength(0);
+
+    await click('Enter Tutorial');
+    await waitForUi();
+    expect(host.textContent).toContain('Tutorial Surface');
 
     await click('Tutorial Shot');
     expect(host.textContent).toContain('Playing Tutorial Shot');
@@ -176,7 +216,74 @@ describe('App shell', () => {
     await click('Close');
 
     await click('Back to levels');
-    expect(host.textContent).toContain('Tutorial Shot');
+    expect(host.textContent).toContain('Choose your destination');
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
+  });
+
+  test('galaxy dial rotates between planets and locks unreached missions', async () => {
+    await renderApp();
+
+    await click('Play Campaign');
+    expect(host.textContent).toContain('Tutorial');
+
+    // Rotate to the next planet (Zone 1), which is locked until Tutorial clears.
+    await click('Next planet');
+    expect(host.textContent).toContain('Slope Training');
+
+    expect(host.querySelectorAll('.hotspot')).toHaveLength(0);
+    const enterPlanet = host.querySelector<HTMLButtonElement>('button[aria-label="Enter Slope Training"]');
+    expect(enterPlanet).toBeTruthy();
+    expect(enterPlanet!.disabled).toBe(true);
+  });
+
+  test('planet surface shows active and locked region banners after entering a zone', async () => {
+    seedCompletedLevels(['tut-1']);
+    await renderApp();
+
+    await click('Play Campaign');
+    expect(host.querySelectorAll('.hotspot')).toHaveLength(0);
+    expect(host.querySelectorAll('.surface-banner')).toHaveLength(0);
+
+    await click('Enter Slope Training');
+    await waitForUi();
+    expect(host.textContent).toContain('Slope Training');
+    expect(host.textContent).toContain('Surface');
+    expect(host.querySelectorAll('.surface-region')).toHaveLength(4);
+    expect(host.querySelectorAll('.surface-banner')).toHaveLength(4);
+    expect(host.querySelectorAll('.surface-banner--ready')).toHaveLength(1);
+    expect(host.querySelectorAll('.surface-banner--locked')).toHaveLength(3);
+    expect(host.querySelector('.surface-banner--ready')?.getAttribute('aria-label')).toContain('Steeper Lines');
+  });
+
+  test('planet surface marks completed regions and launches active banners directly', async () => {
+    seedCompletedLevels(['tut-1', 'z1-l1']);
+    await renderApp();
+
+    await click('Play Campaign');
+
+    await click('Enter Slope Training');
+    await waitForUi();
+
+    expect(host.textContent).toContain('Slope Training');
+    expect(host.querySelectorAll('.surface-banner--cleared')).toHaveLength(1);
+    expect(host.querySelectorAll('.surface-banner--ready')).toHaveLength(1);
+    expect(host.querySelectorAll('.surface-check')).toHaveLength(1);
+    expect(host.querySelector('.surface-banner--ready')?.getAttribute('aria-label')).toContain(
+      'Fractional Slopes',
+    );
+
+    await click('Fractional Slopes');
+    expect(host.textContent).toContain('Playing Fractional Slopes');
+  });
+
+  test('galaxy can switch to the classic list view and back', async () => {
+    await renderApp();
+
+    await click('Play Campaign');
+    await click('List view');
+    expect(host.textContent).toContain('Choose a Zone');
+
+    await click('Galaxy');
+    expect(host.textContent).toContain('Choose your destination');
   });
 });

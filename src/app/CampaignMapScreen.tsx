@@ -8,6 +8,8 @@ interface CampaignMapScreenProps {
   onSelectZone: (zoneId: string) => void;
   onBack: () => void;
   onOpenSettings: () => void;
+  /** Label/tooltip for the back control (defaults to "Modes"). */
+  backLabel?: string;
 }
 
 /** The campaign zone map: pick a zone (locked until the previous is cleared). */
@@ -17,9 +19,10 @@ export function CampaignMapScreen({
   onSelectZone,
   onBack,
   onOpenSettings,
+  backLabel = 'Modes',
 }: CampaignMapScreenProps) {
   return (
-    <ScreenChrome onBack={onBack} backLabel="Modes" onOpenSettings={onOpenSettings}>
+    <ScreenChrome onBack={onBack} backLabel={backLabel} onOpenSettings={onOpenSettings}>
       <section className="level-select" aria-labelledby="campaign-title">
         <div className="level-select__header">
           <div>
