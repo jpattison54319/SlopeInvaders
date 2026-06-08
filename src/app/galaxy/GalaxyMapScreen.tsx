@@ -89,6 +89,7 @@ export function GalaxyMapScreen({
   }, [rotate, surfacePhase]);
 
   const locked = activeZone.status !== 'available' || !progress.isZoneUnlocked(activeZone.id);
+  const showProgressSummary = !locked && activeZone.status === 'available' && activeZone.levels.length > 0;
   const statusNote =
     activeZone.status !== 'available'
       ? 'Coming Soon'
@@ -97,6 +98,10 @@ export function GalaxyMapScreen({
         : activeZone.levels.length === 0
           ? ''
           : `${progress.zoneClearedCount(activeZone.id)} / ${activeZone.levels.length} missions cleared`;
+  const acquiredStars = showProgressSummary
+    ? activeZone.levels.reduce((sum, level) => sum + progress.getLevelStars(level.id), 0)
+    : 0;
+  const totalStars = activeZone.levels.length * 3;
 
   const canEnter = !locked && activeZone.levels.length > 0;
   const showingSurface = surfacePhase === 'surface' || surfacePhase === 'leaving';
@@ -173,6 +178,24 @@ export function GalaxyMapScreen({
               </strong>
               <span>{activeZone.theme}</span>
               {statusNote && <span className="galaxy__status">{statusNote}</span>}
+              {showProgressSummary && (
+                <span
+                  className="galaxy__mastery"
+                  aria-label={`${acquiredStars} of ${totalStars} mastery stars acquired`}
+                >
+                  <svg
+                    className="galaxy__mastery-star-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M12 2.4 15 8.5l6.7 1-4.85 4.72 1.15 6.68L12 17.75 6 20.9l1.15-6.68L2.3 9.5l6.7-1L12 2.4Z" />
+                  </svg>
+                  <span>
+                    {acquiredStars} / {totalStars} Mastery
+                  </span>
+                </span>
+              )}
             </div>
           </>
         )}

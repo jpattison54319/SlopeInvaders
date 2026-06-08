@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { factionBanners } from '../../assets/assetMap';
 import type { Zone } from '../../game/campaign/types';
 import { missionPathLayout } from '../../game/campaign/planets';
+import { StarRating } from '../../game/components/StarRating';
 import type { CampaignProgress } from '../useCampaignProgress';
 
 interface PlanetSurfaceMapProps {
@@ -96,6 +97,11 @@ export function PlanetSurfaceMap({
               <img src={factionBanners[banner.bannerKey]} alt="" draggable={false} />
               <span className="surface-banner__label">L{i + 1}</span>
               {complete && <span className="surface-check" aria-hidden="true">✓</span>}
+              <StarRating
+                stars={progress.getLevelStars(level.id)}
+                label={`${level.name} stars`}
+                className="surface-banner__stars"
+              />
             </button>
           );
         })}

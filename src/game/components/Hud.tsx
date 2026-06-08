@@ -69,7 +69,7 @@ export function Hud({
 
       {won ? (
         <div className="feedback feedback--win" data-tour="hint" role="status">
-          <strong>Level Complete!</strong>
+          <strong>Victory!</strong>
           <p>
             All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final score:{' '}
             {score}.

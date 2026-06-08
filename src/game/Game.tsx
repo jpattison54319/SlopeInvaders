@@ -17,8 +17,10 @@ import { IconButton } from './components/IconButton';
 import { Calculator } from './components/Calculator';
 import { GuidedTour, type TourStep } from './components/GuidedTour';
 import { CalculatorIcon } from './components/CalculatorIcon';
+import { VictoryOverlay } from './components/VictoryOverlay';
 import { useSfx } from './audio/sfxContext';
 import { scorePerformance, type DifficultyTier, type LevelStats } from './campaign/difficulty';
+import { starsForCompletedStats, type StarCount } from './campaign/stars';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
@@ -151,6 +153,7 @@ export function Game({
   const [shot, setShot] = useState<ShotState | null>(null);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
   const [calcOpen, setCalcOpen] = useState(false);
+  const [earnedStars, setEarnedStars] = useState<StarCount>(0);
   // Show the spotlight walkthrough on the first visit to a guided level.
   const [showTour, setShowTour] = useState(
     () => Boolean(level.guidedTour) && !tourSeen(level.id),
@@ -260,6 +263,7 @@ export function Game({
         completedAt: Date.now(),
       };
       const stats: LevelStats = { ...partial, score: scorePerformance(partial) };
+      setEarnedStars(starsForCompletedStats(stats));
       onComplete(level.id, stats);
     } else if (!won && completedRef.current) {
       completedRef.current = false;
@@ -438,6 +442,7 @@ export function Game({
       setFeedback(null);
       setShot(null);
       setExplosions([]);
+      setEarnedStars(0);
     },
     [level],
   );
@@ -540,7 +545,7 @@ export function Game({
     setExplosions((prev) => prev.filter((e) => e.id !== id));
   }, []);
 
-  const showWinOverlay = outcome === 'won';
+  const showWinOverlay = outcome === 'won' && earnedStars > 0;
   const showLoseOverlay = outcome === 'lost';
 
   return (
@@ -593,22 +598,14 @@ export function Game({
           />
 
           {showWinOverlay && (
-            <div className="game-overlay" role="dialog" aria-label="Level complete">
-              <div className="game-overlay__panel game-overlay__panel--win">
-                <strong>Level Complete!</strong>
-                <p>
-                  Cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'} · Score {score}
-                </p>
-                <div className="game-overlay__actions">
-                  <button type="button" className="btn btn--fire" onClick={onAdvance}>
-                    {hasNext ? '▶ Next Level' : '✓ Continue'}
-                  </button>
-                  <button type="button" className="btn btn--reset" onClick={handleReset}>
-                    ↺ Replay
-                  </button>
-                </div>
-              </div>
-            </div>
+            <VictoryOverlay
+              shotsFired={shotsFired}
+              score={score}
+              stars={earnedStars}
+              hasNext={hasNext}
+              onAdvance={onAdvance}
+              onReplay={handleReset}
+            />
           )}
 
           {showLoseOverlay && (

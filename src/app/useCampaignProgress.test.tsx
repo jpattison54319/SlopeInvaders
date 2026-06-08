@@ -17,6 +17,7 @@ import { useCampaignProgress, type CampaignProgress } from './useCampaignProgres
 const PROGRESS_KEY = 'slope-invaders:campaign-progress';
 const LEVEL_STATS_KEY = 'slope-invaders:level-stats';
 const PROFILE_STATS_KEY = 'slope-invaders:profile-stats';
+const LEVEL_STARS_KEY = 'slope-invaders:level-stars';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -138,6 +139,52 @@ describe('useCampaignProgress', () => {
     expect(profile.lastPlayedAt).toBe(50);
   });
 
+  it('stores the best mastery stars without lowering them on a worse replay', async () => {
+    await act(async () => {
+      progress.markComplete(
+        'z1-l1',
+        stats({ misses: 0, heartsLost: 0, heartsRemaining: 5, startHearts: 5 }),
+      );
+    });
+
+    expect(progress.getLevelStars('z1-l1')).toBe(3);
+
+    await act(async () => {
+      progress.markComplete(
+        'z1-l1',
+        stats({ misses: 3, heartsLost: 3, heartsRemaining: 2, startHearts: 5, completedAt: 50 }),
+      );
+    });
+
+    expect(progress.getLevelStats('z1-l1')?.misses).toBe(3);
+    expect(progress.getLevelStars('z1-l1')).toBe(3);
+    expect(JSON.parse(storage.getItem(LEVEL_STARS_KEY) ?? '{}')['z1-l1']).toBe(3);
+  });
+
+  it('derives legacy completed level stars from saved stats, falling back to one star', async () => {
+    storage.setItem(PROGRESS_KEY, JSON.stringify({ completedLevels: ['z1-l1', 'z1-l2'] }));
+    storage.setItem(
+      LEVEL_STATS_KEY,
+      JSON.stringify({
+        'z1-l1': stats({ levelId: 'z1-l1', misses: 1, heartsLost: 1, heartsRemaining: 4 }),
+      }),
+    );
+
+    await act(async () => {
+      root.unmount();
+    });
+    root = createRoot(host);
+    await act(async () => {
+      root.render(<Harness onProgress={(next) => {
+        progress = next;
+      }} />);
+    });
+
+    expect(progress.getLevelStars('z1-l1')).toBe(2);
+    expect(progress.getLevelStars('z1-l2')).toBe(1);
+    expect(progress.getLevelStars('z1-l3')).toBe(0);
+  });
+
   it('derives adaptive tier from prior level stats in the same zone', async () => {
     await act(async () => {
       progress.markComplete('z1-l1', stats({ levelId: 'z1-l1', score: 1 }));
@@ -184,6 +231,7 @@ describe('useCampaignProgress', () => {
     expect(storage.getItem(PROGRESS_KEY)).not.toBeNull();
     expect(storage.getItem(LEVEL_STATS_KEY)).not.toBeNull();
     expect(storage.getItem(PROFILE_STATS_KEY)).not.toBeNull();
+    expect(storage.getItem(LEVEL_STARS_KEY)).not.toBeNull();
 
     await act(async () => {
       progress.resetProgress();
@@ -192,5 +240,6 @@ describe('useCampaignProgress', () => {
     expect(storage.getItem(PROGRESS_KEY)).toBeNull();
     expect(storage.getItem(LEVEL_STATS_KEY)).toBeNull();
     expect(storage.getItem(PROFILE_STATS_KEY)).toBeNull();
+    expect(storage.getItem(LEVEL_STARS_KEY)).toBeNull();
   });
 });
