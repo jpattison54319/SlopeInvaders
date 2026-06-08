@@ -15,7 +15,7 @@ interface GalaxyMapScreenProps {
   onBack: () => void;
   onOpenSettings: () => void;
   /** Switch to the classic zone/level list screens. */
-  onOpenClassic: () => void;
+  // onOpenClassic: () => void;
 }
 
 type SurfacePhase = 'space' | 'approach' | 'surface' | 'leaving';
@@ -37,7 +37,7 @@ export function GalaxyMapScreen({
   onPlayLevel,
   onBack,
   onOpenSettings,
-  onOpenClassic,
+  // onOpenClassic,
 }: GalaxyMapScreenProps) {
   const initialIndex = useMemo(() => {
     const fromId = initialZoneId ? zones.findIndex((z) => z.id === initialZoneId) : -1;

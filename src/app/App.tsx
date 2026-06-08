@@ -102,7 +102,7 @@ export default function App() {
             onPlayLevel={(levelId) => setScreen({ name: 'fade', levelId })}
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
-            onOpenClassic={() => setScreen({ name: 'campaign-map' })}
+            // onOpenClassic={() => setScreen({ name: 'campaign-map' })}
           />
         );
 
