@@ -28,6 +28,8 @@ Important docs:
 - `docs/agent/04-ui-audio-visual-design.md`: interface clarity, cognitive load, visual style, audio, and accessibility.
 - `docs/agent/05-prototype-scope-zone-1.md`: concrete prototype scope for Tutorial + Zone 1.
 - `docs/agent/06-zone-2-intercepts.md`: Zone 2 (`y = mx + b`) learning focus, scaffold, and design decisions (horizontal-line "cheese", two-point mastery).
+- `docs/agent/07-zone-3-negative-slopes.md`: Zone 3 (negative slopes, Quadrant IV) learning focus, scaffold, and design decisions (slope-only to force negative reasoning, default `m = 0`, any-quadrant rendering).
+- `docs/agent/08-zone-4-full-grid.md`: Zone 4 (full grid, all quadrants, facing-direction control) learning focus, scaffold, and design decisions (infinite line vs one-way shot, two-tone preview, ≥1 asteroid per quadrant, True/False reflection).
 - `docs/agent/sources.md`: source notes and bibliography-style references.
 
 Before adding or changing gameplay mechanics, level sequencing, scaffolds, feedback, adaptivity, stats, UI, audio, gamification, or multiplayer behavior, consult the relevant doc and keep the implementation aligned with that source-backed theory.
@@ -44,7 +46,10 @@ Current user-facing flow:
 4. Tutorial opens with a one-time guided spotlight tour, then teaches slope, firing, grid reading, hearts, and feedback.
 5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
 5a. Zone 2 focuses on `y = mx + b`: the y-intercept lifts the line off the origin, same slope hits different targets at different `b`, and horizontal lines (`y = b`). Its no-preview mastery uses two-point lines so horizontal shortcuts cannot clear them. Horizontal "cheese" shots are intentionally allowed (no blockers yet).
-6. Settings controls music and SFX volume/mute. There is no separate Audio button beside Play.
+5b. Zone 3 focuses on negative slopes in Quadrant IV: the ship sits at the top-left origin, positive x runs right, negative y runs down. It is slope-only (`y = mx`, y-intercept removed again so students can't bypass negative-slope reasoning), the slope starts flat at `m = 0`, a positive slope shoots up off the top, and only a negative slope reaches the asteroids. Its no-preview mastery uses two-point falling lines so the flat (`m = 0`) line cannot clear them.
+5c. Zone 4 focuses on the full coordinate grid (all four quadrants, ship at the origin) with slope + y-intercept + a facing-direction control. The ship is a cannon: slope tilts the aim up (positive) or down (negative), and the facing buttons pick the side. Facing left mirrors the aim across the ship — facing right fires `y = m·x + b`, facing left fires its mirror `y = -m·x + b` — so a positive slope sends the shot up-and-left (Q2) and a negative slope down-and-left (Q3). The projectile always leaves the ship outward in the facing direction; the aim preview is bright forward and faded backward; the equation display and the dashed line show the effective (facing-mirrored) line while the slope stepper keeps the dialed value; the ship sprite flips with facing. A line is still infinite both ways but the shot fires one way. Every level has at least one asteroid per quadrant; later levels add more. Its end-of-zone quiz includes a True/False question that `y = mx + b` is an infinite line extending both directions.
+6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
+6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
 8. Gameplay music uses `src/assets/in_game.mp3`.
 9. SFX use `src/assets/laser.wav` and `src/assets/explosion.wav`.
@@ -78,7 +83,9 @@ npm run build
 - `src/app/CampaignMapScreen.tsx` and `src/app/ZoneLevelsScreen.tsx` are the classic zone/level-list screens, kept as a "List view" fallback.
 - `src/game/campaign/planets.ts` maps zones to planet sprites and lays out level hotspots.
 - `src/app/DebriefScreen.tsx` renders end-of-zone reflection/debrief.
-- `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls.
+- `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls and toggles to the controls sub-screen.
+- `src/app/ControlsSettings.tsx` renders the keyboard remap sub-screen (two-column map, key capture, reassign confirm, restore defaults).
+- `src/game/controls/keybindings.ts` defines the `GameAction` set, `DEFAULT_KEYBINDINGS`, and pure helpers (`findActionForKey`, `reassignKey`, `normalizeKey`, `keyLabel`, `withDefaults`); `Game.tsx` reads the bindings to drive a `keydown` handler.
 - `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, unlock rules, and adaptive tier selection.
 - `src/app/App.test.tsx` covers menu/settings/game shell behavior.
 - `src/app/useCampaignProgress.test.tsx` covers progress/stats/adaptive-tier persistence behavior.
@@ -91,7 +98,10 @@ npm run build
 - `src/game/campaign/levels/tutorial.ts` defines the Tutorial level.
 - `src/game/campaign/levels/zone1.ts` defines Zone 1 and adaptive flags/variants.
 - `src/game/campaign/levels/zone2.ts` defines Zone 2 (`y = mx + b`) and its adaptive flags/variants.
-- `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`) and `interceptLevel` (`y = mx + b`) level-config factories.
+- `src/game/campaign/levels/zone3.ts` defines Zone 3 (negative slopes, Quadrant IV) and its adaptive flags/variants.
+- `src/game/campaign/levels/zone4.ts` defines Zone 4 (full grid, all quadrants, facing direction) and its adaptive flags/variants.
+- `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`), `interceptLevel` (`y = mx + b`), `negativeSlopeLevel` (Quadrant IV, `y = mx`), and `fullGridLevel` (all quadrants, `y = mx + b` + direction) level-config factories.
+- The `direction`/`facing` control mechanic: `Game.tsx` derives the effective fired line (`fireM = facing === 'right' ? m : -m`, `fireB` through the ship) and feeds it to hit detection, the board, and the equation; it also orients the shot segment to start at the ship so the projectile flies outward. `hitDetection.ts` and `coordinateTransform.ts` take a `facing` param (right reaches `x ≥ fromX`, left reaches `x ≤ fromX`). `EquationLine.tsx` draws the two-tone preview, `EquationControls.tsx` the toggle (and shows the facing-mirrored slope in the equation), and `Ship.tsx` flips the sprite.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
 - `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts` implement the floating calculator, safe evaluator, draggable placement, and persisted viewport-safe positioning.
@@ -123,6 +133,7 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:level-stats` stores the latest stats per level.
 - `slope-invaders:profile-stats` accumulates lifetime totals per completion, including replays.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
+- `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
 - Calculator opens and tweaks are recorded but not scored.
 
 ## Guided Tour and Mission Banner

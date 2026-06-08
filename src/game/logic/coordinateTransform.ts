@@ -7,6 +7,7 @@
  */
 import type { Point } from './lineMath';
 import { getYAtX } from './lineMath';
+import type { Facing } from '../levels/types';
 
 /** The math bounds of the visible board (in graph units). */
 export interface Bounds {
@@ -73,20 +74,24 @@ export function screenToGraph(point: Point, vp: Viewport): Point {
 }
 
 /**
- * Clip the line y = m·x + b to the board and to the firing direction
- * (x ≥ fromX). Returns the graph-space start/end of the visible segment, or
- * null if the line never crosses the board within range.
+ * Clip the line y = m·x + b to the board and to the firing direction. With
+ * `facing = 'right'` the segment runs from `fromX` to the right edge (x ≥ fromX);
+ * with `facing = 'left'` it runs from the left edge to `fromX` (x ≤ fromX).
+ * Returns the graph-space start/end of the visible segment, or null if the line
+ * never crosses the board within range.
  *
- * Used both to draw the preview line and to animate the fired shot.
+ * Used both to draw the preview line (forward bright, reverse faded) and to
+ * animate the fired shot.
  */
 export function lineBoardSegment(
   m: number,
   b: number,
   bounds: Bounds,
   fromX: number = bounds.minX,
+  facing: Facing = 'right',
 ): { start: Point; end: Point } | null {
-  let xStart = Math.max(bounds.minX, fromX);
-  let xEnd = bounds.maxX;
+  let xStart = facing === 'right' ? Math.max(bounds.minX, fromX) : bounds.minX;
+  let xEnd = facing === 'right' ? bounds.maxX : Math.min(bounds.maxX, fromX);
   if (xStart > xEnd) return null;
 
   if (m === 0) {

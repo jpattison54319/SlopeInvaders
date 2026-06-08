@@ -50,3 +50,58 @@ export function interceptLevel(
     ...over,
   };
 }
+
+/**
+ * Shared base for Zone 3 levels: Quadrant IV (ship at the top-left origin,
+ * positive x to the right, negative y downward). Slope-only (y = mx with b
+ * locked at 0, like Zone 1) so the lesson can't be bypassed with the intercept.
+ * Slope starts at 0 — a flat line along the top edge the student tilts downward
+ * into negative territory. A positive slope shoots up and off the top. Override
+ * any field per level.
+ */
+export function negativeSlopeLevel(
+  over: Partial<LevelConfig> &
+    Pick<LevelConfig, 'id' | 'name' | 'learningGoal' | 'asteroids'>,
+): LevelConfig {
+  return {
+    quadrantMode: 'quadrant-four',
+    equationForm: 'y=mx',
+    allowedControls: ['slope'],
+    defaults: { m: 0, b: 0 },
+    bounds: { minX: 0, maxX: 10, minY: -10, maxY: 0 },
+    ship: { position: { x: 0, y: 0 } },
+    walls: [],
+    linkedGroups: [],
+    maxShots: Infinity,
+    showCoordinates: true,
+    trajectoryPreview: 'always',
+    ...over,
+  };
+}
+
+/**
+ * Shared base for Zone 4 levels: the full coordinate grid (all four quadrants),
+ * ship at the origin. Slope + y-intercept + a facing-direction control: the
+ * equation line is infinite both ways, but the shot fires only in the facing
+ * direction (right reaches x ≥ 0, left reaches x ≤ 0). Default faces right.
+ * Override any field per level.
+ */
+export function fullGridLevel(
+  over: Partial<LevelConfig> &
+    Pick<LevelConfig, 'id' | 'name' | 'learningGoal' | 'asteroids'>,
+): LevelConfig {
+  return {
+    quadrantMode: 'all-quadrants',
+    equationForm: 'y=mx+b',
+    allowedControls: ['slope', 'yIntercept', 'direction'],
+    defaults: { m: 1, b: 0, facing: 'right' },
+    bounds: { minX: -10, maxX: 10, minY: -10, maxY: 10 },
+    ship: { position: { x: 0, y: 0 } },
+    walls: [],
+    linkedGroups: [],
+    maxShots: Infinity,
+    showCoordinates: true,
+    trajectoryPreview: 'always',
+    ...over,
+  };
+}

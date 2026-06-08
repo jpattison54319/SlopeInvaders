@@ -7,7 +7,7 @@
  */
 import type { Point } from './lineMath';
 import { getYAtX, getMissDistance, isPointOnLine } from './lineMath';
-import type { AsteroidSpec, WallSpec } from '../levels/types';
+import type { AsteroidSpec, Facing, WallSpec } from '../levels/types';
 
 /** Per-asteroid evaluation of a single shot. */
 export interface ShotResult {
@@ -30,9 +30,12 @@ export function evaluateAsteroid(
   asteroid: AsteroidSpec,
   fromX: number,
   tolerance: number = DEFAULT_HIT_TOLERANCE,
+  facing: Facing = 'right',
 ): ShotResult {
   const wp = asteroid.weakPoint;
-  const inRange = wp.x >= fromX; // only asteroids ahead of the cannon
+  // The shot only travels in the facing direction, so only asteroids on that
+  // side of the cannon are reachable (the line itself is infinite both ways).
+  const inRange = facing === 'right' ? wp.x >= fromX : wp.x <= fromX;
   const hit = inRange && isPointOnLine(m, b, wp, tolerance);
   // TODO: when walls exist, also require !isPathBlocked(cannon, wp, walls).
   return {
@@ -51,8 +54,9 @@ export function evaluateShot(
   asteroids: AsteroidSpec[],
   fromX: number,
   tolerance: number = DEFAULT_HIT_TOLERANCE,
+  facing: Facing = 'right',
 ): ShotResult[] {
-  return asteroids.map((a) => evaluateAsteroid(m, b, a, fromX, tolerance));
+  return asteroids.map((a) => evaluateAsteroid(m, b, a, fromX, tolerance, facing));
 }
 
 /**

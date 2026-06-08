@@ -1,16 +1,20 @@
 /**
  * Campaign zone registry + navigation helpers.
  *
- * Tutorial + Zone 1 are fully built; later zones are `coming-soon` stubs so the
- * Campaign map is future-proof (give a stub real `levels` and flip `status` to
- * 'available' to ship it).
+ * Tutorial + Zones 1–4 are fully built. To add a future zone, build its level
+ * file and append it here; `comingSoonZone` (below) makes a locked stub for any
+ * zone whose levels aren't ready yet (give it real `levels` + `status:
+ * 'available'` to ship it).
  */
 import type { CampaignLevel, Zone } from './types';
 import { tutorialZone } from './levels/tutorial';
 import { zoneOne } from './levels/zone1';
 import { zoneTwo } from './levels/zone2';
+import { zoneThree } from './levels/zone3';
+import { zoneFour } from './levels/zone4';
 
-function comingSoonZone(id: string, number: number, name: string, theme: string): Zone {
+/** A locked placeholder for a zone whose levels aren't built yet. */
+export function comingSoonZone(id: string, number: number, name: string, theme: string): Zone {
   return { id, number, name, theme, status: 'coming-soon', levels: [] };
 }
 
@@ -18,8 +22,8 @@ export const zones: Zone[] = [
   tutorialZone,
   zoneOne,
   zoneTwo,
-  comingSoonZone('zone-3', 3, 'Negative Slopes', 'Lines that fall'),
-  comingSoonZone('zone-4', 4, 'Four Quadrants', 'The full coordinate grid'),
+  zoneThree,
+  zoneFour,
 ];
 
 /** Flat, ordered list of every playable level across available zones. */

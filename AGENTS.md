@@ -24,6 +24,8 @@ The `docs/agent/` folder contains the foundational theory behind design decision
 - `docs/agent/04-ui-audio-visual-design.md`: UI, cognitive load, visual/audio/accessibility guidance.
 - `docs/agent/05-prototype-scope-zone-1.md`: current prototype scope for full Zone 1.
 - `docs/agent/06-zone-2-intercepts.md`: Zone 2 (`y = mx + b`) learning focus, scaffold, and design decisions.
+- `docs/agent/07-zone-3-negative-slopes.md`: Zone 3 (negative slopes, Quadrant IV) learning focus, scaffold, and design decisions.
+- `docs/agent/08-zone-4-full-grid.md`: Zone 4 (full grid, facing direction, infinite-line-vs-one-way-shot) learning focus, scaffold, and design decisions.
 - `docs/agent/sources.md`: bibliography-style source notes.
 
 Before adding or changing gameplay, pedagogy, UI, audio, feedback, adaptivity, gamification, or multiplayer behavior, consult the relevant `docs/agent` file and keep the implementation rooted in that source-backed design theory.
@@ -39,9 +41,11 @@ Current product flow:
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating dial; the active planet's level "hotspots" replace the level list, and a "List view" toggle keeps the classic zone/level screens. Launching a level plays a brief warp transition into gameplay.
 - Planet art lives in `src/assets/planets/` (wired via `assetMap`); each zone unlocks once the previous zone is fully cleared, and later zones are coming soon.
 - Campaign levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
-- Zone 1 (`y = mx`) and Zone 2 (`y = mx + b`) are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 2 unlocks the y-intercept control and teaches horizontal lines.
+- Zones 1–4 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control. The coordinate plane renders any-quadrant bounds.
+- A line is infinite both ways but a shot fires one way: Zone 4's ship is a cannon — slope tilts the aim up/down, the facing control (left/right) picks the side, and facing left mirrors the aim across the ship (right fires `y = mx + b`, left fires `y = -mx + b`). The projectile leaves the ship outward, the preview is bright forward / faded backward, and the equation/dashed line show the facing-mirrored slope while the stepper keeps the dialed value.
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
-- Top-right Settings controls music and SFX volume/mute.
+- Top-right Settings controls music and SFX volume/mute, and has a "Change Controls" sub-screen for remapping keyboard controls.
+- Gameplay keyboard controls drive the equation/facing/fire (defaults Space fire, W/S y-intercept ±, A/D x-offset ∓/±, R/F slope ±, Q/E face left/right). Bindings are remappable + persisted (`slope-invaders:keybindings`), gated by the level's allowed controls (Fire always works), and ignored while typing or mid-shot.
 - Menu music: `src/assets/homescreen_background.mp3`.
 - Gameplay music: `src/assets/in_game.mp3`.
 - SFX: `src/assets/laser.wav` and `src/assets/explosion.wav`.
@@ -77,6 +81,8 @@ npm run dev -- --host 127.0.0.1
 - `src/game/campaign/levels/tutorial.ts`: Tutorial campaign level.
 - `src/game/campaign/levels/zone1.ts`: Zone 1 levels and adaptive flags/variants.
 - `src/game/campaign/levels/zone2.ts`: Zone 2 (`y = mx + b`) levels and adaptive flags/variants.
+- `src/game/campaign/levels/zone3.ts`: Zone 3 (negative slopes, Quadrant IV) levels and adaptive flags/variants.
+- `src/game/campaign/levels/zone4.ts`: Zone 4 (full grid, all quadrants, facing direction) levels and adaptive flags/variants.
 - `src/game/campaign/zones.ts`: zone registry and navigation helpers.
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/`: Konva board and DOM gameplay UI.

@@ -13,7 +13,7 @@ describe('campaign navigation', () => {
     expect(firstCampaignLevel.zone.id).toBe('tutorial');
   });
 
-  it('orderedLevels covers the tutorial, all of zone 1, then all of zone 2', () => {
+  it('orderedLevels covers the tutorial, then zones 1, 2, 3, and 4', () => {
     expect(orderedLevels.map((e) => e.level.id)).toEqual([
       'tut-1',
       'z1-l1',
@@ -25,6 +25,16 @@ describe('campaign navigation', () => {
       'z2-l3',
       'z2-l4',
       'z2-l5',
+      'z3-l1',
+      'z3-l2',
+      'z3-l3',
+      'z3-l4',
+      'z3-l5',
+      'z4-l1',
+      'z4-l2',
+      'z4-l3',
+      'z4-l4',
+      'z4-l5',
     ]);
   });
 
@@ -40,21 +50,37 @@ describe('campaign navigation', () => {
     expect(next?.zone.id).toBe('zone-2');
   });
 
+  it('nextLevel crosses the zone-2 → zone-3 boundary', () => {
+    const next = nextLevel('z2-l5');
+    expect(next?.level.id).toBe('z3-l1');
+    expect(next?.zone.id).toBe('zone-3');
+  });
+
+  it('nextLevel crosses the zone-3 → zone-4 boundary', () => {
+    const next = nextLevel('z3-l5');
+    expect(next?.level.id).toBe('z4-l1');
+    expect(next?.zone.id).toBe('zone-4');
+  });
+
   it('nextLevel advances within a zone', () => {
     expect(nextLevel('z1-l1')?.level.id).toBe('z1-l2');
     expect(nextLevel('z1-l3')?.level.id).toBe('z1-l4');
   });
 
   it('nextLevel is undefined at the end of available content', () => {
-    expect(nextLevel('z2-l5')).toBeUndefined();
+    expect(nextLevel('z4-l5')).toBeUndefined();
   });
 
   it('nextLevelInZone advances within a zone but stops at the zone boundary', () => {
     expect(nextLevelInZone('z1-l1')?.level.id).toBe('z1-l2');
     expect(nextLevelInZone('z2-l1')?.level.id).toBe('z2-l2');
     // Last level of a zone has no in-zone successor (so the debrief runs instead).
+    expect(nextLevelInZone('z3-l1')?.level.id).toBe('z3-l2');
+    expect(nextLevelInZone('z4-l1')?.level.id).toBe('z4-l2');
     expect(nextLevelInZone('z1-l4')).toBeUndefined();
     expect(nextLevelInZone('z2-l5')).toBeUndefined();
+    expect(nextLevelInZone('z3-l5')).toBeUndefined();
+    expect(nextLevelInZone('z4-l5')).toBeUndefined();
     expect(nextLevelInZone('tut-1')).toBeUndefined();
   });
 

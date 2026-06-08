@@ -177,6 +177,59 @@ describe('App shell', () => {
     expect(host.querySelector('input[aria-label="Sound effects volume"]')).toBeTruthy();
   });
 
+  test('settings → Change Controls remaps keys, handles conflicts, and restores defaults', async () => {
+    await renderApp();
+    await click('Settings');
+    await click('Change Controls');
+
+    // The mapping lists actions with their default keys.
+    const keyFor = (label: string) =>
+      Array.from(host.querySelectorAll('button')).find(
+        (b) => b.getAttribute('aria-label') === `Change key for ${label}`,
+      ) ?? null;
+    expect(host.textContent).toContain('Slope +');
+    expect(keyFor('Slope +')!.textContent).toBe('R');
+    expect(keyFor('Face left')!.textContent).toBe('Q');
+
+    // Rebind "Slope +" to a free key.
+    await click('Change key for Slope +');
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'z' }));
+    });
+    expect(keyFor('Slope +')!.textContent).toBe('Z');
+    expect(JSON.parse(localStorage.getItem('slope-invaders:keybindings')!).slopeUp).toBe('z');
+
+    // Rebind "Slope +" to a key already used by "Face left" → confirm dialog.
+    await click('Change key for Slope +');
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'q' }));
+    });
+    expect(host.textContent).toContain('Key already used');
+    await click('Reassign');
+    expect(keyFor('Slope +')!.textContent).toBe('Q');
+    expect(keyFor('Face left')!.textContent).toBe('—'); // old owner left unassigned
+
+    // Restore defaults brings everything back in one click.
+    await click('Restore Defaults');
+    expect(keyFor('Slope +')!.textContent).toBe('R');
+    expect(keyFor('Face left')!.textContent).toBe('Q');
+
+    // Escape cancels a pending rebind without closing the modal. (Dispatch from
+    // document.body so the capture-phase listener runs before the Modal's Escape.)
+    await click('Change key for Face left');
+    expect(host.textContent).toContain('Press a key');
+    await act(async () => {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
+    expect(host.querySelector('.controls-settings')).toBeTruthy();
+    expect(host.textContent).not.toContain('Press a key');
+    expect(keyFor('Face left')!.textContent).toBe('Q');
+
+    // Back returns to the audio settings; X still closes.
+    await click('← Back');
+    expect(host.textContent).toContain('Music Volume');
+  });
+
   test('campaign chrome keeps back and settings controls icon-only but accessible', async () => {
     await renderApp();
     await click('Play Campaign');

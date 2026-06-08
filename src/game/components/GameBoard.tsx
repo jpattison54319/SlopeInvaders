@@ -1,5 +1,5 @@
 import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
-import type { LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
+import type { Facing, LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 import type { Point } from '../logic/lineMath';
 import { getYAtX } from '../logic/lineMath';
 import { createViewport, graphToScreen } from '../logic/coordinateTransform';
@@ -46,6 +46,10 @@ interface GameBoardProps {
   showCoordinates?: boolean;
   /** In sequential-target levels, the only currently-hittable asteroid id. */
   activeTargetId?: string | null;
+  /** Direction the ship faces / fires (Zone 4). */
+  facing?: Facing;
+  /** Draw the line both ways (bright forward, faded back) — Zone 4 preview. */
+  bidirectional?: boolean;
 }
 
 function lerp(a: Point, b: Point, t: number): Point {
@@ -68,6 +72,8 @@ export function GameBoard({
   trajectoryStyle = 'normal',
   showCoordinates = true,
   activeTargetId = null,
+  facing = 'right',
+  bidirectional = false,
 }: GameBoardProps) {
   const vp = createViewport(width, height, level.bounds);
   const starfield = useImage(assets.starfield);
@@ -120,6 +126,8 @@ export function GameBoard({
           faded={!!shot}
           mode={trajectoryPreview}
           style={trajectoryStyle}
+          facing={facing}
+          showReverse={bidirectional}
         />
 
         {level.asteroids
@@ -155,7 +163,7 @@ export function GameBoard({
           <Explosion key={e.id} vp={vp} point={e.point} onDone={() => onExplosionDone(e.id)} />
         ))}
 
-        <Ship vp={vp} position={launchPoint} />
+        <Ship vp={vp} position={launchPoint} facing={facing} />
 
         {/* Projectile head */}
         {beam && bolt && (

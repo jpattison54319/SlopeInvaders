@@ -519,6 +519,112 @@ input:focus-visible {
   border-color: #ff6b8a;
 }
 
+/* ---------- Controls (keyboard remap) settings ---------- */
+.controls-settings {
+  position: relative;
+  display: grid;
+  gap: 14px;
+}
+.controls-settings__top {
+  display: grid;
+  gap: 8px;
+}
+.controls-settings__back {
+  justify-self: start;
+  color: var(--cyan);
+  background: #14204a;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  cursor: pointer;
+}
+.controls-settings__back:hover {
+  filter: brightness(1.2);
+}
+.controls-settings__hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.controls-settings__list {
+  display: grid;
+  gap: 8px;
+}
+.keybind-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #0d1430;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+.keybind-row__label {
+  font-size: 13px;
+  color: var(--text);
+}
+.keybind-key {
+  min-width: 92px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--cyan);
+  background: #060a1e;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.keybind-key:hover {
+  border-color: rgba(94, 241, 255, 0.55);
+}
+.keybind-key--listening {
+  color: var(--amber);
+  border-color: var(--amber);
+  box-shadow: inset 0 0 14px rgba(255, 209, 102, 0.18);
+}
+.controls-settings__restore {
+  justify-self: start;
+}
+.keybind-confirm {
+  position: absolute;
+  inset: -16px;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(3, 6, 18, 0.78);
+  backdrop-filter: blur(3px);
+}
+.keybind-confirm__panel {
+  width: min(320px, 100%);
+  display: grid;
+  gap: 12px;
+  text-align: center;
+  padding: 18px 16px;
+  background: rgba(11, 16, 42, 0.98);
+  border: 2px solid var(--panel-border);
+  border-radius: 10px;
+}
+.keybind-confirm__panel p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.keybind-confirm__panel kbd {
+  font-family: var(--mono);
+  color: var(--cyan);
+}
+.keybind-confirm__actions {
+  display: flex;
+  gap: 10px;
+}
+
 /* ---------- Header ---------- */
 .app__header {
   text-align: center;
@@ -881,6 +987,46 @@ input:focus-visible {
 }
 .stepper__input:focus {
   outline: 2px solid rgba(94, 241, 255, 0.5);
+}
+
+.direction-toggle {
+  margin-top: 12px;
+}
+.direction-toggle__label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  margin-bottom: 7px;
+}
+.direction-toggle__buttons {
+  display: flex;
+  gap: 6px;
+}
+.direction-btn {
+  flex: 1;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 10px 6px;
+  color: var(--text-dim);
+  background: #0d1430;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+.direction-btn:hover:not(:disabled) {
+  background: #14204a;
+}
+.direction-btn--active {
+  color: var(--cyan);
+  border-color: rgba(94, 241, 255, 0.6);
+  box-shadow: inset 0 0 14px rgba(94, 241, 255, 0.18);
+}
+.direction-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .controls__actions {

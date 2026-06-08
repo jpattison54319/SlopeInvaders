@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AsteroidSpec, LevelConfig } from './levels/types';
-import { evaluateShot } from './logic/hitDetection';
+import type { AsteroidSpec, Facing, LevelConfig } from './levels/types';
+import {
+  DEFAULT_KEYBINDINGS,
+  findActionForKey,
+  normalizeKey,
+  type KeyBindings,
+} from './controls/keybindings';
+import { evaluateShot, DEFAULT_HIT_TOLERANCE } from './logic/hitDetection';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
 import { buildFeedback, type ShotFeedback } from './logic/hints';
@@ -98,6 +104,10 @@ interface GameProps {
   hasNext: boolean;
   /** Difficulty tier this level is being played at (recorded into stats). */
   tier?: DifficultyTier;
+  /** Current key map for keyboard controls. */
+  keyBindings?: KeyBindings;
+  /** Disable keyboard controls (e.g. while the settings modal is open). */
+  keyboardEnabled?: boolean;
   onExit: () => void;
   onSettings: () => void;
   onAdvance: () => void;
@@ -112,6 +122,8 @@ export function Game({
   levelNumberLabel,
   hasNext,
   tier = 'standard',
+  keyBindings = DEFAULT_KEYBINDINGS,
+  keyboardEnabled = true,
   onExit,
   onSettings,
   onAdvance,
@@ -129,6 +141,8 @@ export function Game({
   const [b, setB] = useState(level.defaults.b);
   // x-offset of the cannon (movable ship). Unlocked in later levels; 0 here.
   const [xOffset, setXOffset] = useState(level.defaults.xOffset ?? 0);
+  // Facing direction: the shot only travels this way (Zone 4). Defaults right.
+  const [facing, setFacing] = useState<Facing>(level.defaults.facing ?? 'right');
   const [destroyed, setDestroyed] = useState<ReadonlySet<string>>(new Set());
   const [score, setScore] = useState(0);
   const [shotsFired, setShotsFired] = useState(0);
@@ -179,6 +193,11 @@ export function Game({
   // The displayed line y = m(x - xOffset) + b is the same line as
   // y = m·x + bEff, so the whole geometry pipeline uses this single intercept.
   const bEff = b - m * xOffset;
+  // Facing mirrors the aim across the ship: facing right fires y = m·x + bEff,
+  // facing left fires its mirror y = -m·x + bEff' (so a positive slope tilts up
+  // whichever way you face). The board, equation, and shot all use this line.
+  const fireM = facing === 'right' ? m : -m;
+  const fireB = bEff + shipX * (m - fireM);
 
   // In sequential levels, the only currently-targetable asteroid (array order).
   const activeAsteroid = level.sequentialTargets
@@ -340,10 +359,11 @@ export function Game({
     const targetable = level.sequentialTargets
       ? alive.filter((a) => a.id === activeTargetId)
       : alive;
-    const results = evaluateShot(m, bEff, targetable, shipX);
-    const seg = lineBoardSegment(m, bEff, level.bounds, shipX);
+    // The shot flies out of the ship along the effective (facing-mirrored) line.
+    const results = evaluateShot(fireM, fireB, targetable, shipX, DEFAULT_HIT_TOLERANCE, facing);
+    const rawSeg = lineBoardSegment(fireM, fireB, level.bounds, shipX, facing);
 
-    if (!seg) {
+    if (!rawSeg) {
       setFeedback({
         hit: false,
         headline: 'Off the board',
@@ -356,6 +376,10 @@ export function Game({
       loseHeart();
       return;
     }
+
+    // The clip returns start at the smaller x; when facing left the ship is the
+    // larger-x end, so flip it so the beam leaves the ship and travels outward.
+    const seg = facing === 'left' ? { start: rawSeg.end, end: rawSeg.start } : rawSeg;
 
     const dx = seg.end.x - seg.start.x;
     const hits = results
@@ -374,8 +398,8 @@ export function Game({
       results,
       applied: new Set<string>(),
       finalized: false,
-      m,
-      b: bEff,
+      m: fireM,
+      b: fireB,
     };
     setFeedback(null);
     setShot({ start: seg.start, end: seg.end, progress: 0 });
@@ -387,9 +411,10 @@ export function Game({
     level,
     destroyed,
     activeTargetId,
-    m,
-    bEff,
+    fireM,
+    fireB,
     shipX,
+    facing,
     loseHeart,
     startLoop,
   ]);
@@ -405,6 +430,7 @@ export function Game({
       setM(level.defaults.m);
       setB(level.defaults.b);
       setXOffset(level.defaults.xOffset ?? 0);
+      setFacing(level.defaults.facing ?? 'right');
       setDestroyed(new Set());
       setScore(0);
       setShotsFired(0);
@@ -435,6 +461,73 @@ export function Game({
     tweaksRef.current += 1;
     setXOffset(v);
   }, []);
+  const handleChangeFacing = useCallback((v: Facing) => {
+    tweaksRef.current += 1;
+    setFacing(v);
+  }, []);
+
+  // Keyboard controls: drive the equation/facing handlers from the bound keys.
+  // Ignored while typing in an input, while a shot animates / the level is over,
+  // or when disabled (e.g. the settings modal is open). Each action is gated by
+  // the level's allowedControls so it does nothing the on-screen controls can't.
+  useEffect(() => {
+    if (!keyboardEnabled) return;
+    const round = (v: number) => Math.round(v * 100) / 100;
+    const onKey = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
+      if (firing || outcome !== 'playing') return;
+      const action = findActionForKey(keyBindings, normalizeKey(e));
+      if (!action) return;
+      const allowed = level.allowedControls;
+      switch (action) {
+        case 'fire':
+          handleFire();
+          break;
+        case 'slopeUp':
+          if (allowed.includes('slope')) handleChangeM(round(m + 0.5));
+          break;
+        case 'slopeDown':
+          if (allowed.includes('slope')) handleChangeM(round(m - 0.5));
+          break;
+        case 'yInterceptUp':
+          if (allowed.includes('yIntercept')) handleChangeB(round(b + 0.5));
+          break;
+        case 'yInterceptDown':
+          if (allowed.includes('yIntercept')) handleChangeB(round(b - 0.5));
+          break;
+        case 'xOffsetUp':
+          if (allowed.includes('xOffset')) handleChangeXOffset(round(xOffset + 1));
+          break;
+        case 'xOffsetDown':
+          if (allowed.includes('xOffset')) handleChangeXOffset(round(xOffset - 1));
+          break;
+        case 'faceLeft':
+          if (allowed.includes('direction')) handleChangeFacing('left');
+          break;
+        case 'faceRight':
+          if (allowed.includes('direction')) handleChangeFacing('right');
+          break;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [
+    keyboardEnabled,
+    keyBindings,
+    firing,
+    outcome,
+    m,
+    b,
+    xOffset,
+    level.allowedControls,
+    handleFire,
+    handleChangeM,
+    handleChangeB,
+    handleChangeXOffset,
+    handleChangeFacing,
+  ]);
 
   const toggleCalculator = useCallback(() => {
     setCalcOpen((open) => {
@@ -484,8 +577,8 @@ export function Game({
             width={BOARD_SIZE}
             height={BOARD_SIZE}
             level={level}
-            m={m}
-            b={bEff}
+            m={fireM}
+            b={fireB}
             shipX={shipX}
             destroyed={destroyed}
             shot={shot}
@@ -495,6 +588,8 @@ export function Game({
             trajectoryStyle={level.trajectoryStyle}
             showCoordinates={level.showCoordinates}
             activeTargetId={activeTargetId}
+            facing={facing}
+            bidirectional={level.allowedControls.includes('direction')}
           />
 
           {showWinOverlay && (
@@ -551,9 +646,11 @@ export function Game({
             m={m}
             b={b}
             xOffset={xOffset}
+            facing={facing}
             onChangeM={handleChangeM}
             onChangeB={handleChangeB}
             onChangeXOffset={handleChangeXOffset}
+            onChangeFacing={handleChangeFacing}
             onFire={handleFire}
             onReset={handleReset}
             disabled={firing || outcome !== 'playing'}

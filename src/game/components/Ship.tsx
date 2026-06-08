@@ -2,6 +2,7 @@ import { Image as KonvaImage } from 'react-konva';
 import type { Point } from '../logic/lineMath';
 import type { Viewport } from '../logic/coordinateTransform';
 import { graphToScreen } from '../logic/coordinateTransform';
+import type { Facing } from '../levels/types';
 import { assets } from '../../assets/assetMap';
 import { useImage } from './useImage';
 
@@ -11,10 +12,12 @@ interface ShipProps {
   position: Point;
   /** Size of the ship in graph units. */
   size?: number;
+  /** Which way the ship faces; mirrors the sprite horizontally when 'left'. */
+  facing?: Facing;
 }
 
 /** The player's cannon/ship sprite, anchored at its graph position. */
-export function Ship({ vp, position, size = 1.4 }: ShipProps) {
+export function Ship({ vp, position, size = 1.4, facing = 'right' }: ShipProps) {
   const img = useImage(assets.ship);
   if (!img) return null;
 
@@ -30,6 +33,7 @@ export function Ship({ vp, position, size = 1.4 }: ShipProps) {
       height={sidePx}
       offsetX={sidePx / 2}
       offsetY={sidePx / 2}
+      scaleX={facing === 'left' ? -1 : 1}
       imageSmoothingEnabled={false}
       listening={false}
     />
