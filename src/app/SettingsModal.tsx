@@ -1,5 +1,8 @@
+import { useState } from 'react';
 import { icons } from '../assets/assetMap';
 import { Modal } from '../game/components/Modal';
+import { ControlsSettings } from './ControlsSettings';
+import type { KeyBindings } from '../game/controls/keybindings';
 
 interface SettingsModalProps {
   musicVolume: number;
@@ -7,10 +10,12 @@ interface SettingsModalProps {
   sfxVolume: number;
   sfxMuted: boolean;
   activeTrack: 'menu' | 'game';
+  keyBindings: KeyBindings;
   onChangeMusicVolume: (value: number) => void;
   onChangeMusicMuted: (value: boolean) => void;
   onChangeSfxVolume: (value: number) => void;
   onChangeSfxMuted: (value: boolean) => void;
+  onChangeKeyBindings: (value: KeyBindings) => void;
   onClose: () => void;
 }
 
@@ -71,47 +76,64 @@ export function SettingsModal({
   sfxVolume,
   sfxMuted,
   activeTrack,
+  keyBindings,
   onChangeMusicVolume,
   onChangeMusicMuted,
   onChangeSfxVolume,
   onChangeSfxMuted,
+  onChangeKeyBindings,
   onClose,
 }: SettingsModalProps) {
+  const [view, setView] = useState<'main' | 'controls'>('main');
   const trackLabel = activeTrack === 'game' ? 'In-game music' : 'Menu music';
 
   return (
-    <Modal title="Settings" icon="settings" onClose={onClose}>
-      <div className="settings-panel">
-        <div className="settings-panel__track">
-          <img src={icons.music} alt="" draggable={false} />
-          <div>
-            <span>Now Playing</span>
-            <strong>{trackLabel}</strong>
+    <Modal title={view === 'controls' ? 'Controls' : 'Settings'} icon="settings" onClose={onClose}>
+      {view === 'controls' ? (
+        <ControlsSettings
+          keyBindings={keyBindings}
+          onChange={onChangeKeyBindings}
+          onBack={() => setView('main')}
+        />
+      ) : (
+        <div className="settings-panel">
+          <div className="settings-panel__track">
+            <img src={icons.music} alt="" draggable={false} />
+            <div>
+              <span>Now Playing</span>
+              <strong>{trackLabel}</strong>
+            </div>
+          </div>
+
+          <VolumeControl
+            label="Music Volume"
+            ariaLabel="Music volume"
+            volume={musicVolume}
+            muted={musicMuted}
+            muteLabel="Mute music"
+            unmuteLabel="Unmute music"
+            onChangeVolume={onChangeMusicVolume}
+            onChangeMuted={onChangeMusicMuted}
+          />
+
+          <VolumeControl
+            label="Sound FX Volume"
+            ariaLabel="Sound effects volume"
+            volume={sfxVolume}
+            muted={sfxMuted}
+            muteLabel="Mute sound effects"
+            unmuteLabel="Unmute sound effects"
+            onChangeVolume={onChangeSfxVolume}
+            onChangeMuted={onChangeSfxMuted}
+          />
+
+          <div className="settings-group">
+            <button type="button" className="settings-panel__mute" onClick={() => setView('controls')}>
+              Change Controls
+            </button>
           </div>
         </div>
-
-        <VolumeControl
-          label="Music Volume"
-          ariaLabel="Music volume"
-          volume={musicVolume}
-          muted={musicMuted}
-          muteLabel="Mute music"
-          unmuteLabel="Unmute music"
-          onChangeVolume={onChangeMusicVolume}
-          onChangeMuted={onChangeMusicMuted}
-        />
-
-        <VolumeControl
-          label="Sound FX Volume"
-          ariaLabel="Sound effects volume"
-          volume={sfxVolume}
-          muted={sfxMuted}
-          muteLabel="Mute sound effects"
-          unmuteLabel="Unmute sound effects"
-          onChangeVolume={onChangeSfxVolume}
-          onChangeMuted={onChangeSfxMuted}
-        />
-      </div>
+      )}
     </Modal>
   );
 }

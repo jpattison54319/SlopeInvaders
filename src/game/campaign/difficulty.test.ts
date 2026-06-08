@@ -9,6 +9,8 @@ import {
 import type { CampaignLevel } from './types';
 import { slopeLevel } from './levels/helpers';
 import { zoneTwo } from './levels/zone2';
+import { zoneThree } from './levels/zone3';
+import { zoneFour } from './levels/zone4';
 
 /** A full LevelStats with sensible defaults, overridable per test. */
 function stats(over: Partial<LevelStats> = {}): LevelStats {
@@ -173,6 +175,22 @@ describe('configForTier', () => {
     expect(z2l2.config.asteroids).toHaveLength(2); // standard tier
     const c = configForTier(z2l2, 'challenge');
     expect(c.asteroids).toHaveLength(3); // challenge variant adds the off-row target
+    expect(c.hearts).toBe(3); // base 4 - 1
+  });
+
+  it('applies the authored Zone 3 challenge variant (z3-l2 adds a third descent)', () => {
+    const z3l2 = zoneThree.levels.find((l) => l.id === 'z3-l2')!;
+    expect(z3l2.config.asteroids).toHaveLength(2); // standard tier
+    const c = configForTier(z3l2, 'challenge');
+    expect(c.asteroids).toHaveLength(3); // challenge variant adds a steeper descent
+    expect(c.hearts).toBe(3); // base 4 - 1
+  });
+
+  it('applies the authored Zone 4 challenge variant (z4-l2 adds a fifth target)', () => {
+    const z4l2 = zoneFour.levels.find((l) => l.id === 'z4-l2')!;
+    expect(z4l2.config.asteroids).toHaveLength(4); // standard tier (1 per quadrant)
+    const c = configForTier(z4l2, 'challenge');
+    expect(c.asteroids).toHaveLength(5); // challenge variant adds one
     expect(c.hearts).toBe(3); // base 4 - 1
   });
 });

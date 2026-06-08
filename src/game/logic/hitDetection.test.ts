@@ -42,3 +42,24 @@ describe('evaluateShot', () => {
     expect(hits).toEqual(['a1']);
   });
 });
+
+describe('facing direction (Zone 4)', () => {
+  // y = x passes through both (2,2) on the right and (-3,-3) on the left.
+  const right: AsteroidSpec = { id: 'r', weakPoint: { x: 2, y: 2 } };
+  const left: AsteroidSpec = { id: 'l', weakPoint: { x: -3, y: -3 } };
+
+  it('facing right hits the right-side target and not the left', () => {
+    expect(evaluateAsteroid(1, 0, right, 0, undefined, 'right').hit).toBe(true);
+    expect(evaluateAsteroid(1, 0, left, 0, undefined, 'right').hit).toBe(false);
+  });
+
+  it('facing left hits the left-side target and not the right', () => {
+    expect(evaluateAsteroid(1, 0, left, 0, undefined, 'left').hit).toBe(true);
+    expect(evaluateAsteroid(1, 0, right, 0, undefined, 'left').hit).toBe(false);
+  });
+
+  it('defaults to facing right when omitted', () => {
+    expect(evaluateAsteroid(1, 0, right, 0).hit).toBe(true);
+    expect(evaluateAsteroid(1, 0, left, 0).hit).toBe(false);
+  });
+});

@@ -5,6 +5,7 @@ import type { AsteroidSpec } from '../levels/types';
 import type { Viewport } from '../logic/coordinateTransform';
 import { graphToScreen } from '../logic/coordinateTransform';
 import { COLORS } from './colors';
+import { coordinateLabelLayout } from './asteroidLabelLayout';
 
 interface AsteroidProps {
   vp: Viewport;
@@ -93,6 +94,13 @@ export function Asteroid({
   }
 
   const coreR = rockPx * 0.16;
+  const coordinateLabel = `(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`;
+  const coordinateLabelFontSize = 11;
+  const coordinateLabelBox = coordinateLabelLayout(
+    coordinateLabel,
+    rockPx,
+    coordinateLabelFontSize,
+  );
 
   return (
     <Group listening={false} opacity={active ? 1 : 0.4}>
@@ -106,12 +114,13 @@ export function Asteroid({
       {/* Target coordinate label. */}
       {showCoordinates && (
         <Text
-          x={center.x - rockPx / 2}
+          x={center.x + coordinateLabelBox.xOffset}
           y={center.y + rockPx / 2 + 2}
-          width={rockPx}
+          width={coordinateLabelBox.width}
           align="center"
-          text={`(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`}
-          fontSize={11}
+          wrap={coordinateLabelBox.wrap}
+          text={coordinateLabel}
+          fontSize={coordinateLabelFontSize}
           fontFamily="monospace"
           fill={COLORS.weakPointGlow}
         />

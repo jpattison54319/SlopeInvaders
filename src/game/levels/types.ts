@@ -10,13 +10,16 @@ import type { Point } from '../logic/lineMath';
 import type { Bounds } from '../logic/coordinateTransform';
 
 /** Which part of the plane the level uses. */
-export type QuadrantMode = 'quadrant-one' | 'all-quadrants';
+export type QuadrantMode = 'quadrant-one' | 'quadrant-four' | 'all-quadrants';
 
 /** The algebraic form the player is working in. */
 export type EquationForm = 'y=mx' | 'y=mx+b' | 'point-slope';
 
 /** Controls the player is allowed to manipulate this level. */
-export type ControlKey = 'slope' | 'yIntercept' | 'xOffset';
+export type ControlKey = 'slope' | 'yIntercept' | 'xOffset' | 'direction';
+
+/** Which way the ship faces / fires (the shot only travels this way). */
+export type Facing = 'left' | 'right';
 
 /** Visual/behavioural flavour of an asteroid (mostly future-facing). */
 export type AsteroidType = 'standard' | 'armored' | 'special';
@@ -73,7 +76,7 @@ export interface LevelConfig {
   equationForm: EquationForm;
   allowedControls: ControlKey[];
   /** Starting equation values. */
-  defaults: { m: number; b: number; xOffset?: number };
+  defaults: { m: number; b: number; xOffset?: number; facing?: Facing };
   bounds: Bounds;
   /** The cannon/ship position (origin of the shot). */
   ship: { position: Point };

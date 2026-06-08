@@ -23,6 +23,7 @@ import { ZoneLevelsScreen } from './ZoneLevelsScreen';
 import { DebriefScreen } from './DebriefScreen';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
+import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
 
@@ -52,6 +53,9 @@ export default function App() {
   const [musicMuted, setMusicMuted] = usePersistentState('slope-invaders:music-muted', false);
   const [sfxVolume, setSfxVolume] = usePersistentState('slope-invaders:sfx-volume', DEFAULT_SFX_VOLUME);
   const [sfxMuted, setSfxMuted] = usePersistentState('slope-invaders:sfx-muted', false);
+  const [storedKeyBindings, setKeyBindings] = usePersistentState(KEYBINDINGS_KEY, DEFAULT_KEYBINDINGS);
+  // Merge over defaults so a stored map that predates a new action stays valid.
+  const keyBindings = withDefaults(storedKeyBindings);
 
   const progress = useCampaignProgress();
   const reducedMotion = usePrefersReducedMotion();
@@ -186,6 +190,8 @@ export default function App() {
             title={level.name}
             levelNumberLabel={label}
             hasNext={!!nextLevelInZone(level.id)}
+            keyBindings={keyBindings}
+            keyboardEnabled={!settingsOpen}
             onExit={() => exitToZone(level.id)}
             onSettings={openSettings}
             onAdvance={() => advance(level.id)}
@@ -211,10 +217,12 @@ export default function App() {
           sfxVolume={sfxVolume}
           sfxMuted={sfxMuted}
           activeTrack={screen.name === 'game' ? 'game' : 'menu'}
+          keyBindings={keyBindings}
           onChangeMusicVolume={setMusicVolume}
           onChangeMusicMuted={setMusicMuted}
           onChangeSfxVolume={setSfxVolume}
           onChangeSfxMuted={setSfxMuted}
+          onChangeKeyBindings={setKeyBindings}
           onClose={() => setSettingsOpen(false)}
         />
       )}

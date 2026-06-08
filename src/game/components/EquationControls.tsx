@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import type { ControlKey, EquationForm } from '../levels/types';
+import type { ControlKey, EquationForm, Facing } from '../levels/types';
 
 interface EquationControlsProps {
   m: number;
   b: number;
   xOffset: number;
+  facing: Facing;
   onChangeM: (value: number) => void;
   onChangeB: (value: number) => void;
   onChangeXOffset: (value: number) => void;
+  onChangeFacing: (value: Facing) => void;
   onFire: () => void;
   onReset: () => void;
   /** Disable inputs/Fire while a shot is animating. */
@@ -142,9 +144,11 @@ export function EquationControls({
   m,
   b,
   xOffset,
+  facing,
   onChangeM,
   onChangeB,
   onChangeXOffset,
+  onChangeFacing,
   onFire,
   onReset,
   disabled,
@@ -152,10 +156,14 @@ export function EquationControls({
   controls,
   equationForm,
 }: EquationControlsProps) {
+  // Facing left mirrors the line across the ship, so the equation (and the
+  // dashed aim line it matches) shows the negated slope while the slope stepper
+  // keeps showing the value the player dialed.
+  const shownM = controls.includes('direction') && facing === 'left' ? -m : m;
   return (
     <div className="controls" data-tour="command">
       <div className="controls__equation" aria-live="polite">
-        {equationString(m, b, xOffset, equationForm)}
+        {equationString(shownM, b, xOffset, equationForm)}
       </div>
 
       <div className="controls__steppers">
@@ -191,6 +199,35 @@ export function EquationControls({
           />
         )}
       </div>
+
+      {/* Facing direction — the shot fires only this way (Zone 4). */}
+      {controls.includes('direction') && (
+        <div className="direction-toggle">
+          <span className="direction-toggle__label">facing</span>
+          <div className="direction-toggle__buttons">
+            <button
+              type="button"
+              className={`direction-btn ${facing === 'left' ? 'direction-btn--active' : ''}`}
+              aria-label="Face left"
+              aria-pressed={facing === 'left'}
+              disabled={disabled}
+              onClick={() => onChangeFacing('left')}
+            >
+              ◀ Left
+            </button>
+            <button
+              type="button"
+              className={`direction-btn ${facing === 'right' ? 'direction-btn--active' : ''}`}
+              aria-label="Face right"
+              aria-pressed={facing === 'right'}
+              disabled={disabled}
+              onClick={() => onChangeFacing('right')}
+            >
+              Right ▶
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="controls__actions">
         <button
