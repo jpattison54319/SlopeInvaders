@@ -7,10 +7,12 @@ import {
   type DifficultyTier,
   type LevelStats,
 } from '../game/campaign/difficulty';
+import { starsForLevel, type StarCount } from '../game/campaign/stars';
 
 const STORAGE_KEY = 'slope-invaders:campaign-progress';
 const STATS_KEY = 'slope-invaders:level-stats';
 const PROFILE_KEY = 'slope-invaders:profile-stats';
+const STARS_KEY = 'slope-invaders:level-stars';
 
 /** Lifetime, cross-level totals — derived from the per-level stats, persisted
  * for a future learner profile / statistics page. */
@@ -51,6 +53,7 @@ function clearStoredProgress(): void {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(STATS_KEY);
     localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(STARS_KEY);
   } catch {
     /* ignore */
   }
@@ -101,6 +104,31 @@ function aggregateLatestStats(stats: Record<string, LevelStats>): ProfileStats {
 function saveStats(stats: Record<string, LevelStats>): void {
   try {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadStars(): Record<string, StarCount> {
+  try {
+    const raw = localStorage.getItem(STARS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return {};
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter((entry): entry is [string, StarCount] => {
+        const [, value] = entry;
+        return value === 0 || value === 1 || value === 2 || value === 3;
+      }),
+    );
+  } catch {
+    return {};
+  }
+}
+
+function saveStars(stars: Record<string, StarCount>): void {
+  try {
+    localStorage.setItem(STARS_KEY, JSON.stringify(stars));
   } catch {
     /* ignore */
   }
@@ -157,6 +185,7 @@ export interface CampaignProgress {
   /** The difficulty tier a level should be played at (rolling adaptivity). */
   tierForLevel: (zone: Zone, index: number) => DifficultyTier;
   getLevelStats: (levelId: string) => LevelStats | undefined;
+  getLevelStars: (levelId: string) => StarCount;
   getProfileStats: () => ProfileStats;
   resetProgress: () => void;
 }
@@ -172,14 +201,25 @@ export interface CampaignProgress {
 export function useCampaignProgress(): CampaignProgress {
   const [completed, setCompleted] = useState<Set<string>>(() => new Set(loadCompleted()));
   const [stats, setStats] = useState<Record<string, LevelStats>>(() => loadStats());
+  const [stars, setStars] = useState<Record<string, StarCount>>(() => loadStars());
   const [profile, setProfile] = useState<ProfileStats>(() => loadProfile());
 
   const markComplete = useCallback((levelId: string, levelStats?: LevelStats) => {
+    const earnedStars = starsForLevel(true, levelStats);
+    const priorDerivedStars = starsForLevel(completed.has(levelId), stats[levelId]);
+
     setCompleted((prev) => {
       if (prev.has(levelId)) return prev;
       const next = new Set(prev);
       next.add(levelId);
       saveCompleted([...next]);
+      return next;
+    });
+    setStars((prev) => {
+      const best = Math.max(prev[levelId] ?? 0, priorDerivedStars, earnedStars) as StarCount;
+      if (prev[levelId] === best) return prev;
+      const next = { ...prev, [levelId]: best };
+      saveStars(next);
       return next;
     });
     if (levelStats) {
@@ -194,11 +234,12 @@ export function useCampaignProgress(): CampaignProgress {
         return next;
       });
     }
-  }, []);
+  }, [completed, stats]);
 
   const resetProgress = useCallback(() => {
     setCompleted(new Set());
     setStats({});
+    setStars({});
     setProfile(EMPTY_PROFILE);
     clearStoredProgress();
   }, []);
@@ -250,8 +291,10 @@ export function useCampaignProgress(): CampaignProgress {
       markComplete,
       tierForLevel,
       getLevelStats: (levelId: string) => stats[levelId],
+      getLevelStars: (levelId: string) =>
+        stars[levelId] ?? starsForLevel(completed.has(levelId), stats[levelId]),
       getProfileStats: () => profile,
       resetProgress,
     };
-  }, [completed, stats, profile, markComplete, resetProgress]);
+  }, [completed, stats, stars, profile, markComplete, resetProgress]);
 }

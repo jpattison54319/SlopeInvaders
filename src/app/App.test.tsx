@@ -12,6 +12,7 @@ import App from './App';
   true;
 
 const PROGRESS_KEY = 'slope-invaders:campaign-progress';
+const LEVEL_STATS_KEY = 'slope-invaders:level-stats';
 
 vi.mock('../game/audio/useMusic', () => ({
   useMusic: vi.fn(),
@@ -115,6 +116,40 @@ function installMemoryStorage() {
 
 function seedCompletedLevels(levelIds: string[]) {
   localStorage.setItem(PROGRESS_KEY, JSON.stringify({ completedLevels: levelIds }));
+}
+
+function seedLevelStats(stats: Record<string, unknown>) {
+  localStorage.setItem(LEVEL_STATS_KEY, JSON.stringify(stats));
+}
+
+function levelStats(overrides: Record<string, unknown> = {}) {
+  return {
+    levelId: 'z1-l1',
+    tier: 'standard',
+    targets: 2,
+    shots: 2,
+    hits: 2,
+    misses: 0,
+    offBoardShots: 0,
+    multiHits: 0,
+    accuracy: 1,
+    startHearts: 5,
+    heartsLost: 0,
+    heartsRemaining: 5,
+    losses: 0,
+    manualResets: 0,
+    attempts: 1,
+    passedFirstTry: true,
+    calculatorOpens: 0,
+    tweaks: 0,
+    durationMs: 1000,
+    timeToFirstShotMs: 100,
+    timeToFirstHitMs: 200,
+    firstPlayedAt: 10,
+    completedAt: 20,
+    score: 1,
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -289,6 +324,23 @@ describe('App shell', () => {
     expect(enterPlanet!.disabled).toBe(true);
   });
 
+  test('planet view summarizes acquired stars before entering a world', async () => {
+    seedCompletedLevels(['tut-1', 'z1-l1']);
+    seedLevelStats({
+      'z1-l1': levelStats({ levelId: 'z1-l1', misses: 1, heartsLost: 1, heartsRemaining: 4 }),
+    });
+
+    await renderApp();
+    await click('Play Campaign');
+
+    expect(host.textContent).toContain('1 / 4 missions cleared');
+    expect(host.querySelector('.galaxy__mastery')?.textContent).toBe('2 / 12 Mastery');
+    expect(host.querySelector('.galaxy__mastery')?.getAttribute('aria-label')).toBe(
+      '2 of 12 mastery stars acquired',
+    );
+    expect(host.querySelector('.galaxy__mastery-star-icon')).toBeTruthy();
+  });
+
   test('planet surface shows active and locked region banners after entering a zone', async () => {
     seedCompletedLevels(['tut-1']);
     await renderApp();
@@ -303,13 +355,19 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Surface');
     expect(host.querySelectorAll('.surface-region')).toHaveLength(4);
     expect(host.querySelectorAll('.surface-banner')).toHaveLength(4);
+    expect(host.querySelectorAll('.surface-banner .star-rating')).toHaveLength(4);
+    expect(host.querySelectorAll('.surface-banner .star-rating__star')).toHaveLength(12);
     expect(host.querySelectorAll('.surface-banner--ready')).toHaveLength(1);
+    expect(host.querySelectorAll('.surface-banner--ready .star-rating__star--filled')).toHaveLength(0);
     expect(host.querySelectorAll('.surface-banner--locked')).toHaveLength(3);
     expect(host.querySelector('.surface-banner--ready')?.getAttribute('aria-label')).toContain('Steeper Lines');
   });
 
   test('planet surface marks completed regions and launches active banners directly', async () => {
     seedCompletedLevels(['tut-1', 'z1-l1']);
+    seedLevelStats({
+      'z1-l1': levelStats({ levelId: 'z1-l1', misses: 1, heartsLost: 1, heartsRemaining: 4 }),
+    });
     await renderApp();
 
     await click('Play Campaign');
@@ -321,6 +379,10 @@ describe('App shell', () => {
     expect(host.querySelectorAll('.surface-banner--cleared')).toHaveLength(1);
     expect(host.querySelectorAll('.surface-banner--ready')).toHaveLength(1);
     expect(host.querySelectorAll('.surface-check')).toHaveLength(1);
+    expect(host.querySelector('.surface-banner--cleared .star-rating')?.getAttribute('aria-label')).toBe(
+      'Steeper Lines stars: 2 of 3 stars',
+    );
+    expect(host.querySelectorAll('.surface-banner--cleared .star-rating__star--filled')).toHaveLength(2);
     expect(host.querySelector('.surface-banner--ready')?.getAttribute('aria-label')).toContain(
       'Fractional Slopes',
     );

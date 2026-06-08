@@ -27,8 +27,11 @@ Example:
 | Stars | Criteria |
 |---|---|
 | 1 | Complete the level |
-| 2 | Complete with hearts remaining |
-| 3 | Complete with no misses or no hints |
+| 2 | Complete with at most one missed shot |
+| 3 | Complete with no missed shots and full hearts remaining |
+
+Persist the best star count earned for each level. Replays can improve a level's
+stars, but a worse replay should not lower the displayed mastery rating.
 
 For advanced levels, stars can reward:
 
