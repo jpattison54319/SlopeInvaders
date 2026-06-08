@@ -27,6 +27,7 @@ Important docs:
 - `docs/agent/03-gamification-multiplayer.md`: XP, badges, stars, cosmetics, and multiplayer guardrails.
 - `docs/agent/04-ui-audio-visual-design.md`: interface clarity, cognitive load, visual style, audio, and accessibility.
 - `docs/agent/05-prototype-scope-zone-1.md`: concrete prototype scope for Tutorial + Zone 1.
+- `docs/agent/06-zone-2-intercepts.md`: Zone 2 (`y = mx + b`) learning focus, scaffold, and design decisions (horizontal-line "cheese", two-point mastery).
 - `docs/agent/sources.md`: source notes and bibliography-style references.
 
 Before adding or changing gameplay mechanics, level sequencing, scaffolds, feedback, adaptivity, stats, UI, audio, gamification, or multiplayer behavior, consult the relevant doc and keep the implementation aligned with that source-backed theory.
@@ -42,6 +43,7 @@ Current user-facing flow:
 3. Campaign opens a galaxy planet-dial (zones are planets; the active planet's hotspots are its levels, with a launch warp into gameplay). A "List view" toggle keeps the classic zone/level-list screens.
 4. Tutorial opens with a one-time guided spotlight tour, then teaches slope, firing, grid reading, hearts, and feedback.
 5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
+5a. Zone 2 focuses on `y = mx + b`: the y-intercept lifts the line off the origin, same slope hits different targets at different `b`, and horizontal lines (`y = b`). Its no-preview mastery uses two-point lines so horizontal shortcuts cannot clear them. Horizontal "cheese" shots are intentionally allowed (no blockers yet).
 6. Settings controls music and SFX volume/mute. There is no separate Audio button beside Play.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
 8. Gameplay music uses `src/assets/in_game.mp3`.
@@ -88,6 +90,8 @@ npm run build
 - `src/game/campaign/difficulty.ts` defines `DifficultyTier`, `LevelStats`, scoring, tier selection, and tier-based config transforms.
 - `src/game/campaign/levels/tutorial.ts` defines the Tutorial level.
 - `src/game/campaign/levels/zone1.ts` defines Zone 1 and adaptive flags/variants.
+- `src/game/campaign/levels/zone2.ts` defines Zone 2 (`y = mx + b`) and its adaptive flags/variants.
+- `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`) and `interceptLevel` (`y = mx + b`) level-config factories.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
 - `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts` implement the floating calculator, safe evaluator, draggable placement, and persisted viewport-safe positioning.
@@ -111,9 +115,8 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 
 ## Adaptive Difficulty and Stats
 
-- Zone 1 level 1 is a fixed `standard` diagnostic.
-- Later Zone 1 levels set `adaptive: true`.
-- `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats.
+- Each zone's first level is a fixed `standard` diagnostic; later levels in that zone set `adaptive: true`.
+- `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats, so adaptivity rolls per zone (Zone 2 tiers ignore Zone 1 performance).
 - `configForTier(level, tier)` applies hearts/scaffold deltas and challenge variants.
 - Do not render a visible difficulty badge; adaptivity should be invisible and non-stigmatizing.
 - `LevelStats` captures rich per-level visit data for future profile work.

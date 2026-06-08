@@ -10,7 +10,7 @@ Quick orientation:
 - Campaign opens an atmospheric galaxy where zones are planets on a rotating dial and the active planet's "hotspots" are its levels (a "List view" toggle keeps the classic zone/level screens). Planet art is in `src/assets/planets/`.
 - `src/app/` contains app shell, mode/zone routing, settings, progress, stats, and adaptive tier wiring.
 - `src/game/` contains gameplay, campaign data, components, audio, and pure game logic.
-- Zone 1 uses invisible rolling adaptive difficulty after its first diagnostic level.
+- Zone 1 (`y = mx`) and Zone 2 (`y = mx + b`) are both playable; each uses invisible rolling adaptive difficulty after its own first diagnostic level. Zone 2 unlocks the y-intercept control (which supports half-steps) and teaches horizontal lines.
 - The in-level calculator is a free tool and must not penalize scoring/adaptivity; its dragged viewport position persists in `slope-invaders:calculator-position`.
 - The learning goal sits in a full-width mission banner above the board (the old per-level teaching "callout" is gone).
 - Levels can opt into a one-time guided spotlight tour on first open; the Tutorial uses it.

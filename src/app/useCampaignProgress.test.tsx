@@ -5,6 +5,7 @@ import { act, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { zoneOne } from '../game/campaign/levels/zone1';
+import { zoneTwo } from '../game/campaign/levels/zone2';
 import type { LevelStats } from '../game/campaign/difficulty';
 import { useCampaignProgress, type CampaignProgress } from './useCampaignProgress';
 
@@ -142,6 +143,17 @@ describe('useCampaignProgress', () => {
 
     expect(progress.tierForLevel(zoneOne, 0)).toBe('standard');
     expect(progress.tierForLevel(zoneOne, 1)).toBe('challenge');
+  });
+
+  it('rolls the Zone 2 tier from prior Zone 2 stats, independent of Zone 1', async () => {
+    await act(async () => {
+      progress.markComplete('z2-l1', stats({ levelId: 'z2-l1', score: 1 }));
+    });
+
+    // First Zone 2 level is always the fixed standard diagnostic.
+    expect(progress.tierForLevel(zoneTwo, 0)).toBe('standard');
+    // A flawless z2-l1 lifts the next Zone 2 level to challenge.
+    expect(progress.tierForLevel(zoneTwo, 1)).toBe('challenge');
   });
 
   it('resetProgress clears progress, per-level stats, and profile stats stores', async () => {

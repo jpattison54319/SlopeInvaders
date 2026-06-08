@@ -23,6 +23,7 @@ The `docs/agent/` folder contains the foundational theory behind design decision
 - `docs/agent/03-gamification-multiplayer.md`: XP, badges, multiplayer guardrails.
 - `docs/agent/04-ui-audio-visual-design.md`: UI, cognitive load, visual/audio/accessibility guidance.
 - `docs/agent/05-prototype-scope-zone-1.md`: current prototype scope for full Zone 1.
+- `docs/agent/06-zone-2-intercepts.md`: Zone 2 (`y = mx + b`) learning focus, scaffold, and design decisions.
 - `docs/agent/sources.md`: bibliography-style source notes.
 
 Before adding or changing gameplay, pedagogy, UI, audio, feedback, adaptivity, gamification, or multiplayer behavior, consult the relevant `docs/agent` file and keep the implementation rooted in that source-backed design theory.
@@ -36,9 +37,9 @@ Current product flow:
 - App starts on a pixel-art arcade mode-select menu.
 - Campaign is the available mode; Arcade and Versus are coming soon.
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating dial; the active planet's level "hotspots" replace the level list, and a "List view" toggle keeps the classic zone/level screens. Launching a level plays a brief warp transition into gameplay.
-- Planet art lives in `src/assets/planets/` (wired via `assetMap`); Tutorial is unlocked, Zone 1 unlocks after Tutorial, later zones are locked/coming soon.
-- Tutorial and Zone 1 levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
-- Zone 1 uses rolling adaptive difficulty after its first diagnostic level.
+- Planet art lives in `src/assets/planets/` (wired via `assetMap`); each zone unlocks once the previous zone is fully cleared, and later zones are coming soon.
+- Campaign levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
+- Zone 1 (`y = mx`) and Zone 2 (`y = mx + b`) are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 2 unlocks the y-intercept control and teaches horizontal lines.
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
 - Top-right Settings controls music and SFX volume/mute.
 - Menu music: `src/assets/homescreen_background.mp3`.
@@ -75,6 +76,7 @@ npm run dev -- --host 127.0.0.1
 - `src/game/campaign/difficulty.ts`: adaptive tiers, `LevelStats`, scoring, tier config transforms.
 - `src/game/campaign/levels/tutorial.ts`: Tutorial campaign level.
 - `src/game/campaign/levels/zone1.ts`: Zone 1 levels and adaptive flags/variants.
+- `src/game/campaign/levels/zone2.ts`: Zone 2 (`y = mx + b`) levels and adaptive flags/variants.
 - `src/game/campaign/zones.ts`: zone registry and navigation helpers.
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/`: Konva board and DOM gameplay UI.

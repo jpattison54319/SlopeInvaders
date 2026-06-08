@@ -8,6 +8,8 @@ interface CampaignMapScreenProps {
   onSelectZone: (zoneId: string) => void;
   onBack: () => void;
   onOpenSettings: () => void;
+  /** Toggle back to the galaxy planet view. */
+  onToggleView: () => void;
   /** Label/tooltip for the back control (defaults to "Modes"). */
   backLabel?: string;
 }
@@ -19,10 +21,17 @@ export function CampaignMapScreen({
   onSelectZone,
   onBack,
   onOpenSettings,
+  onToggleView,
   backLabel = 'Modes',
 }: CampaignMapScreenProps) {
   return (
-    <ScreenChrome onBack={onBack} backLabel={backLabel} onOpenSettings={onOpenSettings}>
+    <ScreenChrome
+      onBack={onBack}
+      backLabel={backLabel}
+      onOpenSettings={onOpenSettings}
+      onToggleView={onToggleView}
+      toggleViewLabel="Planet view"
+    >
       <section className="level-select" aria-labelledby="campaign-title">
         <div className="level-select__header">
           <div>

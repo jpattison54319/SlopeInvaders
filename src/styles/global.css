@@ -1430,7 +1430,7 @@ input:focus-visible {
   color: var(--amber);
   text-shadow: 0 0 14px rgba(255, 209, 102, 0.3);
 }
-.galaxy__classic {
+.chrome-toggle-btn {
   flex: 0 0 auto;
   font-family: var(--pixel-font);
   font-size: 9px;
@@ -1442,7 +1442,7 @@ input:focus-visible {
   padding: 10px 12px;
   cursor: pointer;
 }
-.galaxy__classic:hover {
+.chrome-toggle-btn:hover {
   filter: brightness(1.2);
   border-color: rgba(94, 241, 255, 0.5);
 }

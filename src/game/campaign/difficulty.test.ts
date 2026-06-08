@@ -8,6 +8,7 @@ import {
 } from './difficulty';
 import type { CampaignLevel } from './types';
 import { slopeLevel } from './levels/helpers';
+import { zoneTwo } from './levels/zone2';
 
 /** A full LevelStats with sensible defaults, overridable per test. */
 function stats(over: Partial<LevelStats> = {}): LevelStats {
@@ -165,5 +166,13 @@ describe('configForTier', () => {
     const c = configForTier(lvl, 'challenge');
     expect(c.asteroids).toHaveLength(2);
     expect(c.hearts).toBe(3); // rule delta still applies
+  });
+
+  it('applies the authored Zone 2 challenge variant (z2-l2 adds a third target)', () => {
+    const z2l2 = zoneTwo.levels.find((l) => l.id === 'z2-l2')!;
+    expect(z2l2.config.asteroids).toHaveLength(2); // standard tier
+    const c = configForTier(z2l2, 'challenge');
+    expect(c.asteroids).toHaveLength(3); // challenge variant adds the off-row target
+    expect(c.hearts).toBe(3); // base 4 - 1
   });
 });

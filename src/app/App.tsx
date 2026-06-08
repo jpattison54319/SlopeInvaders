@@ -9,7 +9,7 @@ import {
   zones,
   findZone,
   findCampaignLevel,
-  nextLevel,
+  nextLevelInZone,
   firstCampaignLevel,
 } from '../game/campaign/zones';
 import { configForTier } from '../game/campaign/difficulty';
@@ -70,14 +70,19 @@ export default function App() {
   };
 
   const advance = (levelId: string) => {
-    const next = nextLevel(levelId);
+    // Advance within the current zone only — never auto-cross into the next zone.
+    const next = nextLevelInZone(levelId);
     if (next) {
       setScreen({ name: 'game', levelId: next.level.id });
       return;
     }
+    // Finished a zone's last level: run the end-of-zone self-regulated learning
+    // check (reflections + debrief) if it has one, otherwise back to the galaxy.
     const current = findCampaignLevel(levelId);
-    if (current?.zone.debrief) {
-      setScreen({ name: 'debrief', zoneId: current.zone.id });
+    const hasLearningCheck =
+      !!current?.zone.debrief || !!current?.zone.reflections?.length;
+    if (hasLearningCheck) {
+      setScreen({ name: 'debrief', zoneId: current!.zone.id });
     } else {
       setScreen({ name: 'galaxy', zoneId: current?.zone.id });
     }
@@ -102,7 +107,7 @@ export default function App() {
             onPlayLevel={(levelId) => setScreen({ name: 'fade', levelId })}
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
-            // onOpenClassic={() => setScreen({ name: 'campaign-map' })}
+            onToggleView={() => setScreen({ name: 'campaign-map' })}
           />
         );
 
@@ -131,10 +136,10 @@ export default function App() {
           <CampaignMapScreen
             zones={zones}
             progress={progress}
-            backLabel="Galaxy"
             onSelectZone={(zoneId) => setScreen({ name: 'zone-levels', zoneId })}
-            onBack={() => setScreen({ name: 'galaxy' })}
+            onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
+            onToggleView={() => setScreen({ name: 'galaxy' })}
           />
         );
 
@@ -148,6 +153,7 @@ export default function App() {
             onSelectLevel={(levelId) => setScreen({ name: 'game', levelId })}
             onBack={() => setScreen({ name: 'campaign-map' })}
             onOpenSettings={openSettings}
+            onToggleView={() => setScreen({ name: 'galaxy', zoneId: zone.id })}
           />
         );
       }
@@ -158,7 +164,7 @@ export default function App() {
         return (
           <DebriefScreen
             zone={zone}
-            onBack={() => setScreen({ name: 'campaign-map' })}
+            onBack={() => setScreen({ name: 'galaxy', zoneId: zone.id })}
             onOpenSettings={openSettings}
           />
         );
@@ -179,7 +185,7 @@ export default function App() {
             tier={tier}
             title={level.name}
             levelNumberLabel={label}
-            hasNext={!!nextLevel(level.id)}
+            hasNext={!!nextLevelInZone(level.id)}
             onExit={() => exitToZone(level.id)}
             onSettings={openSettings}
             onAdvance={() => advance(level.id)}
