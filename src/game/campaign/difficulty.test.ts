@@ -11,6 +11,7 @@ import { slopeLevel } from './levels/helpers';
 import { zoneTwo } from './levels/zone2';
 import { zoneThree } from './levels/zone3';
 import { zoneFour } from './levels/zone4';
+import { zoneFive } from './levels/zone5';
 
 /** A full LevelStats with sensible defaults, overridable per test. */
 function stats(over: Partial<LevelStats> = {}): LevelStats {
@@ -191,6 +192,14 @@ describe('configForTier', () => {
     expect(z4l2.config.asteroids).toHaveLength(4); // standard tier (1 per quadrant)
     const c = configForTier(z4l2, 'challenge');
     expect(c.asteroids).toHaveLength(5); // challenge variant adds one
+    expect(c.hearts).toBe(3); // base 4 - 1
+  });
+
+  it('applies the authored Zone 5 challenge variant (z5-l2 adds a third target)', () => {
+    const z5l2 = zoneFive.levels.find((l) => l.id === 'z5-l2')!;
+    expect(z5l2.config.asteroids).toHaveLength(2); // standard tier
+    const c = configForTier(z5l2, 'challenge');
+    expect(c.asteroids).toHaveLength(3); // challenge variant adds a fortified target
     expect(c.hearts).toBe(3); // base 4 - 1
   });
 });

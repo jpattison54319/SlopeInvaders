@@ -8,6 +8,7 @@ import { zoneOne } from '../game/campaign/levels/zone1';
 import { zoneTwo } from '../game/campaign/levels/zone2';
 import { zoneThree } from '../game/campaign/levels/zone3';
 import { zoneFour } from '../game/campaign/levels/zone4';
+import { zoneFive } from '../game/campaign/levels/zone5';
 import type { LevelStats } from '../game/campaign/difficulty';
 import { useCampaignProgress, type CampaignProgress } from './useCampaignProgress';
 
@@ -221,6 +222,15 @@ describe('useCampaignProgress', () => {
 
     expect(progress.tierForLevel(zoneFour, 0)).toBe('standard');
     expect(progress.tierForLevel(zoneFour, 1)).toBe('challenge');
+  });
+
+  it('rolls the Zone 5 tier from prior Zone 5 stats, independent of earlier zones', async () => {
+    await act(async () => {
+      progress.markComplete('z5-l1', stats({ levelId: 'z5-l1', score: 1 }));
+    });
+
+    expect(progress.tierForLevel(zoneFive, 0)).toBe('standard');
+    expect(progress.tierForLevel(zoneFive, 1)).toBe('challenge');
   });
 
   it('resetProgress clears progress, per-level stats, and profile stats stores', async () => {
