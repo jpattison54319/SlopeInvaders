@@ -12,6 +12,8 @@ import { EquationLine } from './EquationLine';
 import { Asteroid } from './Asteroid';
 import { Ship } from './Ship';
 import { Wall } from './Wall';
+import { Chain } from './Chain';
+import { Friendly } from './Friendly';
 import { Explosion } from './Explosion';
 
 /** A live explosion the board should render. */
@@ -56,6 +58,21 @@ function lerp(a: Point, b: Point, t: number): Point {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
+/** Weak points of each still-alive linked group, for drawing the chain tether. */
+function chainGroups(
+  asteroids: LevelConfig['asteroids'],
+  destroyed: ReadonlySet<string>,
+): Array<[string, Point[]]> {
+  const groups = new Map<string, Point[]>();
+  for (const a of asteroids) {
+    if (!a.linkGroup || destroyed.has(a.id)) continue;
+    const pts = groups.get(a.linkGroup);
+    if (pts) pts.push(a.weakPoint);
+    else groups.set(a.linkGroup, [a.weakPoint]);
+  }
+  return [...groups].filter(([, pts]) => pts.length >= 2);
+}
+
 /** The coordinate-plane play area, rendered with React Konva. */
 export function GameBoard({
   width,
@@ -80,7 +97,7 @@ export function GameBoard({
   const bolt = useImage(assets.bolt);
   // The ship IS the launch point: it sits on the line at its own x, so changing
   // b carries the ship up/down the y-axis with the line, and changing m pivots
-  // the line around the ship. (Future xOffset will move shipX too.)
+  // the line around the ship. The Zone 8 x-offset control moves shipX.
   const launchPoint: Point = { x: shipX, y: getYAtX(m, b, shipX) };
 
   // Firing beam + projectile geometry (screen space).
@@ -115,6 +132,16 @@ export function GameBoard({
 
         {level.walls.map((w) => (
           <Wall key={w.id} vp={vp} wall={w} />
+        ))}
+
+        {/* Chains linking still-alive asteroid groups (Zone 6). */}
+        {chainGroups(level.asteroids, destroyed).map(([groupId, pts]) => (
+          <Chain key={groupId} vp={vp} points={pts} />
+        ))}
+
+        {/* Friendly ships the shot must avoid (Zone 7). */}
+        {(level.friendlies ?? []).map((f) => (
+          <Friendly key={f.id} vp={vp} friendly={f} showCoordinates={showCoordinates} />
         ))}
 
         <EquationLine

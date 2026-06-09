@@ -21,6 +21,7 @@ import { MissionFadeTransition } from './MissionFadeTransition';
 import { CampaignMapScreen } from './CampaignMapScreen';
 import { ZoneLevelsScreen } from './ZoneLevelsScreen';
 import { DebriefScreen } from './DebriefScreen';
+import { CampaignCompleteScreen } from './CampaignCompleteScreen';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
@@ -35,7 +36,11 @@ type Screen =
   | { name: 'campaign-map' }
   | { name: 'zone-levels'; zoneId: string }
   | { name: 'game'; levelId: string }
-  | { name: 'debrief'; zoneId: string };
+  | { name: 'debrief'; zoneId: string }
+  | { name: 'campaign-complete' };
+
+/** The last available zone — clearing its debrief completes the campaign. */
+const lastAvailableZoneId = zones.filter((z) => z.status === 'available').at(-1)?.id;
 
 const DEFAULT_MUSIC_VOLUME = 0.65;
 const DEFAULT_SFX_VOLUME = 0.7;
@@ -165,14 +170,30 @@ export default function App() {
       case 'debrief': {
         const zone = findZone(screen.zoneId);
         if (!zone) return null;
+        // After the final zone's debrief, run the campaign finale; otherwise
+        // return to the galaxy.
+        const isFinalZone = zone.id === lastAvailableZoneId;
         return (
           <DebriefScreen
             zone={zone}
-            onBack={() => setScreen({ name: 'galaxy', zoneId: zone.id })}
+            onBack={() =>
+              setScreen(isFinalZone ? { name: 'campaign-complete' } : { name: 'galaxy', zoneId: zone.id })
+            }
             onOpenSettings={openSettings}
           />
         );
       }
+
+      case 'campaign-complete':
+        return (
+          <CampaignCompleteScreen
+            progress={progress}
+            reducedMotion={reducedMotion}
+            onMenu={() => setScreen({ name: 'mode-select' })}
+            onGalaxy={() => setScreen({ name: 'galaxy', zoneId: lastAvailableZoneId })}
+            onOpenSettings={openSettings}
+          />
+        );
 
       case 'game': {
         const ctx = findCampaignLevel(screen.levelId) ?? findCampaignLevel(firstCampaignLevel.level.id)!;

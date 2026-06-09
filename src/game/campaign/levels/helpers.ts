@@ -105,3 +105,21 @@ export function fullGridLevel(
     ...over,
   };
 }
+
+/**
+ * Shared base for Zone 8 levels: the full grid + facing of {@link fullGridLevel},
+ * but the cannon can now slide horizontally with the x-offset control. The line
+ * becomes y = m(x − h) + b, where h is the x the cannon sits at (it rides the
+ * line at its own x). Repositioning opens new firing lanes around walls and
+ * changes which targets fall in the facing range. Override any field per level.
+ */
+export function offsetGridLevel(
+  over: Partial<LevelConfig> &
+    Pick<LevelConfig, 'id' | 'name' | 'learningGoal' | 'asteroids'>,
+): LevelConfig {
+  return fullGridLevel({
+    allowedControls: ['slope', 'yIntercept', 'xOffset', 'direction'],
+    defaults: { m: 1, b: 0, xOffset: 0, facing: 'right' },
+    ...over,
+  });
+}

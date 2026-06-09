@@ -10,14 +10,8 @@ interface WallProps {
 }
 
 /**
- * Asteroid wall / shield placeholder.
- *
- * Level 1 has no walls, but this renders a level's wall segments so future
- * levels can drop them in. It draws a thick energy-barrier line in the 8-bit
- * palette.
- *
- * TODO: render shield "gaps" as breaks in the barrier, and pair this with
- *       hitDetection.isPathBlocked() so walls actually stop shots.
+ * Renders a level's wall/shield segments. These barriers block shots that cross
+ * them, so they are part of both the puzzle logic and the visual language.
  */
 export function Wall({ vp, wall }: WallProps) {
   const a = graphToScreen(wall.from, vp);

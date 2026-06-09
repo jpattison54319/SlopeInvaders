@@ -6,7 +6,15 @@ import {
   normalizeKey,
   type KeyBindings,
 } from './controls/keybindings';
-import { evaluateShot, firstWallHit, DEFAULT_HIT_TOLERANCE } from './logic/hitDetection';
+import {
+  evaluateShot,
+  firstWallHit,
+  firstFriendlyHit,
+  hitsFriendly,
+  resolveDestroyed,
+  DEFAULT_HIT_TOLERANCE,
+} from './logic/hitDetection';
+import type { Point } from './logic/lineMath';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
 import { buildFeedback, type ShotFeedback } from './logic/hints';
@@ -94,6 +102,10 @@ interface ShotContext {
   b: number;
   /** The shot destroyed nothing because a wall stood in the way. */
   blocked: boolean;
+  /** Linked groups this shot clipped but didn't fully clear (all-or-none). */
+  partialGroups: string[];
+  /** The shot crossed a friendly ship, so it was scrubbed (Zone 7). */
+  friendlyScrub: boolean;
 }
 
 type Outcome = 'playing' | 'won' | 'lost';
@@ -314,16 +326,34 @@ export function Game({
         missesRef.current += 1;
         loseHeart();
       }
-      setFeedback(
-        ctx.blocked && destroyedSpecs.length === 0
-          ? {
-              hit: false,
-              headline: 'Blocked!',
-              detail:
-                'A shield wall stopped your shot. Change the slope or y-intercept so your line reaches the asteroid without crossing a wall.',
-            }
-          : buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById),
-      );
+      // Feedback precedence when nothing was destroyed: a friendly ship in the
+      // line, then a wall, then a half-cleared chain, then the generic hint.
+      let feedbackForShot: ShotFeedback;
+      if (destroyedSpecs.length === 0 && ctx.friendlyScrub) {
+        feedbackForShot = {
+          hit: false,
+          headline: 'Friendly ship!',
+          detail:
+            'Your line of fire crossed a friendly ship, so the shot was scrubbed. Pick a different line that reaches the asteroid without passing through an ally.',
+        };
+      } else if (destroyedSpecs.length === 0 && ctx.blocked) {
+        feedbackForShot = {
+          hit: false,
+          headline: 'Blocked!',
+          detail:
+            'A shield wall stopped your shot. Change the slope or y-intercept so your line reaches the asteroid without crossing a wall.',
+        };
+      } else if (destroyedSpecs.length === 0 && ctx.partialGroups.length > 0) {
+        feedbackForShot = {
+          hit: false,
+          headline: 'Chained!',
+          detail:
+            'Those rocks are linked — one line has to pass through every chained rock at once. You only lined up part of the chain.',
+        };
+      } else {
+        feedbackForShot = buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById);
+      }
+      setFeedback(feedbackForShot);
       setShotsFired((s) => s + 1);
     },
     [asteroidsById, loseHeart],
@@ -384,6 +414,13 @@ export function Game({
       facing,
       level.walls,
     );
+    const friendlies = level.friendlies ?? [];
+    // A friendly ship anywhere in the line of fire scrubs the whole shot (Zone 7).
+    const friendlyScrub = friendlies.some((f) =>
+      hitsFriendly(fireM, fireB, f, shipX, DEFAULT_HIT_TOLERANCE, facing, level.walls),
+    );
+    // Linked groups are all-or-none: a half-clipped chain destroys nothing (Zone 6).
+    const { destroyedIds, partialGroups } = resolveDestroyed(results, targetable);
     const rawSeg = lineBoardSegment(fireM, fireB, level.bounds, shipX, facing);
 
     if (!rawSeg) {
@@ -403,14 +440,22 @@ export function Game({
     // The clip returns start at the smaller x; when facing left the ship is the
     // larger-x end, so flip it so the beam leaves the ship and travels outward.
     const oriented = facing === 'left' ? { start: rawSeg.end, end: rawSeg.start } : rawSeg;
-    // Stop the beam at the first shield wall it crosses (blocked asteroids beyond
-    // it are already hit:false), so the laser visibly halts at the wall.
-    const block = firstWallHit(oriented.start, oriented.end, level.walls);
-    const seg = block ? { start: oriented.start, end: block } : oriented;
+    // Stop the beam at the first obstacle it reaches — a shield wall or a friendly
+    // ship (blocked asteroids beyond a wall are already hit:false; a scrubbed shot
+    // destroys nothing) — so the laser visibly halts at whatever it strikes.
+    const wallPt = firstWallHit(oriented.start, oriented.end, level.walls);
+    const friendlyPt = firstFriendlyHit(oriented.start, oriented.end, friendlies, DEFAULT_HIT_TOLERANCE);
+    const stops = [wallPt, friendlyPt].filter((p): p is Point => p !== null);
+    const distSq = (p: Point) =>
+      (p.x - oriented.start.x) ** 2 + (p.y - oriented.start.y) ** 2;
+    const stop = stops.length ? stops.reduce((a, c) => (distSq(c) < distSq(a) ? c : a)) : null;
+    const seg = stop ? { start: oriented.start, end: stop } : oriented;
 
+    // A friendly in the line scrubs every hit; otherwise apply the all-or-none set.
+    const effectiveHits = friendlyScrub ? new Set<string>() : destroyedIds;
     const dx = seg.end.x - seg.start.x;
     const hits = results
-      .filter((r) => r.hit)
+      .filter((r) => effectiveHits.has(r.asteroidId))
       .map((r) => {
         const asteroid = targetable.find((a) => a.id === r.asteroidId)!;
         const frac = dx === 0 ? 1 : (r.weakPoint.x - seg.start.x) / dx;
@@ -428,6 +473,8 @@ export function Game({
       m: fireM,
       b: fireB,
       blocked: hits.length === 0 && results.some((r) => r.blocked),
+      partialGroups,
+      friendlyScrub,
     };
     setFeedback(null);
     setShot({ start: seg.start, end: seg.end, progress: 0 });
