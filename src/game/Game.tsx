@@ -6,7 +6,7 @@ import {
   normalizeKey,
   type KeyBindings,
 } from './controls/keybindings';
-import { evaluateShot, DEFAULT_HIT_TOLERANCE } from './logic/hitDetection';
+import { evaluateShot, firstWallHit, DEFAULT_HIT_TOLERANCE } from './logic/hitDetection';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
 import { buildFeedback, type ShotFeedback } from './logic/hints';
@@ -92,6 +92,8 @@ interface ShotContext {
   finalized: boolean;
   m: number;
   b: number;
+  /** The shot destroyed nothing because a wall stood in the way. */
+  blocked: boolean;
 }
 
 type Outcome = 'playing' | 'won' | 'lost';
@@ -312,7 +314,16 @@ export function Game({
         missesRef.current += 1;
         loseHeart();
       }
-      setFeedback(buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById));
+      setFeedback(
+        ctx.blocked && destroyedSpecs.length === 0
+          ? {
+              hit: false,
+              headline: 'Blocked!',
+              detail:
+                'A shield wall stopped your shot. Change the slope or y-intercept so your line reaches the asteroid without crossing a wall.',
+            }
+          : buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById),
+      );
       setShotsFired((s) => s + 1);
     },
     [asteroidsById, loseHeart],
@@ -364,7 +375,15 @@ export function Game({
       ? alive.filter((a) => a.id === activeTargetId)
       : alive;
     // The shot flies out of the ship along the effective (facing-mirrored) line.
-    const results = evaluateShot(fireM, fireB, targetable, shipX, DEFAULT_HIT_TOLERANCE, facing);
+    const results = evaluateShot(
+      fireM,
+      fireB,
+      targetable,
+      shipX,
+      DEFAULT_HIT_TOLERANCE,
+      facing,
+      level.walls,
+    );
     const rawSeg = lineBoardSegment(fireM, fireB, level.bounds, shipX, facing);
 
     if (!rawSeg) {
@@ -383,7 +402,11 @@ export function Game({
 
     // The clip returns start at the smaller x; when facing left the ship is the
     // larger-x end, so flip it so the beam leaves the ship and travels outward.
-    const seg = facing === 'left' ? { start: rawSeg.end, end: rawSeg.start } : rawSeg;
+    const oriented = facing === 'left' ? { start: rawSeg.end, end: rawSeg.start } : rawSeg;
+    // Stop the beam at the first shield wall it crosses (blocked asteroids beyond
+    // it are already hit:false), so the laser visibly halts at the wall.
+    const block = firstWallHit(oriented.start, oriented.end, level.walls);
+    const seg = block ? { start: oriented.start, end: block } : oriented;
 
     const dx = seg.end.x - seg.start.x;
     const hits = results
@@ -404,6 +427,7 @@ export function Game({
       finalized: false,
       m: fireM,
       b: fireB,
+      blocked: hits.length === 0 && results.some((r) => r.blocked),
     };
     setFeedback(null);
     setShot({ start: seg.start, end: seg.end, progress: 0 });
