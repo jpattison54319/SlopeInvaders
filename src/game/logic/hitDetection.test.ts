@@ -5,8 +5,11 @@ import {
   segmentIntersection,
   isPathBlocked,
   firstWallHit,
+  firstFriendlyHit,
+  hitsFriendly,
+  resolveDestroyed,
 } from './hitDetection';
-import type { AsteroidSpec, WallSpec } from '../levels/types';
+import type { AsteroidSpec, FriendlySpec, WallSpec } from '../levels/types';
 
 const asteroids: AsteroidSpec[] = [
   { id: 'a1', weakPoint: { x: 2, y: 2 } },
@@ -113,5 +116,56 @@ describe('walls (Zone 5)', () => {
     expect(results.find((r) => r.asteroidId === 'near')!.hit).toBe(true);
     expect(results.find((r) => r.asteroidId === 'far')!.hit).toBe(false);
     expect(results.find((r) => r.asteroidId === 'far')!.blocked).toBe(true);
+  });
+});
+
+describe('linked groups — all-or-none (Zone 6)', () => {
+  // A chained pair on y = 0.5x, plus a solo on y = x.
+  const linked: AsteroidSpec[] = [
+    { id: 'c1', weakPoint: { x: 2, y: 1 }, linkGroup: 'chain' },
+    { id: 'c2', weakPoint: { x: 6, y: 3 }, linkGroup: 'chain' },
+    { id: 's1', weakPoint: { x: 4, y: 4 } },
+  ];
+
+  it('destroys the whole chain when one line hits every member', () => {
+    const results = evaluateShot(0.5, 0, linked, 0); // y = 0.5x through (2,1) and (6,3)
+    const { destroyedIds, partialGroups } = resolveDestroyed(results, linked);
+    expect([...destroyedIds].sort()).toEqual(['c1', 'c2']);
+    expect(partialGroups).toEqual([]);
+  });
+
+  it('destroys nothing and flags the group when only part of a chain is hit', () => {
+    const results = evaluateShot(0, 1, linked, 0); // y = 1 hits (2,1) only
+    const { destroyedIds, partialGroups } = resolveDestroyed(results, linked);
+    expect(destroyedIds.size).toBe(0);
+    expect(partialGroups).toEqual(['chain']);
+  });
+
+  it('destroys a solo independently of any chain', () => {
+    const results = evaluateShot(1, 0, linked, 0); // y = x hits the solo (4,4) only
+    const { destroyedIds, partialGroups } = resolveDestroyed(results, linked);
+    expect([...destroyedIds]).toEqual(['s1']);
+    expect(partialGroups).toEqual([]);
+  });
+});
+
+describe('friendly ships (Zone 7)', () => {
+  const friendly: FriendlySpec = { id: 'f', position: { x: 4, y: 4 } };
+
+  it('hitsFriendly is true when the line crosses an ally in range, false otherwise', () => {
+    expect(hitsFriendly(1, 0, friendly, 0)).toBe(true); // y = x through (4,4)
+    expect(hitsFriendly(2, -2, friendly, 0)).toBe(false); // y = 2x - 2 → 6 at x=4
+    // Facing left can't reach an ally on the right.
+    expect(hitsFriendly(1, 0, friendly, 0, undefined, 'left')).toBe(false);
+  });
+
+  it('a wall in front of an ally shields it from the shot', () => {
+    const wall: WallSpec = { id: 'w', from: { x: 2, y: 1 }, to: { x: 2, y: 3 } };
+    expect(hitsFriendly(1, 0, friendly, 0, undefined, 'right', [wall])).toBe(false);
+  });
+
+  it('firstFriendlyHit returns the nearest ally on the beam, or null when clear', () => {
+    expect(firstFriendlyHit({ x: 0, y: 0 }, { x: 8, y: 8 }, [friendly])).toEqual({ x: 4, y: 4 });
+    expect(firstFriendlyHit({ x: 0, y: -2 }, { x: 8, y: 6 }, [friendly])).toBeNull();
   });
 });

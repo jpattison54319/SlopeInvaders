@@ -2,12 +2,13 @@
  * hitDetection — decide whether a fired line y = m·x + b destroys asteroids.
  *
  * A shot is a hit when the line passes through an asteroid's weak point (within
- * tolerance) and the weak point lies ahead of the cannon in the firing
- * direction. Wall blocking is stubbed for a future milestone.
+ * tolerance), the weak point lies ahead of the cannon in the firing direction,
+ * and no wall blocks the path. Linked groups and friendly ships layer additional
+ * campaign rules on top of these per-target checks.
  */
 import type { Point } from './lineMath';
 import { getYAtX, getMissDistance, isPointOnLine } from './lineMath';
-import type { AsteroidSpec, Facing, WallSpec } from '../levels/types';
+import type { AsteroidSpec, Facing, FriendlySpec, WallSpec } from '../levels/types';
 
 /** Per-asteroid evaluation of a single shot. */
 export interface ShotResult {
@@ -67,6 +68,67 @@ export function evaluateShot(
 }
 
 /**
+ * Apply linked-group "all-or-none" (Zone 6) to a shot's per-asteroid results.
+ *
+ * A solo asteroid (no `linkGroup`) is destroyed independently when hit. A linked
+ * group's members are destroyed ONLY when a single shot hits every member; a
+ * group that's only partially hit destroys nothing (and is reported in
+ * `partialGroups` so the UI can explain "you only clipped one of the chain").
+ *
+ * Pass the asteroids that were actually targetable this shot (alive, and — in
+ * sequential levels — currently active), matching the `results` array.
+ */
+export function resolveDestroyed(
+  results: ShotResult[],
+  asteroids: AsteroidSpec[],
+): { destroyedIds: Set<string>; partialGroups: string[] } {
+  const hit = new Set(results.filter((r) => r.hit).map((r) => r.asteroidId));
+  const groups = new Map<string, AsteroidSpec[]>();
+  const destroyedIds = new Set<string>();
+
+  for (const a of asteroids) {
+    if (!a.linkGroup) {
+      if (hit.has(a.id)) destroyedIds.add(a.id); // solo: independent
+    } else {
+      const members = groups.get(a.linkGroup);
+      if (members) members.push(a);
+      else groups.set(a.linkGroup, [a]);
+    }
+  }
+
+  const partialGroups: string[] = [];
+  for (const [groupId, members] of groups) {
+    if (members.every((a) => hit.has(a.id))) {
+      members.forEach((a) => destroyedIds.add(a.id));
+    } else if (members.some((a) => hit.has(a.id))) {
+      partialGroups.push(groupId);
+    }
+  }
+  return { destroyedIds, partialGroups };
+}
+
+/**
+ * True when a friendly ship (Zone 7) sits in the line of fire: on the fired line
+ * within tolerance, in the firing direction, and not shielded by a wall in front
+ * of it. Mirrors {@link evaluateAsteroid} but for a no-go point.
+ */
+export function hitsFriendly(
+  m: number,
+  b: number,
+  friendly: FriendlySpec,
+  fromX: number,
+  tolerance: number = DEFAULT_HIT_TOLERANCE,
+  facing: Facing = 'right',
+  walls: WallSpec[] = [],
+): boolean {
+  const p = friendly.position;
+  const inRange = facing === 'right' ? p.x >= fromX : p.x <= fromX;
+  if (!inRange || !isPointOnLine(m, b, p, tolerance)) return false;
+  const from: Point = { x: fromX, y: getYAtX(m, b, fromX) };
+  return !isPathBlocked(from, p, walls); // a wall in front protects the friendly
+}
+
+/**
  * Intersection point of segments p1→p2 and p3→p4, or null if they don't cross
  * (or are parallel/collinear). Standard parametric form.
  */
@@ -117,4 +179,35 @@ export function firstWallHit(from: Point, to: Point, walls: WallSpec[]): Point |
  */
 export function isPathBlocked(from: Point, to: Point, walls: WallSpec[]): boolean {
   return firstWallHit(from, to, walls) !== null;
+}
+
+/**
+ * The nearest friendly-ship position to `from` that lies within `tolerance` of
+ * the beam segment `from`→`to`, or null if the beam clears every friendly. Used
+ * to halt the beam visually at the friendly it would strike (Zone 7).
+ */
+export function firstFriendlyHit(
+  from: Point,
+  to: Point,
+  friendlies: FriendlySpec[],
+  tolerance: number = DEFAULT_HIT_TOLERANCE,
+): Point | null {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const lenSq = dx * dx + dy * dy;
+  let best: Point | null = null;
+  let bestT = Infinity;
+  for (const f of friendlies) {
+    const p = f.position;
+    // Projection parameter of p onto the segment (clamped to [0, 1]).
+    const t = lenSq === 0 ? 0 : ((p.x - from.x) * dx + (p.y - from.y) * dy) / lenSq;
+    if (t < 0 || t > 1) continue; // behind the cannon or past the beam end
+    const proj = { x: from.x + t * dx, y: from.y + t * dy };
+    const dist = Math.hypot(p.x - proj.x, p.y - proj.y);
+    if (dist <= tolerance && t < bestT) {
+      bestT = t;
+      best = p;
+    }
+  }
+  return best;
 }

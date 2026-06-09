@@ -1,10 +1,9 @@
 /**
  * Level data model for Slope Invaders.
  *
- * Only Level 1 is playable in this prototype, but the model is intentionally
- * future-ready: it can describe walls/shields, linked asteroid groups, all four
- * quadrants, alternate equation forms and a movable ship without code changes
- * to the type layer.
+ * The campaign model covers the shipped mechanics: walls/shields, linked
+ * asteroid groups, friendly ships, all four quadrants, alternate equation forms,
+ * and a movable ship.
  */
 import type { Point } from '../logic/lineMath';
 import type { Bounds } from '../logic/coordinateTransform';
@@ -40,14 +39,13 @@ export interface AsteroidSpec {
   /** Score awarded when destroyed. Defaults to 100 if omitted. */
   points?: number;
   type?: AsteroidType;
-  /** Membership in a linked group (see LinkedGroupSpec). Future feature. */
+  /** Membership in a linked group: every member must be hit by one shot. */
   linkGroup?: string;
   // TODO: hp for armored asteroids, shieldGaps for special types.
 }
 
 /**
- * A wall/shield segment that blocks shots. Not yet enforced by gameplay — see
- * hitDetection.ts for where blocking will be checked.
+ * A wall/shield segment that blocks shots.
  */
 export interface WallSpec {
   id: string;
@@ -59,11 +57,24 @@ export interface WallSpec {
 
 /**
  * A group of asteroids that should be destroyable with a single well-aimed
- * shot (the line passes through every member's weak point). Future feature.
+ * shot (the line passes through every member's weak point). Zone 6 instead tags
+ * membership directly on each asteroid via `AsteroidSpec.linkGroup`, so this
+ * explicit registry is currently unused (kept for forward compatibility).
  */
 export interface LinkedGroupSpec {
   id: string;
   asteroidIds: string[];
+}
+
+/**
+ * A friendly ship the player must NOT hit (Zone 7). If the fired line crosses a
+ * friendly within tolerance (in the firing direction and not shielded by a
+ * wall), the shot is scrubbed and a heart is lost. Friendlies are obstacles, not
+ * targets — they live outside `asteroids` so they never count toward the win.
+ */
+export interface FriendlySpec {
+  id: string;
+  position: Point;
 }
 
 /** A complete level definition. */
@@ -83,6 +94,8 @@ export interface LevelConfig {
   asteroids: AsteroidSpec[];
   walls: WallSpec[];
   linkedGroups: LinkedGroupSpec[];
+  /** Friendly ships the shot must avoid (Zone 7). Omit/empty for no friendlies. */
+  friendlies?: FriendlySpec[];
   /** Use Infinity for relaxed, exploration-style levels. */
   maxShots: number;
 

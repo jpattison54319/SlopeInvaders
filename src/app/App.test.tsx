@@ -6,6 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
+import { orderedLevels } from '../game/campaign/zones';
 import App from './App';
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -18,15 +19,55 @@ vi.mock('../game/audio/useMusic', () => ({
   useMusic: vi.fn(),
 }));
 
+// The campaign-finale fireworks render to a Konva canvas; stub them out so the
+// app shell tests don't pull in the (canvas-dependent) Konva node build.
+vi.mock('../game/components/Fireworks', () => ({
+  Fireworks: () => null,
+}));
+
 vi.mock('../game/Game', () => ({
   Game: ({
+    level,
     title,
     onExit,
     onSettings,
+    onAdvance,
+    onComplete,
   }: {
+    level: { id: string; asteroids: unknown[]; hearts?: number };
     title: string;
     onExit: () => void;
     onSettings: () => void;
+    onAdvance: () => void;
+    onComplete: (
+      levelId: string,
+      stats: {
+        levelId: string;
+        tier: 'standard';
+        targets: number;
+        shots: number;
+        hits: number;
+        misses: number;
+        offBoardShots: number;
+        multiHits: number;
+        accuracy: number;
+        startHearts: number;
+        heartsLost: number;
+        heartsRemaining: number;
+        losses: number;
+        manualResets: number;
+        attempts: number;
+        passedFirstTry: boolean;
+        calculatorOpens: number;
+        tweaks: number;
+        durationMs: number;
+        timeToFirstShotMs: number;
+        timeToFirstHitMs: number;
+        firstPlayedAt: number;
+        completedAt: number;
+        score: number;
+      },
+    ) => void;
   }) => (
     <section aria-label="Mock game screen">
       <h1>Playing {title}</h1>
@@ -35,6 +76,41 @@ vi.mock('../game/Game', () => ({
       </button>
       <button type="button" onClick={onSettings}>
         Game settings
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const startHearts = level.hearts ?? Infinity;
+          onComplete(level.id, {
+            levelId: level.id,
+            tier: 'standard',
+            targets: level.asteroids.length,
+            shots: level.asteroids.length,
+            hits: level.asteroids.length,
+            misses: 0,
+            offBoardShots: 0,
+            multiHits: 0,
+            accuracy: 1,
+            startHearts,
+            heartsLost: 0,
+            heartsRemaining: startHearts,
+            losses: 0,
+            manualResets: 0,
+            attempts: 1,
+            passedFirstTry: true,
+            calculatorOpens: 0,
+            tweaks: 0,
+            durationMs: 1000,
+            timeToFirstShotMs: 100,
+            timeToFirstHitMs: 200,
+            firstPlayedAt: 10,
+            completedAt: 20,
+            score: 1,
+          });
+          onAdvance();
+        }}
+      >
+        Win mock
       </button>
     </section>
   ),
@@ -416,5 +492,29 @@ describe('App shell', () => {
     // The back control just goes back (to modes) rather than toggling views.
     await click('Modes');
     expect(host.textContent).toContain('Choose a Mode');
+  });
+
+  test('final zone completion routes through debrief into the campaign finale', async () => {
+    const completedBeforeFinal = orderedLevels
+      .map(({ level }) => level.id)
+      .filter((id) => id !== 'z8-l5');
+    seedCompletedLevels(completedBeforeFinal);
+
+    await renderApp();
+    await click('Play Campaign');
+    await click('List view');
+    await click('Zone 8: Moving Cannon');
+    await click('Final Mastery Check');
+
+    expect(host.textContent).toContain('Playing Final Mastery Check');
+    await click('Win mock');
+
+    expect(host.textContent).toContain('Final Debrief');
+    expect(host.textContent).toContain('Zone 8 Complete');
+
+    await click('Back to Campaign');
+    expect(host.textContent).toContain('You beat Slope Invaders!');
+    expect(host.textContent).toContain('Replay Campaign');
+    expect(host.textContent).toContain('Back to Menu');
   });
 });

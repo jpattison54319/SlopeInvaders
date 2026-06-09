@@ -16,19 +16,17 @@ By the end of the core campaign, learners should be able to:
 
 ## Campaign progression
 
-Recommended order:
+Current implemented order:
 
 1. Tutorial: firing and reading the grid
 2. Zone 1: `y = mx`, slope only, origin cannon
 3. Zone 2: `y = mx + b`, y-intercept unlocked
 4. Zone 3: negative slopes
 5. Zone 4: all four quadrants
-6. Zone 5: preview fading/no-preview challenges
-7. Zone 6: shields and walls
-8. Zone 7: linked asteroids
-9. Zone 8: friendly ships
-10. Zone 9: movable ship / x-offset / point-slope extension
-11. Zone 10: combined mastery challenges
+6. Zone 5: shields and walls
+7. Zone 6: linked asteroids
+8. Zone 7: friendly ships
+9. Zone 8: movable ship / x-offset / point-slope finale
 
 ## Zone design rhythm
 

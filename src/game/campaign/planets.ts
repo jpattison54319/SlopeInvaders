@@ -19,8 +19,11 @@ const ZONE_PLANETS: Record<string, PlanetKey> = {
   'zone-2': 'crystal',
   'zone-3': 'volcano',
   'zone-4': 'celestial',
-  // Placeholder: reuses an existing sprite (no dedicated Zone 5 planet art yet).
+  // Placeholders: reuse existing sprites until dedicated art ships for Zones 5–8.
   'zone-5': 'mooncolony',
+  'zone-6': 'volcano',
+  'zone-7': 'crystal',
+  'zone-8': 'celestial',
 };
 
 const PLANET_KEYS = Object.keys(planets) as PlanetKey[];

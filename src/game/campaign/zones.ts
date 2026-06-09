@@ -1,7 +1,7 @@
 /**
  * Campaign zone registry + navigation helpers.
  *
- * Tutorial + Zones 1–5 are fully built. To add a future zone, build its level
+ * Tutorial + Zones 1–8 are fully built. To add a future zone, build its level
  * file and append it here; `comingSoonZone` (below) makes a locked stub for any
  * zone whose levels aren't ready yet (give it real `levels` + `status:
  * 'available'` to ship it).
@@ -13,6 +13,9 @@ import { zoneTwo } from './levels/zone2';
 import { zoneThree } from './levels/zone3';
 import { zoneFour } from './levels/zone4';
 import { zoneFive } from './levels/zone5';
+import { zoneSix } from './levels/zone6';
+import { zoneSeven } from './levels/zone7';
+import { zoneEight } from './levels/zone8';
 
 /** A locked placeholder for a zone whose levels aren't built yet. */
 export function comingSoonZone(id: string, number: number, name: string, theme: string): Zone {
@@ -26,6 +29,9 @@ export const zones: Zone[] = [
   zoneThree,
   zoneFour,
   zoneFive,
+  zoneSix,
+  zoneSeven,
+  zoneEight,
 ];
 
 /** Flat, ordered list of every playable level across available zones. */

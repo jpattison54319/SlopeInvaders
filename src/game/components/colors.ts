@@ -20,4 +20,9 @@ export const COLORS = {
   weakPointGlow: '#ff90a6',
   explosion: '#ffd166',
   wall: '#5ef1ff',
+  chain: '#c0c7d4', // steel tether linking chained asteroids
+  chainGlow: 'rgba(192, 199, 212, 0.5)',
+  friendly: '#39d98a', // ally ship — green, clearly "do not hit"
+  friendlyDark: '#1f9d63',
+  friendlyShield: 'rgba(57, 217, 138, 0.45)',
 } as const;
