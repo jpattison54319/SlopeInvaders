@@ -4,7 +4,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { music } from '../assets/assetMap';
+import { assets, icons, music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { orderedLevels } from '../game/campaign/zones';
 import App from './App';
@@ -258,8 +258,16 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Arcade');
     expect(host.textContent).toContain('Versus');
     expect(host.textContent).toContain('Coming Soon');
-    expect(host.querySelector('button[aria-label="Settings"]')).toBeTruthy();
-    expect(host.querySelector('button[aria-label="Achievements"]')?.textContent?.trim()).toBe('');
+    const settingsButton = host.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
+    const profileButton = host.querySelector<HTMLButtonElement>('button[aria-label="Pilot Profile"]');
+    const settingsIcon = settingsButton?.querySelector<HTMLImageElement>('.icon-btn__img');
+    const profileIcon = profileButton?.querySelector<HTMLImageElement>('.icon-btn__img');
+    expect(settingsButton).toBeTruthy();
+    expect(profileButton?.textContent?.trim()).toBe('');
+    expect(profileButton?.className).toBe(settingsButton?.className);
+    expect(profileIcon?.className).toBe(settingsIcon?.className);
+    expect(profileIcon?.getAttribute('src')).toBe(icons.pilot);
+    expect(icons.pilot).not.toBe(assets.ship);
     expect(buttonLabels.some((l) => l === 'Settings')).toBe(false);
     expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
@@ -479,6 +487,32 @@ describe('App shell', () => {
 
     // Toggling back returns to the galaxy planet view.
     await click('Planet view');
+    expect(host.textContent).toContain('Choose your destination');
+  });
+
+  test('Pilot Profile opens from the main menu ship button and returns to it', async () => {
+    await renderApp();
+
+    await click('Pilot Profile');
+    expect(host.textContent).toContain('Cadet'); // starting rank
+    expect(host.textContent).toContain('Zone Mastery');
+    expect(host.textContent).toContain('Flight Log');
+    expect(host.querySelectorAll('.badge-card').length).toBeGreaterThan(0);
+
+    await click('Menu');
+    expect(host.textContent).toContain('Choose a Mode');
+  });
+
+  test('Pilot Profile opens from the galaxy and returns to it', async () => {
+    await renderApp();
+
+    await click('Play Campaign');
+    expect(host.querySelector('.galaxy__xp')?.textContent).toBe('0 XP');
+
+    await click('Pilot Profile');
+    expect(host.querySelector('.pilot-card')).toBeTruthy();
+
+    await click('Galaxy');
     expect(host.textContent).toContain('Choose your destination');
   });
 

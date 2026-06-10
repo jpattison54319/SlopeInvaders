@@ -50,6 +50,9 @@ Current user-facing flow:
 5b. Zone 3 focuses on negative slopes in Quadrant IV: the ship sits at the top-left origin, positive x runs right, negative y runs down. It is slope-only (`y = mx`, y-intercept removed again so students can't bypass negative-slope reasoning), the slope starts flat at `m = 0`, a positive slope shoots up off the top, and only a negative slope reaches the asteroids. Its no-preview mastery uses two-point falling lines so the flat (`m = 0`) line cannot clear them.
 5c. Zone 4 focuses on the full coordinate grid (all four quadrants, ship at the origin) with slope + y-intercept + a facing-direction control. The ship is a cannon: slope tilts the aim up (positive) or down (negative), and the facing buttons pick the side. Facing left mirrors the aim across the ship — facing right fires `y = m·x + b`, facing left fires its mirror `y = -m·x + b` — so a positive slope sends the shot up-and-left (Q2) and a negative slope down-and-left (Q3). The projectile always leaves the ship outward in the facing direction; the aim preview is bright forward and faded backward; the equation display and the dashed line show the effective (facing-mirrored) line while the slope stepper keeps the dialed value; the ship sprite flips with facing. A line is still infinite both ways but the shot fires one way. Every level has at least one asteroid per quadrant; later levels add more. Its end-of-zone quiz includes a True/False question that `y = mx + b` is an infinite line extending both directions.
 5d. Zone 5 focuses on walls/shields: it keeps the Zone 4 controls (all quadrants, slope + y-intercept + facing) and adds `WallSpec` segments that block shots crossing them. A target can be hit by many equations, but a wall makes some invalid, so students choose a line that reaches the weak point without crossing a shield (flat/horizontal shots get blocked by a wall at the target's height). `hitDetection.isPathBlocked`/`firstWallHit` do segment intersection on the ship→target path (honoring `WallSpec.gaps`); the beam truncates at the first wall, the asteroid survives, and the blocked shot counts as a miss (so it costs a star). Every level keeps at least one clear line so 3 stars stays achievable. Walls are line segments of any orientation: most are vertical (blocking the flat/horizontal shot at a target's height), and some are **45° diagonal** shields (z5-l3, z5-l5) that block a sloped/diagonal fire so the student must change slope to go over or under. The geometry is locked by `zone5.test.ts`.
+5e. Zones 6–8 extend the full-grid mechanics: Zone 6 is linked asteroids (chained rocks are all-or-none — one line must pass through every rock in the chain), Zone 7 adds friendly ships (a shot whose line crosses an ally is scrubbed and counts as a miss), and Zone 8 is the moving cannon (the x-offset control slides the ship, teaching `y = m(x − h) + b`).
+5f. Winning a level shows the victory overlay with stars, an XP breakdown (one row per earned bonus with the reason it was earned, plus how much was banked), and any newly earned badges. XP uses best-run banking: only the improvement over that level's previous best run is added to the lifetime total, so replays reward improvement, never grinding, and XP never goes down. Lifetime XP maps to a pilot rank (Cadet → Pilot → Ace → Commander → Star Legend) that never demotes.
+5g. The Pilot Profile is the private progress page: a rank/XP hero card (ship avatar, progress bar to the next rank, star/badge/accuracy chips), the badge collection grouped into Zone Mastery / Sharpshooting / Growth (earned badges show planet/sprite emblems and dates; locked ones are dimmed "Next mission" silhouettes, never failures), per-planet mastery star bars, and a lifetime flight log. It opens from the main menu's ship icon (the old disabled trophy button) and from the campaign top bars, and returns to wherever it was opened. Keep it individual — no comparisons, rankings, or other players.
 6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
 6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
@@ -88,7 +91,7 @@ npm run build
 - `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls and toggles to the controls sub-screen.
 - `src/app/ControlsSettings.tsx` renders the keyboard remap sub-screen (two-column map, key capture, reassign confirm, restore defaults).
 - `src/game/controls/keybindings.ts` defines the `GameAction` set, `DEFAULT_KEYBINDINGS`, and pure helpers (`findActionForKey`, `reassignKey`, `normalizeKey`, `keyLabel`, `withDefaults`); `Game.tsx` reads the bindings to drive a `keydown` handler.
-- `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, unlock rules, and adaptive tier selection.
+- `src/app/useCampaignProgress.ts` owns localStorage progress, latest per-level stats, lifetime profile aggregates, XP banking, badge evaluation, unlock rules, and adaptive tier selection; `markComplete` returns `CompletionRewards`.
 - `src/app/App.test.tsx` covers menu/settings/game shell behavior.
 - `src/app/useCampaignProgress.test.tsx` covers progress/stats/adaptive-tier persistence behavior.
 - `src/game/Game.tsx` owns live gameplay state: equation values, score, hearts, destroyed asteroids, shot animation, calculator toggle, feedback, reset/retry, the mission banner, and rich stats instrumentation.
@@ -103,7 +106,13 @@ npm run build
 - `src/game/campaign/levels/zone3.ts` defines Zone 3 (negative slopes, Quadrant IV) and its adaptive flags/variants.
 - `src/game/campaign/levels/zone4.ts` defines Zone 4 (full grid, all quadrants, facing direction) and its adaptive flags/variants.
 - `src/game/campaign/levels/zone5.ts` defines Zone 5 (shields/walls) and its adaptive flags/variants; `src/game/logic/hitDetection.ts` (`segmentIntersection`, `isPathBlocked`, `firstWallHit`) implements wall blocking and `Game.tsx` truncates the beam + reports "Blocked!".
+- `src/game/campaign/levels/zone6.ts`, `zone7.ts`, and `zone8.ts` define Zone 6 (linked asteroids), Zone 7 (friendly ships), and Zone 8 (moving cannon).
 - `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`), `interceptLevel` (`y = mx + b`), `negativeSlopeLevel` (Quadrant IV, `y = mx`), and `fullGridLevel` (all quadrants, `y = mx + b` + direction) level-config factories.
+- `src/game/campaign/xp.ts` computes per-run XP bonuses (`computeRunXp`), banks them against the level's best run (`bankXp`), and maps lifetime XP to pilot ranks (`rankForXp`); pure and unit-tested.
+- `src/game/campaign/badges.ts` is the declarative badge registry (`BADGES`, concept/performance/growth) and `evaluateNewBadges`; pure and unit-tested. Concept badges carry a `zoneId` so the profile can use planet art as the emblem.
+- `src/game/campaign/rewards.ts` defines `CompletionRewards` (XP award + new badges), returned by `useCampaignProgress.markComplete` and rendered by `VictoryOverlay`.
+- `src/game/campaign/profileStats.ts` holds the `ProfileStats` shape (game-layer so badges can read it; re-exported from `useCampaignProgress`).
+- `src/app/PilotProfileScreen.tsx` renders the Pilot Profile (rank card, badge grid, planet mastery, flight log).
 - The `direction`/`facing` control mechanic: `Game.tsx` derives the effective fired line (`fireM = facing === 'right' ? m : -m`, `fireB` through the ship) and feeds it to hit detection, the board, and the equation; it also orients the shot segment to start at the ship so the projectile flies outward. `hitDetection.ts` and `coordinateTransform.ts` take a `facing` param (right reaches `x ≥ fromX`, left reaches `x ≤ fromX`). `EquationLine.tsx` draws the two-tone preview, `EquationControls.tsx` the toggle (and shows the facing-mirrored slope in the equation), and `Ship.tsx` flips the sprite.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
 - `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
@@ -132,9 +141,13 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats, so adaptivity rolls per zone (Zone 2 tiers ignore Zone 1 performance).
 - `configForTier(level, tier)` applies hearts/scaffold deltas and challenge variants.
 - Do not render a visible difficulty badge; adaptivity should be invisible and non-stigmatizing.
-- `LevelStats` captures rich per-level visit data for future profile work.
+- `LevelStats` captures rich per-level visit data (including `firstShotHit` and the resolved `trajectoryPreview` mode — both optional so legacy stored stats stay valid).
+- `markComplete(levelId, stats)` returns `CompletionRewards` (the banked XP award + newly earned badges) so the victory overlay can announce them.
 - `slope-invaders:level-stats` stores the latest stats per level.
 - `slope-invaders:profile-stats` accumulates lifetime totals per completion, including replays.
+- `slope-invaders:xp` stores `{ totalXp, levelBestXp }` — the lifetime XP total and each level's best single-run XP (the best-run-banking baseline). Never subtract from it.
+- `slope-invaders:badges` stores earned badges (badge id → epoch ms). Badges are never revoked.
+- XP and badges must never be keyed on calculator opens, tweak counts, or speed.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
 - Calculator opens and tweaks are recorded but not scored.
@@ -180,8 +193,10 @@ Minimum UI smoke flow:
 4. Top-right Settings opens music/SFX controls.
 5. A playable level opens and shows graph, hearts, equation controls, feedback, and game bar.
 6. Calculator opens, computes `(6-2)/(3-1) = 2`, closes, and leaves the board visible.
-7. Mobile/narrow viewport has no horizontal overflow.
-8. Console has no relevant errors.
+7. Winning a level shows stars plus the XP breakdown (and a badge announcement when one is earned); the galaxy header XP pill updates.
+8. The main menu's ship icon opens the Pilot Profile (rank card, badges, planet mastery, flight log) and its back button returns to the menu.
+9. Mobile/narrow viewport has no horizontal overflow.
+10. Console has no relevant errors.
 
 ## Git Hygiene
 

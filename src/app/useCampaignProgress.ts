@@ -8,26 +8,20 @@ import {
   type LevelStats,
 } from '../game/campaign/difficulty';
 import { starsForLevel, type StarCount } from '../game/campaign/stars';
+import { bankXp, computeRunXp, EMPTY_XP_STORE, type XpStore } from '../game/campaign/xp';
+import { evaluateNewBadges, type EarnedBadges } from '../game/campaign/badges';
+import type { CompletionRewards } from '../game/campaign/rewards';
+
+import type { ProfileStats } from '../game/campaign/profileStats';
+
+export type { ProfileStats };
 
 const STORAGE_KEY = 'slope-invaders:campaign-progress';
 const STATS_KEY = 'slope-invaders:level-stats';
 const PROFILE_KEY = 'slope-invaders:profile-stats';
 const STARS_KEY = 'slope-invaders:level-stars';
-
-/** Lifetime, cross-level totals — derived from the per-level stats, persisted
- * for a future learner profile / statistics page. */
-export interface ProfileStats {
-  levelsCompleted: number;
-  totalShots: number;
-  totalHits: number;
-  totalMisses: number;
-  totalHeartsLost: number;
-  totalPlaytimeMs: number;
-  totalCalculatorOpens: number;
-  totalAttempts: number;
-  firstPlayedAt: number | null;
-  lastPlayedAt: number | null;
-}
+const XP_KEY = 'slope-invaders:xp';
+const BADGES_KEY = 'slope-invaders:badges';
 
 function loadCompleted(): string[] {
   try {
@@ -54,6 +48,50 @@ function clearStoredProgress(): void {
     localStorage.removeItem(STATS_KEY);
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(STARS_KEY);
+    localStorage.removeItem(XP_KEY);
+    localStorage.removeItem(BADGES_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadBadges(): EarnedBadges {
+  try {
+    const raw = localStorage.getItem(BADGES_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === 'object' ? (parsed as EarnedBadges) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveBadges(badges: EarnedBadges): void {
+  try {
+    localStorage.setItem(BADGES_KEY, JSON.stringify(badges));
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadXp(): XpStore {
+  try {
+    const raw = localStorage.getItem(XP_KEY);
+    if (!raw) return EMPTY_XP_STORE;
+    const parsed = JSON.parse(raw) as Partial<XpStore>;
+    return {
+      totalXp: typeof parsed.totalXp === 'number' ? parsed.totalXp : 0,
+      levelBestXp:
+        parsed.levelBestXp && typeof parsed.levelBestXp === 'object' ? parsed.levelBestXp : {},
+    };
+  } catch {
+    return EMPTY_XP_STORE;
+  }
+}
+
+function saveXp(store: XpStore): void {
+  try {
+    localStorage.setItem(XP_KEY, JSON.stringify(store));
   } catch {
     /* ignore */
   }
@@ -180,13 +218,17 @@ export interface CampaignProgress {
   isZoneUnlocked: (zoneId: string) => boolean;
   isZoneComplete: (zoneId: string) => boolean;
   zoneClearedCount: (zoneId: string) => number;
-  /** Mark a level complete; optionally records its rich stats. */
-  markComplete: (levelId: string, stats?: LevelStats) => void;
+  /** Mark a level complete; with stats, also banks XP and returns the rewards. */
+  markComplete: (levelId: string, stats?: LevelStats) => CompletionRewards | undefined;
   /** The difficulty tier a level should be played at (rolling adaptivity). */
   tierForLevel: (zone: Zone, index: number) => DifficultyTier;
   getLevelStats: (levelId: string) => LevelStats | undefined;
   getLevelStars: (levelId: string) => StarCount;
   getProfileStats: () => ProfileStats;
+  /** Lifetime banked XP across all levels. */
+  getTotalXp: () => number;
+  /** Earned badges: badge id → epoch ms when first earned. */
+  getEarnedBadges: () => EarnedBadges;
   resetProgress: () => void;
 }
 
@@ -203,26 +245,31 @@ export function useCampaignProgress(): CampaignProgress {
   const [stats, setStats] = useState<Record<string, LevelStats>>(() => loadStats());
   const [stars, setStars] = useState<Record<string, StarCount>>(() => loadStars());
   const [profile, setProfile] = useState<ProfileStats>(() => loadProfile());
+  const [xp, setXp] = useState<XpStore>(() => loadXp());
+  const [badges, setBadges] = useState<EarnedBadges>(() => loadBadges());
 
-  const markComplete = useCallback((levelId: string, levelStats?: LevelStats) => {
-    const earnedStars = starsForLevel(true, levelStats);
-    const priorDerivedStars = starsForLevel(completed.has(levelId), stats[levelId]);
+  const markComplete = useCallback(
+    (levelId: string, levelStats?: LevelStats): CompletionRewards | undefined => {
+      const priorStats = stats[levelId];
+      const earnedStars = starsForLevel(true, levelStats);
+      const priorDerivedStars = starsForLevel(completed.has(levelId), priorStats);
 
-    setCompleted((prev) => {
-      if (prev.has(levelId)) return prev;
-      const next = new Set(prev);
-      next.add(levelId);
-      saveCompleted([...next]);
-      return next;
-    });
-    setStars((prev) => {
-      const best = Math.max(prev[levelId] ?? 0, priorDerivedStars, earnedStars) as StarCount;
-      if (prev[levelId] === best) return prev;
-      const next = { ...prev, [levelId]: best };
-      saveStars(next);
-      return next;
-    });
-    if (levelStats) {
+      setCompleted((prev) => {
+        if (prev.has(levelId)) return prev;
+        const next = new Set(prev);
+        next.add(levelId);
+        saveCompleted([...next]);
+        return next;
+      });
+      setStars((prev) => {
+        const best = Math.max(prev[levelId] ?? 0, priorDerivedStars, earnedStars) as StarCount;
+        if (prev[levelId] === best) return prev;
+        const next = { ...prev, [levelId]: best };
+        saveStars(next);
+        return next;
+      });
+      if (!levelStats) return undefined;
+
       setStats((prev) => {
         const next = { ...prev, [levelId]: levelStats };
         saveStats(next);
@@ -233,14 +280,53 @@ export function useCampaignProgress(): CampaignProgress {
         saveProfile(next);
         return next;
       });
-    }
-  }, [completed, stats]);
+
+      // Bank XP against this level's best run (never subtracts, no grinding).
+      const { store: nextXp, award } = bankXp(xp, levelId, computeRunXp(levelStats, priorStats));
+      setXp(nextXp);
+      saveXp(nextXp);
+
+      // Evaluate badges against the post-completion campaign state. Earned
+      // badges are permanent — they are never re-fired or revoked.
+      const nextCompleted = new Set(completed);
+      nextCompleted.add(levelId);
+      const newBadges = evaluateNewBadges(
+        {
+          stats: levelStats,
+          priorStats,
+          completedLevelIds: nextCompleted,
+          stars: {
+            ...stars,
+            [levelId]: Math.max(
+              stars[levelId] ?? 0,
+              priorDerivedStars,
+              earnedStars,
+            ) as StarCount,
+          },
+          profile: addCompletionToProfile(profile, levelStats),
+        },
+        badges,
+      );
+      if (newBadges.length > 0) {
+        const earnedAt = Date.now();
+        const nextBadges = { ...badges };
+        for (const badge of newBadges) nextBadges[badge.id] = earnedAt;
+        setBadges(nextBadges);
+        saveBadges(nextBadges);
+      }
+
+      return { xp: award, newBadges };
+    },
+    [completed, stats, stars, profile, xp, badges],
+  );
 
   const resetProgress = useCallback(() => {
     setCompleted(new Set());
     setStats({});
     setStars({});
     setProfile(EMPTY_PROFILE);
+    setXp(EMPTY_XP_STORE);
+    setBadges({});
     clearStoredProgress();
   }, []);
 
@@ -294,7 +380,9 @@ export function useCampaignProgress(): CampaignProgress {
       getLevelStars: (levelId: string) =>
         stars[levelId] ?? starsForLevel(completed.has(levelId), stats[levelId]),
       getProfileStats: () => profile,
+      getTotalXp: () => xp.totalXp,
+      getEarnedBadges: () => badges,
       resetProgress,
     };
-  }, [completed, stats, stars, profile, markComplete, resetProgress]);
+  }, [completed, stats, stars, profile, xp, badges, markComplete, resetProgress]);
 }

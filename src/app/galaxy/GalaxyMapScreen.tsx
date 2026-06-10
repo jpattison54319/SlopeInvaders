@@ -16,6 +16,8 @@ interface GalaxyMapScreenProps {
   onOpenSettings: () => void;
   /** Toggle to the classic zone/level list screens. */
   onToggleView: () => void;
+  /** Open the Pilot Profile (XP, badges, mastery, flight log). */
+  onOpenProfile: () => void;
 }
 
 type SurfacePhase = 'space' | 'approach' | 'surface' | 'leaving';
@@ -38,6 +40,7 @@ export function GalaxyMapScreen({
   onBack,
   onOpenSettings,
   onToggleView,
+  onOpenProfile,
 }: GalaxyMapScreenProps) {
   const initialIndex = useMemo(() => {
     const fromId = initialZoneId ? zones.findIndex((z) => z.id === initialZoneId) : -1;
@@ -126,6 +129,7 @@ export function GalaxyMapScreen({
       onOpenSettings={onOpenSettings}
       onToggleView={onToggleView}
       toggleViewLabel="List view"
+      onOpenProfile={onOpenProfile}
     >
       <section
         className={`galaxy ${showingSurface ? 'galaxy--surface' : ''}`}
@@ -137,6 +141,9 @@ export function GalaxyMapScreen({
               <span className="menu__panel-label">Campaign · Galaxy</span>
               <h2 id="galaxy-title">Choose your destination</h2>
             </div>
+            <span className="galaxy__xp" aria-label={`${progress.getTotalXp()} experience points`}>
+              {progress.getTotalXp()} XP
+            </span>
           </div>
         )}
 

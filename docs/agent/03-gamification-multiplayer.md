@@ -4,19 +4,32 @@
 
 XP should reward meaningful learning behavior.
 
-Good XP sources:
+XP sources (implemented in `src/game/campaign/xp.ts`):
 
-| Action | XP |
-|---|---:|
-| Complete level | +50 |
-| First-try hit | +25 |
-| No-miss clear | +50 |
-| Combo shot | +30 |
-| Linked asteroid success | +40 |
-| No-preview clear | +50 |
-| Retry after failure and improve | +20 |
+| Action | XP | Status |
+|---|---:|---|
+| Complete level | +50 | implemented |
+| First-shot hit (visit's first shot lands) | +25 | implemented |
+| No-miss clear | +50 | implemented |
+| Combo shot (per multi-asteroid line) | +30 | implemented |
+| Linked asteroid success | +40 | future (no chain signal in `LevelStats` yet) |
+| No-preview clear | +50 | implemented |
+| Retry after failure and improve | +20 | implemented (won after a heart-out, or replay beat the prior score) |
 
-Do not subtract earned XP. Instead, reduce bonuses when hints are used.
+Do not subtract earned XP. Instead, reduce bonuses when hints are used. (The
+hint clause is dormant: current hints are automatic feedback and the calculator
+is a free tool, so nothing reduces bonuses yet.)
+
+**Best-run banking (anti-grinding).** Every winning run's XP is computed and
+shown with a per-bonus "why" in the victory overlay, but only the amount above
+that level's previous best run is banked into the lifetime total
+(`slope-invaders:xp`). Replaying a level identically banks 0 (framed
+positively: "Best run already banked — beat it to earn more XP"), so XP rewards
+improvement, never repetition, and never goes down.
+
+**Pilot ranks.** Lifetime XP maps to a rank (`rankForXp`): Cadet → Pilot (500)
+→ Ace (1500) → Commander (3000) → Star Legend (5000). XP never drops, so rank
+never demotes. Shown on the Pilot Profile with progress toward the next rank.
 
 ## Mastery stars
 
@@ -43,33 +56,52 @@ For advanced levels, stars can reward:
 
 ## Badges
 
-Badges should reward specific concepts and self-regulated behaviors.
+Badges should reward specific concepts and self-regulated behaviors. The
+registry lives in `src/game/campaign/badges.ts`; earned badges persist in
+`slope-invaders:badges` (badge id → epoch ms) and are never revoked. Badges are
+evaluated on each level completion and announced in the victory overlay.
 
-### Concept badges
+### Concept badges (implemented — one per zone cleared)
 
-- Slope Starter
-- Intercept Initiate
-- Negative Slope Navigator
-- Quadrant Explorer
-- Point-to-Point Pilot
-- Shield Breaker
-- Friendly Fleet Protector
+- Slope Starter (Zone 1)
+- Intercept Initiate (Zone 2)
+- Negative Slope Navigator (Zone 3)
+- Quadrant Explorer (Zone 4)
+- Shield Breaker (Zone 5)
+- Point-to-Point Pilot (Zone 6)
+- Friendly Fleet Protector (Zone 7)
+- Cannon Commander (Zone 8, moving cannon)
 
 ### Performance badges
 
-- Perfect Trajectory: complete a level with no misses
-- No Preview Pilot: complete a no-preview level
-- Combo Pilot: hit 3+ asteroids with one equation
-- Efficient Engineer: clear a level in the minimum number of shots
+- Perfect Trajectory: complete a level with no misses (implemented)
+- No Preview Pilot: complete a no-preview level (implemented)
+- Combo Pilot: take out 2+ asteroids with one line (implemented; the recorded
+  `multiHits` signal counts shots that destroyed more than one asteroid, so the
+  threshold is 2+, not the originally drafted 3+)
+- Efficient Engineer: clear a level in the minimum number of shots (future)
 
 ### Growth/SRL badges
 
-- Comeback Cadet: pass after failing once
-- Line Analyst: use feedback to correct a miss
-- Smart Support: use a hint and solve the next shot correctly
-- Growth Streak: improve score on retry
+- Comeback Cadet: run out of hearts, retry, and win (implemented; manual
+  resets deliberately do not count as failure)
+- Growth Streak: replay a level and beat the prior score or stars (implemented)
+- Line Analyst: use feedback to correct a miss (future)
+- Smart Support: use a hint and solve the next shot correctly (future — no
+  opt-in hints exist)
 
-Avoid badges that label students negatively.
+Avoid badges that label students negatively. Locked badges render as
+positively framed "Next mission" silhouettes on the Pilot Profile, never as
+failures.
+
+## Pilot Profile
+
+The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the **private
+individual progress** surface: rank + XP card, the badge collection grouped by
+category, per-planet mastery star bars, and a lifetime flight log. It is
+reachable from the main menu's ship icon and from the campaign screens. By
+design it contains no comparisons, rankings against others, or other players;
+calculator/tool counts are never displayed as judgments.
 
 ## Ship upgrades
 

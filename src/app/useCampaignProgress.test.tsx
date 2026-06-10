@@ -19,6 +19,7 @@ const PROGRESS_KEY = 'slope-invaders:campaign-progress';
 const LEVEL_STATS_KEY = 'slope-invaders:level-stats';
 const PROFILE_STATS_KEY = 'slope-invaders:profile-stats';
 const LEVEL_STARS_KEY = 'slope-invaders:level-stars';
+const XP_KEY = 'slope-invaders:xp';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -233,7 +234,63 @@ describe('useCampaignProgress', () => {
     expect(progress.tierForLevel(zoneFive, 1)).toBe('challenge');
   });
 
-  it('resetProgress clears progress, per-level stats, and profile stats stores', async () => {
+  it('banks first-clear XP, returns the award, and persists the store', async () => {
+    let rewards: ReturnType<CampaignProgress['markComplete']>;
+    await act(async () => {
+      rewards = progress.markComplete('z1-l1', stats({ firstShotHit: true }));
+    });
+
+    // complete 50 + first-shot 25 + no-miss 50 = 125, all banked on a first clear.
+    expect(rewards!.xp.runXp).toBe(125);
+    expect(rewards!.xp.awardedXp).toBe(125);
+    expect(progress.getTotalXp()).toBe(125);
+    expect(JSON.parse(storage.getItem(XP_KEY) ?? '{}')).toEqual({
+      totalXp: 125,
+      levelBestXp: { 'z1-l1': 125 },
+    });
+  });
+
+  it('banks only the improvement over a level best and never subtracts on a worse replay', async () => {
+    await act(async () => {
+      progress.markComplete('z1-l1', stats({ misses: 2, heartsLost: 2, heartsRemaining: 3, score: 0.5 }));
+    });
+    expect(progress.getTotalXp()).toBe(50); // completion only
+
+    // Worse replay: runXp 50 again, nothing new to bank, total holds.
+    let worse: ReturnType<CampaignProgress['markComplete']>;
+    await act(async () => {
+      worse = progress.markComplete(
+        'z1-l1',
+        stats({ misses: 4, heartsLost: 4, heartsRemaining: 1, score: 0.2, completedAt: 30 }),
+      );
+    });
+    expect(worse!.xp.awardedXp).toBe(0);
+    expect(progress.getTotalXp()).toBe(50);
+
+    // Better replay: no-miss (+50) + improved-over-prior (+20) on top of completion.
+    let better: ReturnType<CampaignProgress['markComplete']>;
+    await act(async () => {
+      better = progress.markComplete('z1-l1', stats({ misses: 0, score: 0.9, completedAt: 40 }));
+    });
+    expect(better!.xp.runXp).toBe(120);
+    expect(better!.xp.awardedXp).toBe(70);
+    expect(progress.getTotalXp()).toBe(120);
+  });
+
+  it('awards XP for legacy stats records that lack the newer optional fields', async () => {
+    const legacy = stats();
+    delete (legacy as Partial<LevelStats>).firstShotHit;
+    delete (legacy as Partial<LevelStats>).trajectoryPreview;
+
+    let rewards: ReturnType<CampaignProgress['markComplete']>;
+    await act(async () => {
+      rewards = progress.markComplete('z1-l1', legacy);
+    });
+
+    expect(rewards!.xp.runXp).toBe(100); // complete + no-miss; no first-shot bonus
+  });
+
+  it('resetProgress clears progress, per-level stats, profile, and XP stores', async () => {
     await act(async () => {
       progress.markComplete('z1-l1', stats());
     });
@@ -242,6 +299,7 @@ describe('useCampaignProgress', () => {
     expect(storage.getItem(LEVEL_STATS_KEY)).not.toBeNull();
     expect(storage.getItem(PROFILE_STATS_KEY)).not.toBeNull();
     expect(storage.getItem(LEVEL_STARS_KEY)).not.toBeNull();
+    expect(storage.getItem(XP_KEY)).not.toBeNull();
 
     await act(async () => {
       progress.resetProgress();
@@ -251,5 +309,7 @@ describe('useCampaignProgress', () => {
     expect(storage.getItem(LEVEL_STATS_KEY)).toBeNull();
     expect(storage.getItem(PROFILE_STATS_KEY)).toBeNull();
     expect(storage.getItem(LEVEL_STARS_KEY)).toBeNull();
+    expect(storage.getItem(XP_KEY)).toBeNull();
+    expect(progress.getTotalXp()).toBe(0);
   });
 });

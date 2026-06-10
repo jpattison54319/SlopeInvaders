@@ -11,6 +11,8 @@ interface ScreenChromeProps {
   onToggleView?: () => void;
   /** Label shown on the view-toggle button (switches with the active view). */
   toggleViewLabel?: string;
+  /** Optional Pilot Profile entry in the top bar. */
+  onOpenProfile?: () => void;
   children: ReactNode;
 }
 
@@ -25,6 +27,7 @@ export function ScreenChrome({
   onOpenSettings,
   onToggleView,
   toggleViewLabel,
+  onOpenProfile,
   children,
 }: ScreenChromeProps) {
   return (
@@ -41,6 +44,11 @@ export function ScreenChrome({
           )}
         </div>
         <div className="menu__actions">
+          {onOpenProfile && (
+            <button type="button" className="chrome-toggle-btn" onClick={onOpenProfile}>
+              Pilot Profile
+            </button>
+          )}
           {onToggleView && (
             <button type="button" className="chrome-toggle-btn" onClick={onToggleView}>
               {toggleViewLabel}

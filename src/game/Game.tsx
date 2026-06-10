@@ -29,6 +29,7 @@ import { VictoryOverlay } from './components/VictoryOverlay';
 import { useSfx } from './audio/sfxContext';
 import { scorePerformance, type DifficultyTier, type LevelStats } from './campaign/difficulty';
 import { starsForCompletedStats, type StarCount } from './campaign/stars';
+import type { CompletionRewards } from './campaign/rewards';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
@@ -127,8 +128,9 @@ interface GameProps {
   onExit: () => void;
   onSettings: () => void;
   onAdvance: () => void;
-  /** Called once when the level is first won, with the full visit stats. */
-  onComplete: (levelId: string, stats: LevelStats) => void;
+  /** Called once when the level is first won, with the full visit stats.
+   * May return the rewards (XP) the completion earned, for the overlay. */
+  onComplete: (levelId: string, stats: LevelStats) => CompletionRewards | undefined | void;
 }
 
 /** The single-level gameplay screen. */
@@ -168,6 +170,7 @@ export function Game({
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
   const [calcOpen, setCalcOpen] = useState(false);
   const [earnedStars, setEarnedStars] = useState<StarCount>(0);
+  const [rewards, setRewards] = useState<CompletionRewards | null>(null);
   // Show the spotlight walkthrough on the first visit to a guided level.
   const [showTour, setShowTour] = useState(
     () => Boolean(level.guidedTour) && !tourSeen(level.id),
@@ -197,6 +200,8 @@ export function Game({
   const mountEpochRef = useRef(0);
   const firstShotMsRef = useRef<number | null>(null);
   const firstHitMsRef = useRef<number | null>(null);
+  /** Whether the visit's very first shot hit (null until that shot resolves). */
+  const firstShotHitRef = useRef<boolean | null>(null);
   const lostRef = useRef(false);
 
   const remaining = total - destroyed.size;
@@ -268,6 +273,8 @@ export function Game({
         manualResets,
         attempts: 1 + losses + manualResets,
         passedFirstTry: losses === 0,
+        firstShotHit: firstShotHitRef.current === true,
+        trajectoryPreview: level.trajectoryPreview ?? 'always',
         calculatorOpens: calcOpensRef.current,
         tweaks: tweaksRef.current,
         durationMs: performance.now() - mountPerfRef.current,
@@ -278,11 +285,11 @@ export function Game({
       };
       const stats: LevelStats = { ...partial, score: scorePerformance(partial) };
       setEarnedStars(starsForCompletedStats(stats));
-      onComplete(level.id, stats);
+      setRewards(onComplete(level.id, stats) ?? null);
     } else if (!won && completedRef.current) {
       completedRef.current = false;
     }
-  }, [won, onComplete, level.id, level.hearts, tier, total, hasHearts, hearts]);
+  }, [won, onComplete, level.id, level.hearts, level.trajectoryPreview, tier, total, hasHearts, hearts]);
 
   const loseHeart = useCallback(() => {
     if (hasHearts) {
@@ -433,6 +440,7 @@ export function Game({
       setShotsFired((s) => s + 1);
       offBoardRef.current += 1;
       missesRef.current += 1;
+      if (firstShotHitRef.current === null) firstShotHitRef.current = false;
       loseHeart();
       return;
     }
@@ -462,6 +470,8 @@ export function Game({
         return { asteroid, frac: Math.max(0, Math.min(1, frac)) };
       })
       .sort((p, q) => p.frac - q.frac);
+
+    if (firstShotHitRef.current === null) firstShotHitRef.current = hits.length > 0;
 
     shotCtx.current = {
       seg,
@@ -514,6 +524,7 @@ export function Game({
       setShot(null);
       setExplosions([]);
       setEarnedStars(0);
+      setRewards(null);
     },
     [level],
   );
@@ -673,6 +684,8 @@ export function Game({
               shotsFired={shotsFired}
               score={score}
               stars={earnedStars}
+              xp={rewards?.xp}
+              newBadges={rewards?.newBadges}
               hasNext={hasNext}
               onAdvance={onAdvance}
               onReplay={handleReset}
