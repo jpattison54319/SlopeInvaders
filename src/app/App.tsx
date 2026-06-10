@@ -25,6 +25,10 @@ import { CampaignCompleteScreen } from './CampaignCompleteScreen';
 import { PilotProfileScreen } from './PilotProfileScreen';
 import { ClassroomScreen } from './ClassroomScreen';
 import { TeacherDashboardScreen } from './TeacherDashboardScreen';
+import { VersusLobbyScreen } from './VersusLobbyScreen';
+import { VersusMatchScreen } from './VersusMatchScreen';
+import { getCadetName } from '../cloud/identity';
+import type { MatchRole } from '../game/versus/types';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
@@ -43,7 +47,15 @@ type Screen =
   | { name: 'campaign-complete' }
   | { name: 'pilot-profile'; from: 'mode-select' | 'galaxy' | 'campaign-map' }
   | { name: 'classroom'; joinCode?: string }
-  | { name: 'teacher-dashboard'; teacherKey?: string };
+  | { name: 'teacher-dashboard'; teacherKey?: string }
+  | { name: 'versus' }
+  | {
+      name: 'versus-match';
+      matchId: string;
+      seed: number;
+      role: MatchRole;
+      opponentStudentId: string | null;
+    };
 
 /** The last available zone — clearing its debrief completes the campaign. */
 const lastAvailableZoneId = zones.filter((z) => z.status === 'available').at(-1)?.id;
@@ -85,7 +97,8 @@ export default function App() {
   const progress = useCampaignProgress();
   const reducedMotion = usePrefersReducedMotion();
 
-  useMusic(screen.name === 'game' ? music.game : music.menu, musicVolume, musicMuted);
+  const inGame = screen.name === 'game' || screen.name === 'versus-match';
+  useMusic(inGame ? music.game : music.menu, musicVolume, musicMuted);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -95,7 +108,8 @@ export default function App() {
 
   const selectMode = (id: GameModeId) => {
     if (id === 'campaign') setScreen({ name: 'galaxy' });
-    // Arcade / Versus are coming soon — no-op for now.
+    else if (id === 'versus') setScreen({ name: 'versus' });
+    // Arcade is coming soon — no-op for now.
   };
 
   const advance = (levelId: string) => {
@@ -259,6 +273,28 @@ export default function App() {
           />
         );
 
+      case 'versus':
+        return (
+          <VersusLobbyScreen
+            onStartMatch={(p) => setScreen({ name: 'versus-match', ...p })}
+            onBack={() => setScreen({ name: 'mode-select' })}
+            onOpenSettings={openSettings}
+            onOpenClassroom={() => setScreen({ name: 'classroom' })}
+          />
+        );
+
+      case 'versus-match':
+        return (
+          <VersusMatchScreen
+            matchId={screen.matchId}
+            seed={screen.seed}
+            role={screen.role}
+            opponentStudentId={screen.opponentStudentId}
+            myName={getCadetName()}
+            onExit={() => setScreen({ name: 'versus' })}
+          />
+        );
+
       case 'campaign-complete':
         return (
           <CampaignCompleteScreen
@@ -312,7 +348,7 @@ export default function App() {
           musicMuted={musicMuted}
           sfxVolume={sfxVolume}
           sfxMuted={sfxMuted}
-          activeTrack={screen.name === 'game' ? 'game' : 'menu'}
+          activeTrack={inGame ? 'game' : 'menu'}
           keyBindings={keyBindings}
           onChangeMusicVolume={setMusicVolume}
           onChangeMusicMuted={setMusicMuted}

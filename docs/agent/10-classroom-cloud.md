@@ -87,32 +87,51 @@ disabled or no class is joined.
   accuracy) with per-student per-level drill-down.
 - `MenuScreen` has a Classroom entry; the teacher area is reachable from there.
 
-## Phase 2 — Live 1v1 Versus (designed, NOT yet built)
+## Phase 2 — Live 1v1 Versus (built)
 
-Dr. Mario–style: **both players' boards are rendered live on both screens**;
-each player controls only their own board; it is a **race** — first to clear all
-asteroids without losing all hearts wins. Keep the existing `Game.tsx`
-asteroid/shot model; do not fork it.
+Dr. Mario–style: **both players' boards render live on both screens**; each
+player controls only their own board; it is a **race** — first to clear all
+asteroids without losing all hearts wins. Reuses the campaign hit-detection,
+coordinate math, and `GameBoard` rather than forking gameplay.
 
-- **Transport:** one Supabase Realtime **Broadcast** channel per match
-  (`match:<id>`), scoped to the classroom. Each player broadcasts board deltas
-  (equation state, shot fired, asteroid destroyed, hearts); the opponent renders
-  a read-only mirror beside their own board.
-- **Matchmaking:** a `matches` table (`id`, `classroom_id`, `host_student_id`,
-  `guest_student_id`, `status: open|full|active|done`, `level_seed`,
-  `winner_id`, timestamps). A `join_match` RPC does an atomic conditional update
-  (`guest_student_id IS NULL` AND same `classroom_id`) — this enforces both the
-  **2-player cap** and the **same-class** rule. Open matches are listed by
-  classroom so only classmates see/join them.
-- **Attack items:** non-required power-ups spawn probabilistically on the grid
-  for a limited lifetime (shoot fast or they vanish). Shooting one sends a typed
-  effect to the opponent over the broadcast channel — e.g. `+2 asteroids`, a
-  short input freeze/timeout, etc. Effects are data-driven so new ones can be
-  added without protocol changes.
-- **Reuse:** add a `{ name: 'versus-match'; matchId }` screen wrapping two
-  `Game`-derived boards (one interactive, one mirror), and flip the existing
-  `versus` mode descriptor in `src/game/modes/index.ts` from `coming-soon`.
+- **Schema:** `supabase/migrations/0002_versus.sql` adds the `matches` table
+  (`classroom_id`, `host_student_id`, `host_name`, `guest_student_id`,
+  `status: open|full|done|cancelled`, `level_seed`, `winner_student_id`) and the
+  capability-gated RPCs `create_match`, `list_open_matches`, `join_match`,
+  `get_match`, `cancel_match`, `finish_match`. `join_match` is an **atomic
+  conditional update** (`guest_student_id IS NULL` AND same `classroom_id` AND
+  not self) — enforcing the **2-player cap** and **same-class** rule. The
+  `student_classroom()` helper maps a student to their class; RLS stays
+  default-deny. Run it AFTER `0001_classroom.sql`.
+- **Transport:** live state travels over a Supabase Realtime **broadcast**
+  channel `match:<id>` (no per-shot table writes — no extra RLS/publication
+  setup). `src/cloud/versus.ts` wraps both the RPCs and `openMatchChannel()`.
+  Each player broadcasts a full `BoardSnapshot` on every change, plus `hello`
+  and a terminal `over`; the opponent renders a read-only mirror.
+- **Shared field:** both clients derive the identical starting field from the
+  match's `level_seed` via the pure, seeded `buildVersusLevel(seed)`
+  (`src/game/versus/field.ts`, mulberry32) — all quadrants, slope + intercept +
+  facing, 5 hearts, ship at the origin. No level data crosses the wire.
+- **Attack items:** `+2` (garbage asteroids) and `❄` freeze pickups spawn
+  probabilistically on each player's own grid with a limited lifetime
+  (`spawnItem`). Shooting one (the fired line crosses it) broadcasts an `attack`
+  the opponent applies to their board. Items ride along in the snapshot so the
+  mirror shows them; effects are data-driven (`ItemKind`) for easy extension.
+- **Controller:** `src/game/versus/useVersusMatch.ts` owns the local board
+  (reusing `evaluateShot`/`resolveDestroyed`/`lineBoardSegment`), the realtime
+  channel, item economy, freeze, and win/lose latching (event-driven in the shot
+  resolution, never an effect). `finish_match` records the winner best-effort.
+- **UI / routing:** `src/app/VersusLobbyScreen.tsx` (create/join, polls
+  `list_open_matches`, requires a joined class + cadet name) and
+  `src/app/VersusMatchScreen.tsx` (interactive board + mirror, `EquationControls`,
+  hearts, result overlay). App routes `{ name: 'versus' }` and
+  `{ name: 'versus-match'; matchId; seed; role; opponentStudentId }`; the `versus`
+  mode descriptor is now `available`.
 
-When building Phase 2, extend `0001_classroom.sql` with the `matches` table +
-`join_match`/`create_match`/`finish_match` RPCs and keep the same
-capability-gated, account-free model.
+### Test infra note
+
+Konva's package `main` is its Node build, which hard-requires the native
+`canvas` module (it can't build here). `vitest.setup.ts` intercepts Node's
+`require('canvas')` with a tiny `DOMMatrix`/`createCanvas` shim and stubs the
+jsdom 2D context, so the jsdom component tests (e.g. `App.test.tsx`) run without
+`canvas`.

@@ -40,7 +40,7 @@ Current product flow:
 
 - App starts inside a tactical space-cockpit mode-select screen. The coordinate
   board and core game art retain the pixel-art identity.
-- Campaign is the available mode; Arcade and Versus are coming soon.
+- Campaign and (cloud-gated) Versus are available modes; Arcade is coming soon.
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating
   dial. Selecting a planet zooms to its surface map, where gold regions and
   faction banners launch levels directly. A "List view" toggle keeps the classic
@@ -62,8 +62,14 @@ Current product flow:
   localStorage progress. It is additive — with no `VITE_SUPABASE_*` env vars the
   game runs exactly as before, fully offline; sync is best-effort and never
   affects scoring/adaptivity. No accounts: students are a device UUID + cadet
-  name; teachers hold an unguessable secret dashboard link. Live 1v1 Versus
-  matchmaking is specced but not yet built. See `docs/agent/10-classroom-cloud.md`
+  name; teachers hold an unguessable secret dashboard link.
+- **Live 1v1 Versus** (Phase 2, cloud-gated) is built: classmates create/join a
+  match (`matches` table + `0002_versus.sql` RPCs, atomic join enforces the
+  2-player cap + same class), then race on live side-by-side boards over a
+  Supabase Realtime broadcast channel. A shared `level_seed` derives the field
+  deterministically (`src/game/versus/field.ts`); `+2`/freeze attack pickups send
+  effects to the opponent. Code: `src/cloud/versus.ts`, `src/game/versus/*`,
+  `src/app/Versus{Lobby,Match}Screen.tsx`. See `docs/agent/10-classroom-cloud.md`
   and `DEPLOYMENT.md`.
 - The visual shell uses a curated tactical UI bundle in `src/assets/ui/`.
   Shooter-kit art is the primary cockpit language; the robot is instructional

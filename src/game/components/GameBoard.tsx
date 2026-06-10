@@ -1,4 +1,4 @@
-import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Line, Image as KonvaImage, Group, Circle, Text } from 'react-konva';
 import type { Facing, LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 import type { Point } from '../logic/lineMath';
 import { getYAtX } from '../logic/lineMath';
@@ -52,6 +52,8 @@ interface GameBoardProps {
   facing?: Facing;
   /** Draw the line both ways (bright forward, faded back) — Zone 4 preview. */
   bidirectional?: boolean;
+  /** Optional Versus attack pickups to render on the grid. */
+  items?: ReadonlyArray<{ id: string; point: Point; kind: string }>;
 }
 
 function lerp(a: Point, b: Point, t: number): Point {
@@ -91,6 +93,7 @@ export function GameBoard({
   activeTargetId = null,
   facing = 'right',
   bidirectional = false,
+  items = [],
 }: GameBoardProps) {
   const vp = createViewport(width, height, level.bounds);
   const starfield = useImage(assets.starfield);
@@ -168,6 +171,31 @@ export function GameBoard({
               active={activeTargetId == null || a.id === activeTargetId}
             />
           ))}
+
+        {/* Versus attack pickups */}
+        {items.map((it) => {
+          const px = graphToScreen(it.point, vp);
+          const r = vp.unit * 0.42;
+          const add = it.kind === 'add';
+          const color = add ? COLORS.beam : '#8ff8ff';
+          return (
+            <Group key={it.id} x={px.x} y={px.y} listening={false}>
+              <Circle radius={r} fill="rgba(7,11,32,0.7)" stroke={color} strokeWidth={2} shadowColor={color} shadowBlur={10} />
+              <Text
+                text={add ? '+2' : '❄'}
+                fontSize={r}
+                fontStyle="bold"
+                fill={color}
+                width={r * 2}
+                height={r * 2}
+                offsetX={r}
+                offsetY={r}
+                align="center"
+                verticalAlign="middle"
+              />
+            </Group>
+          );
+        })}
 
         {/* Firing beam */}
         {beam && (

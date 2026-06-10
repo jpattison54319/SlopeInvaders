@@ -24,9 +24,10 @@ export const modes: ModeDescriptor[] = [
   {
     id: 'versus',
     name: 'Versus',
-    tagline: 'Two-player slope duel.',
-    description: 'Head-to-head graphing battles. Coming soon.',
-    status: 'coming-soon',
+    tagline: 'Live 1v1 slope duel.',
+    description:
+      'Race a classmate to clear your asteroids on live side-by-side boards, with +2 and freeze attack pickups. Requires joining a class.',
+    status: 'available',
   },
 ];
 

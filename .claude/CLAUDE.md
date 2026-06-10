@@ -43,7 +43,7 @@ Current user-facing flow:
 
 1. The app opens on a tactical space-cockpit mode-select screen while retaining
    pixel-art game imagery and typography.
-2. Campaign is available; Arcade and Versus are visible as coming-soon modes.
+2. Campaign and (cloud-gated) live 1v1 Versus are available; Arcade is a coming-soon mode.
 3. Campaign opens a galaxy planet dial. Selecting a planet zooms to its surface
    map, where gold regions and faction banners launch levels directly. A "List
    view" toggle keeps the classic zone/level-list screens.
@@ -69,9 +69,19 @@ drill-down). It is additive: with no `VITE_SUPABASE_*` env vars
 and a friendly notice replaces the cloud actions. No accounts — students are a
 device UUID + cadet name; teachers hold an unguessable secret dashboard link
 (`?teacher=<key>` opens it, `?class=<code>` prefills join). Progress sync is
-best-effort and never affects scoring/adaptivity. Live 1v1 Versus matchmaking is
-specced (Dr. Mario–style dual live boards + attack items) but not yet built. See
+best-effort and never affects scoring/adaptivity. See
 `docs/agent/10-classroom-cloud.md` and `DEPLOYMENT.md`.
+5i. **Live 1v1 Versus** (Phase 2, cloud-gated) is built. From the menu, Versus
+opens `VersusLobbyScreen` (create a match or join a classmate's open match — only
+same-class students appear, enforced by `0002_versus.sql`'s `join_match` atomic
+update which also caps a match at 2 players). The duel (`VersusMatchScreen`,
+driven by `useVersusMatch`) shows both boards live side by side: you control
+yours, the opponent's is a read-only mirror updated over a Supabase Realtime
+broadcast channel. Both derive the same asteroid field from the match's shared
+`level_seed` (`src/game/versus/field.ts`). It's a race — first to clear all
+asteroids without losing all 5 hearts wins. `+2` (garbage asteroids) and `❄`
+(freeze) attack pickups spawn on your grid; shooting one sends its effect to the
+opponent. Cloud-off or not-joined users get a notice instead.
 6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
 6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
@@ -137,6 +147,10 @@ npm run build
 - `src/app/ClassroomScreen.tsx` (student class-join + cadet name) and `src/app/TeacherDashboardScreen.tsx` (teacher create + roster dashboard) are the cloud-gated classroom screens; both show an offline notice when `isCloudEnabled()` is false.
 - `src/cloud/` is the classroom cloud layer: `supabaseClient.ts` (lazy client + `isCloudEnabled()`), `identity.ts` (device student id, cadet name, joined-class + teacher-class records), `classroom.ts` (RPC wrappers; `pushProgress` best-effort/silent), `progressPayload.ts` (pure `buildProgressPayload` snapshot → `{summary, levels}`). `useCampaignProgress` debounce-syncs on change and exposes `syncNow()` for post-join backfill.
 - `supabase/migrations/0001_classroom.sql` is the Postgres schema (`classrooms`/`students`/`level_results`), RLS default-deny, and the four `SECURITY DEFINER` RPCs gated on unguessable codes. `.env.example` + `DEPLOYMENT.md` cover setup.
+- `src/app/VersusLobbyScreen.tsx` (create/join a match) and `src/app/VersusMatchScreen.tsx` (the live dual-board duel) are the cloud-gated Versus screens; `App` routes `versus` and `versus-match`.
+- `src/cloud/versus.ts` is the matchmaking RPC wrappers (`create_match`/`list_open_matches`/`join_match`/`get_match`/`cancel_match`/`finish_match`) + `openMatchChannel()` (Supabase Realtime broadcast). `src/game/versus/` holds the pure deterministic field/items (`field.ts`), the protocol types (`types.ts`), and the `useVersusMatch` controller (board state, realtime sync, item economy, win/lose).
+- `supabase/migrations/0002_versus.sql` adds the `matches` table + matchmaking RPCs (atomic `join_match` enforces the 2-player cap + same class); run it after `0001`.
+- `vitest.setup.ts` shims konva's optional native `canvas` dependency (Node build) so the jsdom component tests run without it; wired via `vitest.config.ts` `setupFiles`.
 - The `direction`/`facing` control mechanic: `Game.tsx` derives the effective fired line (`fireM = facing === 'right' ? m : -m`, `fireB` through the ship) and feeds it to hit detection, the board, and the equation; it also orients the shot segment to start at the ship so the projectile flies outward. `hitDetection.ts` and `coordinateTransform.ts` take a `facing` param (right reaches `x ≥ fromX`, left reaches `x ≤ fromX`). `EquationLine.tsx` draws the two-tone preview, `EquationControls.tsx` the toggle (and shows the facing-mirrored slope in the equation), and `Ship.tsx` flips the sprite.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
 - `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
