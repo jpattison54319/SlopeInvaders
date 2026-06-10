@@ -10,7 +10,10 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Supabase's newer "publishable" key (sb_publishable_…) is the safe client-side
+// key; we read it first and fall back to the legacy anon key name for back-compat.
+const anonKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let client: SupabaseClient | null = null;
 
