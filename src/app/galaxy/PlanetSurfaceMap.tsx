@@ -3,6 +3,7 @@ import { factionBanners } from '../../assets/assetMap';
 import type { Zone } from '../../game/campaign/types';
 import { missionPathLayout } from '../../game/campaign/planets';
 import { StarRating } from '../../game/components/StarRating';
+import { TacticalStatusRail } from '../../game/components/TacticalPanel';
 import type { CampaignProgress } from '../useCampaignProgress';
 
 interface PlanetSurfaceMapProps {
@@ -22,24 +23,6 @@ const REGION_SHAPES = [
   '35,67 53,59 68,74 58,90 37,87',
 ];
 
-const SURFACE_MARKERS = [
-  { x: 0.21, y: 0.63 },
-  { x: 0.44, y: 0.45 },
-  { x: 0.67, y: 0.6 },
-  { x: 0.82, y: 0.34 },
-  { x: 0.25, y: 0.31 },
-  { x: 0.52, y: 0.78 },
-];
-
-function markerFor(index: number, total: number) {
-  if (index < SURFACE_MARKERS.length) return SURFACE_MARKERS[index];
-  const t = total <= 1 ? 0.5 : index / (total - 1);
-  return {
-    x: 0.14 + t * 0.72,
-    y: 0.34 + (index % 3) * 0.16,
-  };
-}
-
 function regionFor(index: number) {
   return REGION_SHAPES[index % REGION_SHAPES.length];
 }
@@ -53,12 +36,22 @@ export function PlanetSurfaceMap({
 }: PlanetSurfaceMapProps) {
   const path = missionPathLayout(zone.id, zone.levels.length);
   const style = { '--planet-texture': `url(${planetSrc})` } as CSSProperties;
+  const cleared = zone.levels.filter((level) => progress.isLevelComplete(level.id)).length;
+  const stars = zone.levels.reduce((sum, level) => sum + progress.getLevelStars(level.id), 0);
 
   return (
     <div className={`planet-surface ${exiting ? 'planet-surface--leaving' : ''}`} style={style}>
       <div className="planet-surface__hud">
         <span className="menu__panel-label">Campaign · Surface</span>
         <h2>{zone.number === 0 ? `${zone.name} Surface` : `Zone ${zone.number}: ${zone.name} Surface`}</h2>
+        <TacticalStatusRail
+          className="planet-surface__status"
+          label="Planet mission status"
+          items={[
+            { label: 'Cleared', value: `${cleared}/${zone.levels.length}` },
+            { label: 'Mastery', value: `${stars}/${zone.levels.length * 3}` },
+          ]}
+        />
       </div>
 
       <div className="planet-surface__globe">
@@ -81,8 +74,7 @@ export function PlanetSurfaceMap({
           const complete = progress.isLevelComplete(level.id);
           const unlocked = progress.isLevelUnlocked(zone, i);
           const state = complete ? 'cleared' : unlocked ? 'ready' : 'locked';
-          const marker = markerFor(i, zone.levels.length);
-          const banner = path[i];
+          const marker = path[i];
 
           return (
             <button
@@ -94,13 +86,14 @@ export function PlanetSurfaceMap({
               aria-label={`${level.name} — ${state}`}
               onClick={() => onPlayLevel(level.id)}
             >
-              <img src={factionBanners[banner.bannerKey]} alt="" draggable={false} />
+              <img src={factionBanners[marker.bannerKey]} alt="" draggable={false} />
               <span className="surface-banner__label">L{i + 1}</span>
               {complete && <span className="surface-check" aria-hidden="true">✓</span>}
               <StarRating
                 stars={progress.getLevelStars(level.id)}
                 label={`${level.name} stars`}
                 className="surface-banner__stars"
+                size="medium"
               />
             </button>
           );

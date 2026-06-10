@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ControlKey, EquationForm, Facing } from '../levels/types';
+import { TacticalButton } from './TacticalButton';
 
 interface EquationControlsProps {
   m: number;
@@ -230,20 +231,24 @@ export function EquationControls({
       )}
 
       <div className="controls__actions">
-        <button
-          type="button"
+        <TacticalButton
+          asset="play"
+          label="Fire"
+          text="Fire"
+          size="large"
           className="btn btn--fire btn--split"
           data-button-sfx="none"
           onClick={onFire}
           disabled={disabled || won}
-        >
-          <span className="btn__icon" aria-hidden="true">▶</span>
-          <span className="btn__label">Fire</span>
-        </button>
-        <button type="button" className="btn btn--reset btn--split" onClick={onReset}>
-          <span className="btn__icon" aria-hidden="true">↺</span>
-          <span className="btn__label">Reset Level</span>
-        </button>
+        />
+        <TacticalButton
+          asset="replay"
+          label="Reset Level"
+          text="Reset Level"
+          size="large"
+          className="btn btn--reset btn--split"
+          onClick={onReset}
+        />
       </div>
     </div>
   );

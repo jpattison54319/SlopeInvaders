@@ -37,16 +37,27 @@ Slope Invaders is a Vite + React + TypeScript educational game. It teaches linea
 
 Current product flow:
 
-- App starts on a pixel-art arcade mode-select menu.
+- App starts inside a tactical space-cockpit mode-select screen. The coordinate
+  board and core game art retain the pixel-art identity.
 - Campaign is the available mode; Arcade and Versus are coming soon.
-- Campaign opens an atmospheric galaxy where each zone is a planet on a rotating dial; the active planet's level "hotspots" replace the level list, and a "List view" toggle keeps the classic zone/level screens. Launching a level plays a brief warp transition into gameplay.
+- Campaign opens an atmospheric galaxy where each zone is a planet on a rotating
+  dial. Selecting a planet zooms to its surface map, where gold regions and
+  faction banners launch levels directly. A "List view" toggle keeps the classic
+  zone/level screens.
 - Planet art lives in `src/assets/planets/` (wired via `assetMap`); each zone unlocks once the previous zone is fully cleared, and later zones are coming soon.
 - Campaign levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
 - Zones 1–8 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control; Zone 5 keeps Zone 4 controls and adds walls/shields that block shots crossing them; Zone 6 is linked asteroids (one line must clear a whole chain); Zone 7 adds friendly ships that scrub any shot crossing them; Zone 8 is the moving cannon (`y = m(x − h) + b` via the x-offset control). The coordinate plane renders any-quadrant bounds.
 - Walls block shots: `hitDetection.isPathBlocked`/`firstWallHit` (segment intersection, honoring `WallSpec.gaps`) stop a shot at the first wall on the ship→target path; a blocked shot counts as a miss (costs a star). A per-level 1–3 star rating (`src/game/campaign/stars.ts`, `slope-invaders:level-stars`) shows in the victory overlay + planet banners.
 - XP rewards learning behavior per `docs/agent/03`: each win computes bonuses (`src/game/campaign/xp.ts`) shown with per-bonus reasons in the victory overlay, but only the improvement over that level's best run is banked (`slope-invaders:xp`) — XP never subtracts and never rewards grinding. Lifetime XP maps to a pilot rank that never demotes.
 - Badges (`src/game/campaign/badges.ts`, persisted in `slope-invaders:badges`) reward zone mastery, sharpshooting, and growth behaviors; they are never revoked, never keyed on calculator/tweak use, and are announced in the victory overlay. `markComplete` returns the run's `CompletionRewards` (XP award + new badges).
-- The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the private progress page — rank/XP card, badge collection (locked badges framed as "Next mission", never failures), per-planet mastery bars, lifetime flight log. It opens from the main menu's ship icon and the campaign screens' top bar; it must stay individual (no comparisons or leaderboards).
+- The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the private progress
+  page — rank/XP card, badge collection (locked badges framed as "Next mission",
+  never failures), per-planet mastery bars, lifetime flight log. It opens from
+  the astronaut/profile icon and must stay individual (no comparisons or
+  leaderboards).
+- The visual shell uses a curated tactical UI bundle in `src/assets/ui/`.
+  Shooter-kit art is the primary cockpit language; the robot is instructional
+  Mission Control only. See `docs/ASSET_SOURCES.md`.
 - A line is infinite both ways but a shot fires one way: Zone 4's ship is a cannon — slope tilts the aim up/down, the facing control (left/right) picks the side, and facing left mirrors the aim across the ship (right fires `y = mx + b`, left fires `y = -mx + b`). The projectile leaves the ship outward, the preview is bright forward / faded backward, and the equation/dashed line show the facing-mirrored slope while the stepper keeps the dialed value.
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
 - Top-right Settings controls music and SFX volume/mute, and has a "Change Controls" sub-screen for remapping keyboard controls.
@@ -74,7 +85,7 @@ npm run dev -- --host 127.0.0.1
 
 - `src/app/App.tsx`: app shell, mode/zone/level/game routing, music/SFX settings, adaptive tier wiring.
 - `src/app/MenuScreen.tsx`: mode select landing screen.
-- `src/app/galaxy/`: the galaxy planet-dial campaign screen (planets, hotspots, mission popup).
+- `src/app/galaxy/`: the galaxy planet dial and planet-surface region/banner maps.
 - `src/app/CampaignMapScreen.tsx`, `src/app/ZoneLevelsScreen.tsx`: the classic zone/level-list screens, kept as a "List view" fallback.
 - `src/app/DebriefScreen.tsx`: end-of-zone reflection/debrief.
 - `src/app/SettingsModal.tsx`: music and SFX controls.
@@ -96,9 +107,18 @@ npm run dev -- --host 127.0.0.1
 - `src/game/campaign/rewards.ts`: the `CompletionRewards` contract returned by `markComplete`.
 - `src/app/PilotProfileScreen.tsx`: the private Pilot Profile (rank, badges, mastery, flight log).
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
+- `src/game/components/TacticalButton.tsx`, `TacticalPanel.tsx`, and
+  `CoachPanel.tsx`: shared tactical shell primitives.
 - `src/game/components/`: Konva board and DOM gameplay UI.
 - `src/game/logic/`: pure, tested math/game logic.
-- `src/assets/assetMap.ts`: source of truth for sprite/icon/planet/audio imports.
+- `src/assets/assetMap.ts`: source of truth for sprite/icon/planet/audio and typed
+  tactical UI imports.
+- `src/assets/ui/`: curated, optimized production derivatives; do not copy the
+  full source packs into the repository.
+- `docs/ASSET_SOURCES.md`: tactical asset provenance, licensing, and usage rules.
+- `scripts/pixelize_ui_assets.py`: non-destructive Pillow batch tool for making
+  smooth raster assets fit the pixel-art language. It previews to
+  `tmp/pixelized-ui/` unless explicitly run with `--in-place`.
 - `src/styles/global.css`: global styling.
 
 ## Working Rules
@@ -106,7 +126,13 @@ npm run dev -- --host 127.0.0.1
 - Keep app-shell work in `src/app/`; keep gameplay work in `src/game/`.
 - Keep pure math and hit/scoring logic framework-free and covered by tests.
 - Keep campaign pedagogy and sequencing consistent with `docs/agent/`.
-- Preserve the pixel-art arcade style while keeping the graph and math readable.
+- Preserve the tactical arcade cockpit around the existing pixel-art game. The
+  graph and math must remain higher contrast than surrounding artwork.
+- Keep all dynamic labels as HTML; do not introduce baked-in text assets.
+- Do not expect CSS `image-rendering: pixelated` to pixelize smooth source art;
+  use the preview-first raster script and visually inspect the result.
+- Keep navigation utilities icon-only with accessible names and hover titles.
+- Respect `prefers-reduced-motion` for decorative exhaust, bounce, and lighting.
 - Use available assets first; do not replace asset-map imports with hardcoded URLs.
 - Keep Settings as the only menu audio-control entry point.
 - Do not display adaptive tier labels to learners; adaptation should be invisible/non-stigmatizing.

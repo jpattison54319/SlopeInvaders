@@ -1,5 +1,8 @@
-import { assets, icons } from '../assets/assetMap';
-import { IconButton } from '../game/components/IconButton';
+import { useState } from 'react';
+import { assets, uiBackgrounds, uiShips } from '../assets/assetMap';
+import { CoachPanel } from '../game/components/CoachPanel';
+import { Modal } from '../game/components/Modal';
+import { TacticalButton } from '../game/components/TacticalButton';
 import type { GameModeId, ModeDescriptor } from '../game/modes';
 
 interface MenuScreenProps {
@@ -11,15 +14,16 @@ interface MenuScreenProps {
 
 /** The landing screen: title, how-to, and the game-mode selector. */
 export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile }: MenuScreenProps) {
+  const [briefingOpen, setBriefingOpen] = useState(false);
   const campaign = modes.find((m) => m.id === 'campaign');
   const campaignReady = campaign?.status === 'available';
   const availableCount = modes.filter((m) => m.status === 'available').length;
 
   return (
     <main
-      className="menu"
+      className="menu menu--tactical"
       style={{
-        backgroundImage: `linear-gradient(rgba(5, 8, 24, 0.42), rgba(5, 8, 24, 0.82)), url(${assets.starfield})`,
+        backgroundImage: `linear-gradient(90deg, rgba(4, 8, 24, 0.34), rgba(4, 8, 24, 0.84)), url(${uiBackgrounds.menu})`,
       }}
     >
       <nav className="menu__topbar" aria-label="Main menu">
@@ -28,40 +32,42 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile 
           <span>Slope Invaders</span>
         </div>
         <div className="menu__actions">
-          <IconButton icon="pilot" label="Pilot Profile" className="chrome-icon-btn" onClick={onOpenProfile} />
-          <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
+          <TacticalButton asset="info" label="Mission briefing" size="small" onClick={() => setBriefingOpen(true)} />
+          <TacticalButton asset="profile" label="Pilot Profile" size="small" onClick={onOpenProfile} />
+          <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />
         </div>
       </nav>
 
       <section className="menu__hero" aria-labelledby="menu-title">
         <div className="menu__copy">
+          <span className="menu__kicker">Equation Defense Command</span>
           <h1 id="menu-title">
             Slope <span>Invaders</span>
           </h1>
           <p>Graph the line. Blast the asteroids. Master y = mx + b.</p>
           <div className="menu__cta-row">
-            <button
-              type="button"
+            <TacticalButton
+              asset="play"
+              label="Play Campaign"
+              text="Play Campaign"
+              size="large"
               className="menu__play"
               disabled={!campaignReady}
               onClick={() => onSelectMode('campaign')}
-            >
-              <img src={icons.play} alt="" draggable={false} />
-              Play Campaign
-            </button>
+            />
           </div>
         </div>
 
-        <div className="menu__briefing" aria-label="How to play">
-          <span className="menu__panel-label">How to Play</span>
-          <h2>Aim with slope</h2>
-          <p>
-            Set your slope (and later, the y-intercept) so the dashed line passes through each
-            asteroid&rsquo;s glowing core, then Fire. Clear every asteroid to advance — but watch
-            your hearts!
-          </p>
+        <div className="menu__hero-art" aria-hidden="true">
+          <img src={uiShips.hero} alt="" draggable={false} />
+          <span className="menu__hero-thruster" />
         </div>
       </section>
+
+      <CoachPanel compact className="menu__coach">
+        <strong>Cadet, your cannon follows the equation you build.</strong>
+        <span>Choose a campaign route and keep the graph clear.</span>
+      </CoachPanel>
 
       <section className="level-select" aria-labelledby="modes-title">
         <div className="level-select__header">
@@ -84,7 +90,7 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile 
                 onClick={() => onSelectMode(mode.id)}
               >
                 <span className="level-card__number" aria-hidden>
-                  {playable ? '▶' : '🔒'}
+                  {playable ? '01' : '—'}
                 </span>
                 <span className="level-card__body">
                   <strong>{mode.name}</strong>
@@ -98,6 +104,26 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile 
           })}
         </div>
       </section>
+
+      {briefingOpen && (
+        <Modal title="Mission Briefing" onClose={() => setBriefingOpen(false)}>
+          <CoachPanel className="mission-briefing">
+            <p>
+              Adjust the equation until the aiming line passes through each asteroid&rsquo;s
+              glowing core, then fire. Later missions add intercepts, direction, and other
+              tactical controls.
+            </p>
+            <p>
+              Use the on-screen controls, or the keyboard: <strong>R/F</strong> adjusts slope,
+              <strong> W/S</strong> adjusts the y-intercept, and <strong>Space</strong> fires.
+            </p>
+            <p>
+              Keyboard controls can be changed at any time from <strong>Settings → Change
+              Controls</strong>.
+            </p>
+          </CoachPanel>
+        </Modal>
+      )}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { assets } from '../assets/assetMap';
-import { IconButton } from '../game/components/IconButton';
+import { assets, uiBackgrounds, type UiButtonKey } from '../assets/assetMap';
+import { TacticalButton } from '../game/components/TacticalButton';
 
 interface ScreenChromeProps {
   /** Back button (omitted on the root menu). */
@@ -11,13 +11,15 @@ interface ScreenChromeProps {
   onToggleView?: () => void;
   /** Label shown on the view-toggle button (switches with the active view). */
   toggleViewLabel?: string;
+  /** Explicit icon for the view-toggle command. */
+  toggleViewIcon?: Extract<UiButtonKey, 'list' | 'planet'>;
   /** Optional Pilot Profile entry in the top bar. */
   onOpenProfile?: () => void;
   children: ReactNode;
 }
 
 const BG_STYLE = {
-  backgroundImage: `linear-gradient(rgba(5, 8, 24, 0.42), rgba(5, 8, 24, 0.82)), url(${assets.starfield})`,
+  backgroundImage: `linear-gradient(rgba(3, 7, 20, 0.5), rgba(3, 7, 20, 0.88)), url(${uiBackgrounds.cockpit})`,
 };
 
 /** Shared starfield page wrapper with a top bar (brand/back + settings). */
@@ -27,6 +29,7 @@ export function ScreenChrome({
   onOpenSettings,
   onToggleView,
   toggleViewLabel,
+  toggleViewIcon,
   onOpenProfile,
   children,
 }: ScreenChromeProps) {
@@ -35,7 +38,7 @@ export function ScreenChrome({
       <nav className="menu__topbar" aria-label="Navigation">
         <div className="menu__brand">
           {onBack ? (
-            <IconButton icon="back" label={backLabel} className="chrome-icon-btn" onClick={onBack} />
+            <TacticalButton asset="back" label={backLabel} size="small" onClick={onBack} />
           ) : (
             <>
               <img src={assets.ship} alt="" draggable={false} />
@@ -45,16 +48,17 @@ export function ScreenChrome({
         </div>
         <div className="menu__actions">
           {onOpenProfile && (
-            <button type="button" className="chrome-toggle-btn" onClick={onOpenProfile}>
-              Pilot Profile
-            </button>
+            <TacticalButton asset="profile" label="Pilot Profile" size="small" onClick={onOpenProfile} />
           )}
-          {onToggleView && (
-            <button type="button" className="chrome-toggle-btn" onClick={onToggleView}>
-              {toggleViewLabel}
-            </button>
+          {onToggleView && toggleViewIcon && (
+            <TacticalButton
+              asset={toggleViewIcon}
+              label={toggleViewLabel ?? 'Change view'}
+              size="small"
+              onClick={onToggleView}
+            />
           )}
-          <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
+          <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />
         </div>
       </nav>
       {children}

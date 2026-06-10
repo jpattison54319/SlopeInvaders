@@ -10,6 +10,7 @@ interface ZoneLevelsScreenProps {
   onOpenSettings: () => void;
   /** Toggle back to the galaxy planet view. */
   onToggleView: () => void;
+  toggleViewIcon?: 'planet';
 }
 
 /** Level select within a zone, with sequential unlocking + completion ticks. */
@@ -20,6 +21,7 @@ export function ZoneLevelsScreen({
   onBack,
   onOpenSettings,
   onToggleView,
+  toggleViewIcon = 'planet',
 }: ZoneLevelsScreenProps) {
   const zoneLabel = zone.number === 0 ? 'Tutorial' : `Zone ${zone.number}`;
 
@@ -30,6 +32,7 @@ export function ZoneLevelsScreen({
       onOpenSettings={onOpenSettings}
       onToggleView={onToggleView}
       toggleViewLabel="Planet view"
+      toggleViewIcon={toggleViewIcon}
     >
       <section className="level-select" aria-labelledby="zone-title">
         <div className="level-select__header">

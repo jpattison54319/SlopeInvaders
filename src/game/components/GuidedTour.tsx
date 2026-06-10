@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { uiCoach } from '../../assets/assetMap';
+import { TacticalButton } from './TacticalButton';
 
 /** A single stop on the guided tour. A null selector renders a centered card. */
 export interface TourStep {
@@ -137,6 +139,7 @@ export function GuidedTour({ steps, onClose }: GuidedTourProps) {
 
       <div className="tour__card" ref={cardRef} style={{ top: pos.top, left: pos.left }}>
         <div className="tour__header">
+          <img className="tour__coach" src={uiCoach.missionControl} alt="" draggable={false} />
           <span className="tour__count">
             {index + 1} / {steps.length}
           </span>
@@ -147,17 +150,21 @@ export function GuidedTour({ steps, onClose }: GuidedTourProps) {
         <h2 className="tour__title">{step.title}</h2>
         <p className="tour__body">{step.body}</p>
         <div className="tour__nav">
-          <button
-            type="button"
-            className="btn btn--reset tour__btn"
+          <TacticalButton
+            asset="back"
+            label="Previous tour step"
+            text="Back"
+            className="tour__btn"
             onClick={back}
             disabled={isFirst}
-          >
-            ‹ Back
-          </button>
-          <button type="button" className="btn btn--fire tour__btn" onClick={finish}>
-            {isLast ? "Let's Go ▸" : 'Next ›'}
-          </button>
+          />
+          <TacticalButton
+            asset={isLast ? 'play' : 'forward'}
+            label={isLast ? "Let's Go" : 'Next tour step'}
+            text={isLast ? "Let's Go" : 'Next'}
+            className="tour__btn"
+            onClick={finish}
+          />
         </div>
       </div>
     </div>

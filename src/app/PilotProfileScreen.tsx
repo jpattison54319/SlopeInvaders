@@ -3,8 +3,9 @@ import { zones } from '../game/campaign/zones';
 import { planetSrcForZone } from '../game/campaign/planets';
 import { BADGES, type BadgeCategory, type BadgeDef } from '../game/campaign/badges';
 import { rankForXp } from '../game/campaign/xp';
-import { assets, sprites } from '../assets/assetMap';
+import { assets, icons, sprites } from '../assets/assetMap';
 import type { CampaignProgress } from './useCampaignProgress';
+import { TacticalPanel, TacticalProgress } from '../game/components/TacticalPanel';
 
 interface PilotProfileScreenProps {
   progress: CampaignProgress;
@@ -75,29 +76,25 @@ export function PilotProfileScreen({
     <ScreenChrome onBack={onBack} backLabel={backLabel} onOpenSettings={onOpenSettings}>
       <section className="profile" aria-labelledby="profile-title">
         {/* --- Pilot card hero --- */}
-        <div className="pilot-card">
+        <TacticalPanel className="pilot-card" tone="gold">
           <div className="pilot-card__avatar" aria-hidden>
-            <img src={assets.ship} alt="" draggable={false} />
+            <img src={icons.pilot} alt="" draggable={false} />
           </div>
           <div className="pilot-card__id">
             <span className="menu__panel-label">Pilot Profile</span>
             <h2 id="profile-title" className="pilot-card__rank">
               {rank.name}
             </h2>
-            <div
-              className="pilot-card__xp-bar"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(rankProgress * 100)}
-              aria-label={
+            <TacticalProgress
+              value={Math.round(rankProgress * 100)}
+              max={100}
+              tone="gold"
+              label={
                 rank.nextMin === null
                   ? 'Top rank reached'
                   : `${totalXp} of ${rank.nextMin} XP toward the next rank`
               }
-            >
-              <span style={{ width: `${Math.min(100, Math.round(rankProgress * 100))}%` }} />
-            </div>
+            />
             <span className="pilot-card__xp-label">
               {rank.nextMin === null
                 ? `${totalXp} XP · Top rank reached`
@@ -118,7 +115,7 @@ export function PilotProfileScreen({
               <span>accuracy</span>
             </li>
           </ul>
-        </div>
+        </TacticalPanel>
 
         {/* --- Badge collection, grouped by what each rewards --- */}
         {BADGE_GROUPS.map((group) => {

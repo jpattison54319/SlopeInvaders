@@ -67,6 +67,49 @@ import bannerPurpleUrl from './faction-banners/purple-faction.png';
 import bannerRedUrl from './faction-banners/red-faction.png';
 import bannerWhiteUrl from './faction-banners/white-faction.png';
 
+// Curated tactical UI kit. Source files live outside the app repository; only
+// optimized production assets are committed under src/assets/ui/.
+import uiMenuBackgroundUrl from './ui/backgrounds/menu-space.webp';
+import uiCockpitBackgroundUrl from './ui/backgrounds/cockpit-space.webp';
+
+import uiButtonBackwardUrl from './ui/buttons/backward.png';
+import uiButtonBackwardActiveUrl from './ui/buttons/backward-active.png';
+import uiButtonForwardUrl from './ui/buttons/forward.png';
+import uiButtonForwardActiveUrl from './ui/buttons/forward-active.png';
+import uiButtonPlayUrl from './ui/buttons/play.png';
+import uiButtonPlayActiveUrl from './ui/buttons/play-active.png';
+import uiButtonReplayUrl from './ui/buttons/replay.png';
+import uiButtonReplayActiveUrl from './ui/buttons/replay-active.png';
+import uiButtonSettingsUrl from './ui/buttons/settings.png';
+import uiButtonSettingsActiveUrl from './ui/buttons/settings-active.png';
+import uiButtonInfoUrl from './ui/buttons/info.png';
+import uiButtonInfoActiveUrl from './ui/buttons/info-active.png';
+import uiButtonProfileUrl from './ui/buttons/profile.png';
+import uiButtonProfileActiveUrl from './ui/buttons/profile-active.png';
+import uiButtonListUrl from './ui/buttons/menu.png';
+import uiButtonListActiveUrl from './ui/buttons/menu-active.png';
+import uiButtonPlanetUrl from './ui/buttons/planet.png';
+import uiButtonPlanetActiveUrl from './ui/buttons/planet-active.png';
+import uiButtonCloseUrl from './ui/buttons/close.png';
+import uiButtonCloseActiveUrl from './ui/buttons/close-active.png';
+import uiButtonConfirmUrl from './ui/buttons/ok.png';
+import uiButtonConfirmActiveUrl from './ui/buttons/ok-active.png';
+import uiButtonTrophyUrl from './ui/buttons/rating.png';
+import uiButtonTrophyActiveUrl from './ui/buttons/rating-active.png';
+import uiButtonHangarUrl from './ui/buttons/hangar.png';
+import uiButtonHangarActiveUrl from './ui/buttons/hangar-active.png';
+
+import uiCoachDialogUrl from './ui/panels/coach-dialog.png';
+import uiSettingsFrameUrl from './ui/panels/settings-frame.png';
+import uiStatsRailUrl from './ui/hud/stats-rail.png';
+import uiHealthRailUrl from './ui/hud/health-rail.png';
+import uiMissionControlUrl from './ui/coach/mission-control.webp';
+import uiVictoryControlUrl from './ui/coach/victory-control.webp';
+import uiMasteryStarUrl from './ui/results/mastery-star.png';
+import uiVictoryFrameUrl from './ui/results/victory-frame.png';
+import uiDefeatFrameUrl from './ui/results/defeat-frame.png';
+import uiHeroShipUrl from './ui/ships/hero-ship.webp';
+
 export const assets = {
   /** Player cannon (green pixel-art ship). */
   ship: shipUrl,
@@ -139,9 +182,64 @@ export const factionBanners = {
   white: bannerWhiteUrl,
 } as const;
 
+/** Full-screen imagery for the tactical arcade shell. */
+export const uiBackgrounds = {
+  menu: uiMenuBackgroundUrl,
+  cockpit: uiCockpitBackgroundUrl,
+} as const;
+
+/** Paired normal/active artwork for every asset-backed UI command. */
+export const uiButtons = {
+  back: { default: uiButtonBackwardUrl, active: uiButtonBackwardActiveUrl },
+  forward: { default: uiButtonForwardUrl, active: uiButtonForwardActiveUrl },
+  play: { default: uiButtonPlayUrl, active: uiButtonPlayActiveUrl },
+  replay: { default: uiButtonReplayUrl, active: uiButtonReplayActiveUrl },
+  settings: { default: uiButtonSettingsUrl, active: uiButtonSettingsActiveUrl },
+  info: { default: uiButtonInfoUrl, active: uiButtonInfoActiveUrl },
+  profile: { default: uiButtonProfileUrl, active: uiButtonProfileActiveUrl },
+  list: { default: uiButtonListUrl, active: uiButtonListActiveUrl },
+  planet: { default: uiButtonPlanetUrl, active: uiButtonPlanetActiveUrl },
+  close: { default: uiButtonCloseUrl, active: uiButtonCloseActiveUrl },
+  confirm: { default: uiButtonConfirmUrl, active: uiButtonConfirmActiveUrl },
+  trophy: { default: uiButtonTrophyUrl, active: uiButtonTrophyActiveUrl },
+  hangar: { default: uiButtonHangarUrl, active: uiButtonHangarActiveUrl },
+} as const;
+
+/** Decorative frames used behind responsive HTML content. */
+export const uiPanels = {
+  coachDialog: uiCoachDialogUrl,
+  settingsFrame: uiSettingsFrameUrl,
+} as const;
+
+/** Compact tactical HUD rails. */
+export const uiHud = {
+  statsRail: uiStatsRailUrl,
+  healthRail: uiHealthRailUrl,
+} as const;
+
+/** Mission-control character artwork. */
+export const uiCoach = {
+  missionControl: uiMissionControlUrl,
+  victoryControl: uiVictoryControlUrl,
+} as const;
+
+/** Result-screen frames and mastery imagery. */
+export const uiResults = {
+  masteryStar: uiMasteryStarUrl,
+  victoryFrame: uiVictoryFrameUrl,
+  defeatFrame: uiDefeatFrameUrl,
+} as const;
+
+/** Large decorative ships used outside the coordinate board. */
+export const uiShips = {
+  hero: uiHeroShipUrl,
+} as const;
+
 export type AssetKey = keyof typeof assets;
 export type IconKey = keyof typeof icons;
 export type SpriteKey = keyof typeof sprites;
 export type SfxKey = keyof typeof sfx;
 export type PlanetKey = keyof typeof planets;
 export type FactionBannerKey = keyof typeof factionBanners;
+export type UiButtonKey = keyof typeof uiButtons;
+export type UiPanelKey = keyof typeof uiPanels;

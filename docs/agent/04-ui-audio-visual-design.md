@@ -52,7 +52,10 @@ Bad:
 
 ## Visual style
 
-Use an 8-bit / pixel-art space theme that feels energetic but not childish.
+Use a tactical arcade space-cockpit shell around the 8-bit game world. The
+shooter UI kit supplies the structural chrome, controls, status rails, and
+result frames. Pixel art remains appropriate for the graph, ships, asteroids,
+planets, banners, stars, and mastery indicators.
 
 Recommended:
 
@@ -65,6 +68,41 @@ Recommended:
 - friendly ships visually different from asteroids
 
 The math must remain more readable than the art.
+
+### Tactical shell rules
+
+- Deep navy is the base; cyan defines structure, gold marks active commands,
+  green signals success, and rose signals danger.
+- The coordinate board is the highest-contrast and most visually important
+  gameplay surface.
+- Navigation utilities are icon-only, with accessible names, keyboard focus,
+  and hover titles.
+- Use paired normal/active artwork for asset-backed controls.
+- Keep labels and changing values as responsive HTML. Do not use baked-in text.
+- Use stable frame dimensions so active states cannot shift nearby controls.
+- Disable decorative ship exhaust, bounce, and lighting effects when reduced
+  motion is requested.
+
+### Mission Control
+
+The robot is a restrained instructional coach, not the player character.
+
+Use Mission Control for:
+
+- menu briefing
+- guided-tour steps
+- hints and shot feedback
+- success, warning, and neutral learning messages
+
+Do not use the robot as the pilot avatar, a decorative mascot on every panel, or
+an interruption that competes with the graph. The player identity remains the
+astronaut cadet/pilot.
+
+### Asset governance
+
+The optimized production bundle lives in `src/assets/ui/` and is typed through
+`src/assets/assetMap.ts`. The original source packs stay outside the repository.
+See `docs/ASSET_SOURCES.md` for provenance and licensing.
 
 ## Audio
 
