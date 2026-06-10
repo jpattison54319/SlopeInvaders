@@ -8,6 +8,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
   /** Legacy alias for the publishable/anon key. Read as a fallback. */
   readonly VITE_SUPABASE_ANON_KEY?: string;
+  /** Supabase publishable key (new `sb_publishable_…` format). Safe to ship. */
+  readonly VITE_SUPABASE_PUBLISHABLE_KEY?: string;
 }
 
 interface ImportMeta {
