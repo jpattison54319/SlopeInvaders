@@ -1,8 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 import { ScreenChrome } from './ScreenChrome';
 import { Fireworks } from '../game/components/Fireworks';
 import { orderedLevels } from '../game/campaign/zones';
 import type { CampaignProgress } from './useCampaignProgress';
+import { uiCoach, uiResults } from '../assets/assetMap';
+import { TacticalButton } from '../game/components/TacticalButton';
 
 interface CampaignCompleteScreenProps {
   progress: CampaignProgress;
@@ -36,7 +38,12 @@ export function CampaignCompleteScreen({
   return (
     <ScreenChrome onBack={onMenu} backLabel="Main Menu" onOpenSettings={onOpenSettings}>
       <Fireworks reducedMotion={reducedMotion} />
-      <section className="debrief campaign-complete" aria-labelledby="campaign-complete-title">
+      <section
+        className="debrief campaign-complete"
+        aria-labelledby="campaign-complete-title"
+        style={{ '--result-frame': `url(${uiResults.victoryFrame})` } as CSSProperties}
+      >
+        <img className="campaign-complete__coach" src={uiCoach.victoryControl} alt="" draggable={false} />
         <span className="menu__panel-label">Campaign Complete</span>
         <h2 id="campaign-complete-title">You beat Slope Invaders!</h2>
         <p className="debrief__intro">
@@ -64,12 +71,8 @@ export function CampaignCompleteScreen({
         </ul>
 
         <div className="campaign-complete__actions">
-          <button type="button" className="btn btn--fire" onClick={onGalaxy}>
-            ★ Replay Campaign
-          </button>
-          <button type="button" className="btn btn--reset" onClick={onMenu}>
-            ← Back to Menu
-          </button>
+          <TacticalButton asset="replay" label="Replay Campaign" text="Replay Campaign" size="large" onClick={onGalaxy} />
+          <TacticalButton asset="back" label="Back to Menu" text="Back to Menu" size="large" onClick={onMenu} />
         </div>
       </section>
     </ScreenChrome>

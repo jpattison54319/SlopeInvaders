@@ -12,6 +12,7 @@ interface CampaignMapScreenProps {
   onToggleView: () => void;
   /** Open the Pilot Profile (XP, badges, mastery, flight log). */
   onOpenProfile?: () => void;
+  toggleViewIcon?: 'planet';
   /** Label/tooltip for the back control (defaults to "Modes"). */
   backLabel?: string;
 }
@@ -25,6 +26,7 @@ export function CampaignMapScreen({
   onOpenSettings,
   onToggleView,
   onOpenProfile,
+  toggleViewIcon = 'planet',
   backLabel = 'Modes',
 }: CampaignMapScreenProps) {
   return (
@@ -34,6 +36,7 @@ export function CampaignMapScreen({
       onOpenSettings={onOpenSettings}
       onToggleView={onToggleView}
       toggleViewLabel="Planet view"
+      toggleViewIcon={toggleViewIcon}
       onOpenProfile={onOpenProfile}
     >
       <section className="level-select" aria-labelledby="campaign-title">

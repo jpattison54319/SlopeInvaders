@@ -3,6 +3,7 @@ import { icons } from '../assets/assetMap';
 import { Modal } from '../game/components/Modal';
 import { ControlsSettings } from './ControlsSettings';
 import type { KeyBindings } from '../game/controls/keybindings';
+import { TacticalButton } from '../game/components/TacticalButton';
 
 interface SettingsModalProps {
   musicVolume: number;
@@ -60,11 +61,14 @@ function VolumeControl({
       </label>
       <button
         type="button"
-        className="settings-panel__mute"
+        className="settings-panel__mute settings-switch"
         aria-pressed={muted}
         onClick={() => onChangeMuted(!muted)}
       >
-        {muted ? unmuteLabel : muteLabel}
+        <span className="settings-switch__track" aria-hidden="true">
+          <span />
+        </span>
+        <span>{muted ? unmuteLabel : muteLabel}</span>
       </button>
     </div>
   );
@@ -96,7 +100,7 @@ export function SettingsModal({
           onBack={() => setView('main')}
         />
       ) : (
-        <div className="settings-panel">
+        <div className="settings-panel settings-panel--tactical">
           <div className="settings-panel__track">
             <img src={icons.music} alt="" draggable={false} />
             <div>
@@ -128,9 +132,13 @@ export function SettingsModal({
           />
 
           <div className="settings-group">
-            <button type="button" className="settings-panel__mute" onClick={() => setView('controls')}>
-              Change Controls
-            </button>
+            <TacticalButton
+              asset="settings"
+              label="Change Controls"
+              text="Change Controls"
+              size="large"
+              onClick={() => setView('controls')}
+            />
           </div>
         </div>
       )}

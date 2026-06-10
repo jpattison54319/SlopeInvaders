@@ -3,6 +3,8 @@ import type { Zone } from '../../game/campaign/types';
 import { planetSrcForZone } from '../../game/campaign/planets';
 import { ScreenChrome } from '../ScreenChrome';
 import type { CampaignProgress } from '../useCampaignProgress';
+import { TacticalButton } from '../../game/components/TacticalButton';
+import { TacticalPanel, TacticalStatusRail } from '../../game/components/TacticalPanel';
 import { PlanetDial } from './PlanetDial';
 import { PlanetSurfaceMap } from './PlanetSurfaceMap';
 
@@ -18,6 +20,7 @@ interface GalaxyMapScreenProps {
   onToggleView: () => void;
   /** Open the Pilot Profile (XP, badges, mastery, flight log). */
   onOpenProfile: () => void;
+  toggleViewIcon?: 'list';
 }
 
 type SurfacePhase = 'space' | 'approach' | 'surface' | 'leaving';
@@ -41,6 +44,7 @@ export function GalaxyMapScreen({
   onOpenSettings,
   onToggleView,
   onOpenProfile,
+  toggleViewIcon = 'list',
 }: GalaxyMapScreenProps) {
   const initialIndex = useMemo(() => {
     const fromId = initialZoneId ? zones.findIndex((z) => z.id === initialZoneId) : -1;
@@ -129,6 +133,7 @@ export function GalaxyMapScreen({
       onOpenSettings={onOpenSettings}
       onToggleView={onToggleView}
       toggleViewLabel="List view"
+      toggleViewIcon={toggleViewIcon}
       onOpenProfile={onOpenProfile}
     >
       <section
@@ -141,24 +146,21 @@ export function GalaxyMapScreen({
               <span className="menu__panel-label">Campaign · Galaxy</span>
               <h2 id="galaxy-title">Choose your destination</h2>
             </div>
-            <span className="galaxy__xp" aria-label={`${progress.getTotalXp()} experience points`}>
-              {progress.getTotalXp()} XP
-            </span>
+            <span className="galaxy__sector-code">NAV // {String(activeIndex + 1).padStart(2, '0')}</span>
           </div>
         )}
 
         {!showingSurface && (
           <>
             <div className={`galaxy__stage ${surfacePhase === 'approach' ? 'galaxy__stage--approach' : ''}`}>
-              <button
-                type="button"
+              <TacticalButton
+                asset="back"
+                size="medium"
                 className="galaxy-nav-arrow galaxy-nav-arrow--left"
-                aria-label="Previous planet"
+                label="Previous planet"
                 disabled={activeIndex === 0 || surfacePhase !== 'space'}
                 onClick={() => rotate(-1)}
-              >
-                ‹
-              </button>
+              />
 
               <PlanetDial
                 zones={zones}
@@ -168,42 +170,43 @@ export function GalaxyMapScreen({
                 onEnterCenter={enterPlanet}
               />
 
-              <button
-                type="button"
+              <TacticalButton
+                asset="forward"
+                size="medium"
                 className="galaxy-nav-arrow galaxy-nav-arrow--right"
-                aria-label="Next planet"
+                label="Next planet"
                 disabled={activeIndex === zones.length - 1 || surfacePhase !== 'space'}
                 onClick={() => rotate(1)}
-              >
-                ›
-              </button>
+              />
             </div>
 
-            <div className="galaxy__caption" aria-live="polite">
-              <strong>
-                {activeZone.number === 0 ? activeZone.name : `Zone ${activeZone.number}: ${activeZone.name}`}
-              </strong>
-              <span>{activeZone.theme}</span>
-              {statusNote && <span className="galaxy__status">{statusNote}</span>}
-              {showProgressSummary && (
-                <span
-                  className="galaxy__mastery"
-                  aria-label={`${acquiredStars} of ${totalStars} mastery stars acquired`}
-                >
-                  <svg
-                    className="galaxy__mastery-star-icon"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path d="M12 2.4 15 8.5l6.7 1-4.85 4.72 1.15 6.68L12 17.75 6 20.9l1.15-6.68L2.3 9.5l6.7-1L12 2.4Z" />
-                  </svg>
-                  <span>
-                    {acquiredStars} / {totalStars} Mastery
-                  </span>
-                </span>
-              )}
-            </div>
+            <TacticalPanel className="galaxy__console" tone={locked ? 'standard' : 'gold'} aria-live="polite">
+              <div className="galaxy__caption">
+                <strong>
+                  {activeZone.number === 0 ? activeZone.name : `Zone ${activeZone.number}: ${activeZone.name}`}
+                </strong>
+                <span>{activeZone.theme}</span>
+                {statusNote && <span className="galaxy__status">{statusNote}</span>}
+              </div>
+              <TacticalStatusRail
+                label="Campaign navigation status"
+                items={[
+                  { label: 'Pilot XP', value: progress.getTotalXp() },
+                  {
+                    label: 'Missions',
+                    value: showProgressSummary
+                      ? `${progress.zoneClearedCount(activeZone.id)}/${activeZone.levels.length}`
+                      : locked
+                        ? 'Locked'
+                        : '—',
+                  },
+                  {
+                    label: 'Mastery',
+                    value: showProgressSummary ? `${acquiredStars}/${totalStars}` : '—',
+                  },
+                ]}
+              />
+            </TacticalPanel>
           </>
         )}
 

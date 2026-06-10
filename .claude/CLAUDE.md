@@ -41,9 +41,12 @@ Slope Invaders teaches linear equations by letting students aim a cannon/ship wi
 
 Current user-facing flow:
 
-1. The app opens on a pixel-art mode-select menu.
+1. The app opens on a tactical space-cockpit mode-select screen while retaining
+   pixel-art game imagery and typography.
 2. Campaign is available; Arcade and Versus are visible as coming-soon modes.
-3. Campaign opens a galaxy planet-dial (zones are planets; the active planet's hotspots are its levels, with a launch warp into gameplay). A "List view" toggle keeps the classic zone/level-list screens.
+3. Campaign opens a galaxy planet dial. Selecting a planet zooms to its surface
+   map, where gold regions and faction banners launch levels directly. A "List
+   view" toggle keeps the classic zone/level-list screens.
 4. Tutorial opens with a one-time guided spotlight tour, then teaches slope, firing, grid reading, hearts, and feedback.
 5. Zone 1 focuses on `y = mx`, slope-only reasoning, fractional slopes, sequential targets, no-preview mastery, and a final debrief.
 5a. Zone 2 focuses on `y = mx + b`: the y-intercept lifts the line off the origin, same slope hits different targets at different `b`, and horizontal lines (`y = b`). Its no-preview mastery uses two-point lines so horizontal shortcuts cannot clear them. Horizontal "cheese" shots are intentionally allowed (no blockers yet).
@@ -52,7 +55,10 @@ Current user-facing flow:
 5d. Zone 5 focuses on walls/shields: it keeps the Zone 4 controls (all quadrants, slope + y-intercept + facing) and adds `WallSpec` segments that block shots crossing them. A target can be hit by many equations, but a wall makes some invalid, so students choose a line that reaches the weak point without crossing a shield (flat/horizontal shots get blocked by a wall at the target's height). `hitDetection.isPathBlocked`/`firstWallHit` do segment intersection on the ship→target path (honoring `WallSpec.gaps`); the beam truncates at the first wall, the asteroid survives, and the blocked shot counts as a miss (so it costs a star). Every level keeps at least one clear line so 3 stars stays achievable. Walls are line segments of any orientation: most are vertical (blocking the flat/horizontal shot at a target's height), and some are **45° diagonal** shields (z5-l3, z5-l5) that block a sloped/diagonal fire so the student must change slope to go over or under. The geometry is locked by `zone5.test.ts`.
 5e. Zones 6–8 extend the full-grid mechanics: Zone 6 is linked asteroids (chained rocks are all-or-none — one line must pass through every rock in the chain), Zone 7 adds friendly ships (a shot whose line crosses an ally is scrubbed and counts as a miss), and Zone 8 is the moving cannon (the x-offset control slides the ship, teaching `y = m(x − h) + b`).
 5f. Winning a level shows the victory overlay with stars, an XP breakdown (one row per earned bonus with the reason it was earned, plus how much was banked), and any newly earned badges. XP uses best-run banking: only the improvement over that level's previous best run is added to the lifetime total, so replays reward improvement, never grinding, and XP never goes down. Lifetime XP maps to a pilot rank (Cadet → Pilot → Ace → Commander → Star Legend) that never demotes.
-5g. The Pilot Profile is the private progress page: a rank/XP hero card (ship avatar, progress bar to the next rank, star/badge/accuracy chips), the badge collection grouped into Zone Mastery / Sharpshooting / Growth (earned badges show planet/sprite emblems and dates; locked ones are dimmed "Next mission" silhouettes, never failures), per-planet mastery star bars, and a lifetime flight log. It opens from the main menu's ship icon (the old disabled trophy button) and from the campaign top bars, and returns to wherever it was opened. Keep it individual — no comparisons, rankings, or other players.
+5g. The Pilot Profile is the private progress page: an astronaut pilot avatar,
+rank/XP progress, badges, planet mastery, and a lifetime flight log. It opens
+from the profile icon and returns to its originating screen. Keep it individual
+— no comparisons, rankings, or other players.
 6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
 6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
@@ -84,9 +90,11 @@ npm run build
 - `src/main.tsx` mounts the React app and imports global styles.
 - `src/app/App.tsx` owns app-level screen state, mode/zone/level/game routing, settings modal state, music/SFX state, and adaptive tier wiring.
 - `src/app/MenuScreen.tsx` renders the mode-select menu.
-- `src/app/galaxy/` renders the galaxy planet-dial campaign screen (planet dial, level hotspots, mission popup); `src/app/LaunchTransition.tsx` plays the warp into gameplay.
+- `src/app/galaxy/` renders the galaxy planet dial and planet-surface
+  region/banner map.
 - `src/app/CampaignMapScreen.tsx` and `src/app/ZoneLevelsScreen.tsx` are the classic zone/level-list screens, kept as a "List view" fallback.
-- `src/game/campaign/planets.ts` maps zones to planet sprites and lays out level hotspots.
+- `src/game/campaign/planets.ts` maps zones to planet sprites and computes safe,
+  deterministic mission-banner paths.
 - `src/app/DebriefScreen.tsx` renders end-of-zone reflection/debrief.
 - `src/app/SettingsModal.tsx` renders music/SFX volume and mute controls and toggles to the controls sub-screen.
 - `src/app/ControlsSettings.tsx` renders the keyboard remap sub-screen (two-column map, key capture, reassign confirm, restore defaults).
@@ -119,7 +127,15 @@ npm run build
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts` implement the floating calculator, safe evaluator, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/` contains Konva canvas components and DOM controls.
 - `src/game/logic/` contains pure math, scoring, hit detection, and feedback logic with tests.
-- `src/assets/assetMap.ts` is the source of truth for sprite/icon/heart/planet/audio imports.
+- `src/assets/assetMap.ts` is the source of truth for sprite/icon/heart/planet,
+  audio, and typed tactical UI imports.
+- `src/assets/ui/` contains only the curated optimized production derivatives.
+- `src/game/components/TacticalButton.tsx`, `TacticalPanel.tsx`, and
+  `CoachPanel.tsx` are the reusable tactical shell primitives.
+- `docs/ASSET_SOURCES.md` records tactical asset provenance and usage rules.
+- `scripts/pixelize_ui_assets.py` creates non-destructive, category-aware
+  pixelized previews under `tmp/pixelized-ui/`; CSS alone does not convert
+  smooth source artwork into pixel art.
 - `src/styles/global.css` contains all app styling.
 
 ## Architecture Notes
@@ -159,9 +175,14 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 
 ## UI and Design Guidance
 
-- Preserve the 8-bit arcade space vibe.
-- Keep math readability above visual spectacle.
-- Use existing sliced UI/audio assets before adding new art.
+- Use the shooter-kit tactical cockpit as the primary shell around the existing
+  8-bit game world.
+- Keep math readability above visual spectacle; the graph must remain the
+  highest-contrast gameplay surface.
+- Use the robot only as instructional Mission Control, never as the player.
+- Keep labels and dynamic values as accessible HTML rather than baked-in artwork.
+- Add curated assets through typed collections in `assetMap.ts`; do not commit
+  the original 1.18 GB source packs.
 - Keep the shared 3D press treatment and generic click SFX on buttons; opt out only for buttons with their own dedicated sound, such as the actual Fire button using laser SFX.
 - Keep Settings as the single menu entry point for audio controls.
 - Avoid adding marketing/landing-page sections; the first screen should remain the actual game/mode experience.
@@ -188,13 +209,15 @@ npm run dev -- --host 127.0.0.1
 Minimum UI smoke flow:
 
 1. Mode-select menu loads.
-2. Campaign opens the galaxy planet-dial; rotating and a level hotspot's mission popup work.
+2. Campaign opens the galaxy planet dial; selecting a planet opens its surface
+   and an unlocked faction banner launches its mission.
 3. Tutorial/Zone navigation works according to unlock rules (galaxy and the "List view" fallback).
 4. Top-right Settings opens music/SFX controls.
 5. A playable level opens and shows graph, hearts, equation controls, feedback, and game bar.
 6. Calculator opens, computes `(6-2)/(3-1) = 2`, closes, and leaves the board visible.
 7. Winning a level shows stars plus the XP breakdown (and a badge announcement when one is earned); the galaxy header XP pill updates.
-8. The main menu's ship icon opens the Pilot Profile (rank card, badges, planet mastery, flight log) and its back button returns to the menu.
+8. The main menu's profile icon opens the Pilot Profile (rank card, badges,
+   planet mastery, flight log) and its back button returns to the menu.
 9. Mobile/narrow viewport has no horizontal overflow.
 10. Console has no relevant errors.
 

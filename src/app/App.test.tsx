@@ -4,7 +4,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { assets, icons, music } from '../assets/assetMap';
+import { music, uiButtons } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { orderedLevels } from '../game/campaign/zones';
 import App from './App';
@@ -260,14 +260,18 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Coming Soon');
     const settingsButton = host.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
     const profileButton = host.querySelector<HTMLButtonElement>('button[aria-label="Pilot Profile"]');
-    const settingsIcon = settingsButton?.querySelector<HTMLImageElement>('.icon-btn__img');
-    const profileIcon = profileButton?.querySelector<HTMLImageElement>('.icon-btn__img');
+    const settingsIcon = settingsButton?.querySelector<HTMLImageElement>(
+      '.tactical-button__image--default',
+    );
+    const profileIcon = profileButton?.querySelector<HTMLImageElement>(
+      '.tactical-button__image--default',
+    );
     expect(settingsButton).toBeTruthy();
     expect(profileButton?.textContent?.trim()).toBe('');
     expect(profileButton?.className).toBe(settingsButton?.className);
     expect(profileIcon?.className).toBe(settingsIcon?.className);
-    expect(profileIcon?.getAttribute('src')).toBe(icons.pilot);
-    expect(icons.pilot).not.toBe(assets.ship);
+    expect(profileIcon?.getAttribute('src')).toBe(uiButtons.profile.default);
+    expect(settingsIcon?.getAttribute('src')).toBe(uiButtons.settings.default);
     expect(buttonLabels.some((l) => l === 'Settings')).toBe(false);
     expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
@@ -294,6 +298,21 @@ describe('App shell', () => {
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.3, true);
 
     expect(host.querySelector('input[aria-label="Sound effects volume"]')).toBeTruthy();
+  });
+
+  test('mission briefing explains gameplay and keyboard control settings', async () => {
+    await renderApp();
+    await click('Mission briefing');
+
+    const dialog = host.querySelector('[role="dialog"][aria-label="Mission Briefing"]');
+    const header = dialog?.querySelector('.modal__header');
+
+    expect(dialog).toBeTruthy();
+    expect(header?.classList.contains('modal__header--with-icon')).toBe(false);
+    expect(dialog?.textContent).toContain('R/F');
+    expect(dialog?.textContent).toContain('W/S');
+    expect(dialog?.textContent).toContain('Space');
+    expect(dialog?.textContent).toContain('Settings → Change Controls');
   });
 
   test('settings → Change Controls remaps keys, handles conflicts, and restores defaults', async () => {
@@ -418,11 +437,10 @@ describe('App shell', () => {
     await click('Play Campaign');
 
     expect(host.textContent).toContain('1 / 4 missions cleared');
-    expect(host.querySelector('.galaxy__mastery')?.textContent).toBe('2 / 12 Mastery');
-    expect(host.querySelector('.galaxy__mastery')?.getAttribute('aria-label')).toBe(
-      '2 of 12 mastery stars acquired',
-    );
-    expect(host.querySelector('.galaxy__mastery-star-icon')).toBeTruthy();
+    const status = host.querySelector('dl[aria-label="Campaign navigation status"]');
+    expect(status).toBeTruthy();
+    expect(status?.textContent).toContain('Missions1/4');
+    expect(status?.textContent).toContain('Mastery2/12');
   });
 
   test('planet surface shows active and locked region banners after entering a zone', async () => {
@@ -507,7 +525,8 @@ describe('App shell', () => {
     await renderApp();
 
     await click('Play Campaign');
-    expect(host.querySelector('.galaxy__xp')?.textContent).toBe('0 XP');
+    const status = host.querySelector('dl[aria-label="Campaign navigation status"]');
+    expect(status?.textContent).toContain('Pilot XP0');
 
     await click('Pilot Profile');
     expect(host.querySelector('.pilot-card')).toBeTruthy();

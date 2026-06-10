@@ -1,5 +1,8 @@
-import { sprites } from '../../assets/assetMap';
+import type { CSSProperties } from 'react';
+import { sprites, uiHud } from '../../assets/assetMap';
 import type { ShotFeedback } from '../logic/hints';
+import { CoachPanel } from './CoachPanel';
+import { TacticalStatusRail } from './TacticalPanel';
 
 interface HudProps {
   score: number;
@@ -37,6 +40,7 @@ export function Hud({
           data-tour="hearts"
           role="img"
           aria-label={`${heartCount} of ${maxHearts} hearts remaining`}
+          style={{ '--health-rail': `url(${uiHud.healthRail})` } as CSSProperties}
         >
           {Array.from({ length: maxHearts }).map((_, i) => (
             <img
@@ -50,30 +54,25 @@ export function Hud({
         </div>
       )}
 
-      <div className="hud__stats" data-tour="stats">
-        <div className="stat">
-          <span className="stat__value">{score}</span>
-          <span className="stat__label">Score</span>
-        </div>
-        <div className="stat">
-          <span className="stat__value">
-            {destroyedCount}/{total}
-          </span>
-          <span className="stat__label">Asteroids</span>
-        </div>
-        <div className="stat">
-          <span className="stat__value">{shotsFired}</span>
-          <span className="stat__label">Shots</span>
-        </div>
-      </div>
+      <TacticalStatusRail
+        className="hud__stats"
+        label="Mission statistics"
+        items={[
+          { label: 'Score', value: score },
+          { label: 'Targets', value: `${destroyedCount}/${total}` },
+          { label: 'Shots', value: shotsFired },
+        ]}
+      />
 
       {won ? (
         <div className="feedback feedback--win" data-tour="hint" role="status">
-          <strong>Victory!</strong>
-          <p>
-            All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final score:{' '}
-            {score}.
-          </p>
+          <CoachPanel title="Mission Control" tone="success" compact>
+            <strong>Victory!</strong>
+            <p>
+              All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final
+              score: {score}.
+            </p>
+          </CoachPanel>
         </div>
       ) : feedback ? (
         <div
@@ -81,13 +80,17 @@ export function Hud({
           data-tour="hint"
           role="status"
         >
-          <strong>{feedback.headline}</strong>
-          <p>{feedback.detail}</p>
+          <CoachPanel title="Mission Control" tone={feedback.hit ? 'success' : 'warning'} compact>
+            <strong>{feedback.headline}</strong>
+            <p>{feedback.detail}</p>
+          </CoachPanel>
         </div>
       ) : (
         <div className="feedback feedback--idle" data-tour="hint" role="status">
-          <strong>Ready.</strong>
-          <p>Set your slope and y-intercept, watch the dashed aiming line, then Fire!</p>
+          <CoachPanel title="Mission Control" compact>
+            <strong>Ready.</strong>
+            <p>Set your equation, check the dashed trajectory, then Fire.</p>
+          </CoachPanel>
         </div>
       )}
     </div>

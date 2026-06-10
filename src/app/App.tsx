@@ -126,6 +126,7 @@ export default function App() {
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'campaign-map' })}
+            toggleViewIcon="list"
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'galaxy' })}
           />
         );
@@ -159,6 +160,7 @@ export default function App() {
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'galaxy' })}
+            toggleViewIcon="planet"
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'campaign-map' })}
           />
         );
@@ -174,6 +176,7 @@ export default function App() {
             onBack={() => setScreen({ name: 'campaign-map' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'galaxy', zoneId: zone.id })}
+            toggleViewIcon="planet"
           />
         );
       }

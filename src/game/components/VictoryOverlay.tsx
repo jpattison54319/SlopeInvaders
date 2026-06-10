@@ -1,7 +1,10 @@
+import type { CSSProperties } from 'react';
 import type { StarCount } from '../campaign/stars';
 import type { XpAward } from '../campaign/xp';
 import type { BadgeDef } from '../campaign/badges';
+import { uiCoach, uiResults } from '../../assets/assetMap';
 import { StarRating } from './StarRating';
+import { TacticalButton } from './TacticalButton';
 
 interface VictoryOverlayProps {
   shotsFired: number;
@@ -28,7 +31,11 @@ export function VictoryOverlay({
 }: VictoryOverlayProps) {
   return (
     <div className="game-overlay" role="dialog" aria-label="Victory">
-      <div className="game-overlay__panel game-overlay__panel--win">
+      <div
+        className="game-overlay__panel game-overlay__panel--win game-overlay__panel--framed"
+        style={{ '--result-frame': `url(${uiResults.victoryFrame})` } as CSSProperties}
+      >
+        <img className="game-overlay__coach" src={uiCoach.victoryControl} alt="" draggable={false} />
         <strong>Victory</strong>
         <p className="game-overlay__stats">
           Cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'} · Score {score}
@@ -70,12 +77,14 @@ export function VictoryOverlay({
           </div>
         )}
         <div className="game-overlay__actions">
-          <button type="button" className="btn btn--fire" onClick={onAdvance}>
-            {hasNext ? '▶ Next Level' : '✓ Continue'}
-          </button>
-          <button type="button" className="btn btn--reset" onClick={onReplay}>
-            ↺ Replay
-          </button>
+          <TacticalButton
+            asset="forward"
+            label={hasNext ? 'Next Level' : 'Continue'}
+            text={hasNext ? 'Next Level' : 'Continue'}
+            size="large"
+            onClick={onAdvance}
+          />
+          <TacticalButton asset="replay" label="Replay" text="Replay" size="large" onClick={onReplay} />
         </div>
       </div>
     </div>

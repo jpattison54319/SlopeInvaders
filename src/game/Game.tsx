@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { AsteroidSpec, Facing, LevelConfig } from './levels/types';
 import {
   DEFAULT_KEYBINDINGS,
@@ -21,15 +21,17 @@ import { buildFeedback, type ShotFeedback } from './logic/hints';
 import { GameBoard, type ExplosionInstance, type ShotState } from './components/GameBoard';
 import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
-import { IconButton } from './components/IconButton';
 import { Calculator } from './components/Calculator';
 import { GuidedTour, type TourStep } from './components/GuidedTour';
 import { CalculatorIcon } from './components/CalculatorIcon';
 import { VictoryOverlay } from './components/VictoryOverlay';
+import { CoachPanel } from './components/CoachPanel';
+import { TacticalButton } from './components/TacticalButton';
 import { useSfx } from './audio/sfxContext';
 import { scorePerformance, type DifficultyTier, type LevelStats } from './campaign/difficulty';
 import { starsForCompletedStats, type StarCount } from './campaign/stars';
 import type { CompletionRewards } from './campaign/rewards';
+import { uiResults } from '../assets/assetMap';
 
 const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
@@ -633,7 +635,7 @@ export function Game({
   return (
     <div className="app">
       <header className="game-bar">
-        <IconButton icon="back" label="Back to levels" className="bar-btn chrome-icon-btn" onClick={onExit} />
+        <TacticalButton asset="back" label="Back to levels" size="small" className="bar-btn" onClick={onExit} />
         <div className="game-bar__title">
           <span className="game-bar__level">{levelNumberLabel}</span>
           <h1>{title}</h1>
@@ -649,17 +651,23 @@ export function Game({
           >
             <CalculatorIcon className="calc-btn__icon" />
           </button>
-          <IconButton icon="settings" label="Settings" className="bar-btn chrome-icon-btn" onClick={onSettings} />
+          <TacticalButton asset="settings" label="Settings" size="small" className="bar-btn" onClick={onSettings} />
         </div>
       </header>
 
       <div className="mission-banner" data-tour="mission" role="note">
-        <span className="mission-banner__label">Mission</span>
-        <p>{level.learningGoal}</p>
+        <CoachPanel title="Mission Directive" compact>
+          <p>{level.learningGoal}</p>
+        </CoachPanel>
       </div>
 
       <main className="app__main">
-        <div className="app__board" data-tour="grid">
+        <div
+          className={`app__board ${
+            showWinOverlay || showLoseOverlay ? 'app__board--result' : ''
+          }`.trim()}
+          data-tour="grid"
+        >
           <GameBoard
             width={BOARD_SIZE}
             height={BOARD_SIZE}
@@ -694,16 +702,15 @@ export function Game({
 
           {showLoseOverlay && (
             <div className="game-overlay" role="dialog" aria-label="Out of hearts">
-              <div className="game-overlay__panel game-overlay__panel--lose">
+              <div
+                className="game-overlay__panel game-overlay__panel--lose game-overlay__panel--framed"
+                style={{ '--result-frame': `url(${uiResults.defeatFrame})` } as CSSProperties}
+              >
                 <strong>Out of Hearts</strong>
                 <p>Your cannon’s shields are down. Try again!</p>
                 <div className="game-overlay__actions">
-                  <button type="button" className="btn btn--fire" onClick={handleRetry}>
-                    ↺ Retry
-                  </button>
-                  <button type="button" className="btn btn--reset" onClick={onExit}>
-                    ← Levels
-                  </button>
+                  <TacticalButton asset="replay" label="Retry" text="Retry" size="large" onClick={handleRetry} />
+                  <TacticalButton asset="back" label="Back to levels" text="Levels" size="large" onClick={onExit} />
                 </div>
               </div>
             </div>

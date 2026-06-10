@@ -1,0 +1,78 @@
+# Tactical UI Asset Sources
+
+Slope Invaders uses a small, optimized selection from two purchased/downloaded
+Craftpix source packs supplied with the project:
+
+- `space-shooter-game-kit`
+- `sci-fi-robot-gui`
+
+Both source packs point to the Craftpix file license:
+
+- https://craftpix.net/file-licenses/
+
+The original packs remain outside this Git repository because together they are
+approximately 1.18 GB and include editable PSD/AI source files, store artwork,
+and unused variants. Only production-ready derivatives used by the app are
+committed under `src/assets/ui/`.
+
+## Curated Production Assets
+
+- `backgrounds/`: optimized WebP space and cockpit backdrops from the shooter kit.
+- `buttons/`: transparent normal/active PNG pairs from the shooter kit. The
+  profile and planet controls combine supplied button chrome with existing
+  Slope Invaders icon art.
+- `panels/` and `hud/`: transparent settings, dialog, health, and status frames.
+- `ships/`: optimized WebP hero ship artwork from the shooter kit.
+- `coach/`: optimized WebP robot portraits from the robot GUI kit.
+- `results/`: transparent victory, defeat, and mastery framing.
+
+The committed tactical bundle should stay below 5 MB. Keep source-pack folders
+outside the repository and add only assets that appear in the shipped UI.
+
+## Pixelization Workflow
+
+CSS `image-rendering: pixelated` preserves hard edges when low-resolution art is
+scaled, but it does not convert smooth artwork into pixel art. Use the repository
+batch tool to create a real pixelized preview:
+
+```bash
+python3 -m pip install -r scripts/requirements-pixelize.txt
+python3 scripts/pixelize_ui_assets.py
+```
+
+Preview files are written to the ignored `tmp/pixelized-ui/` directory. The tool
+uses category-specific block sizes and palettes so buttons receive a lighter pass
+than backgrounds and hero artwork.
+
+Useful adjustments:
+
+```bash
+# Chunkier preview with fewer colors
+python3 scripts/pixelize_ui_assets.py --block-size 6 --colors 20
+
+# Pixelize one file
+python3 scripts/pixelize_ui_assets.py src/assets/ui/ships/hero-ship.webp
+
+# After reviewing the preview, replace files and retain backups
+python3 scripts/pixelize_ui_assets.py --in-place --backup tmp/ui-originals
+```
+
+Do not use `--in-place` until the preview has been checked in the running game.
+
+## Usage Rules
+
+- Use the shooter kit as the primary UI language.
+- Use the robot only as Mission Control, never as the player identity.
+- Keep labels, values, instructions, and dynamic results as accessible HTML.
+  Do not use artwork with baked-in text.
+- Retain transparent controls and frames as PNG; use WebP for opaque backgrounds
+  and large character/ship art.
+- Add every imported asset through `src/assets/assetMap.ts`.
+- Use `scripts/pixelize_ui_assets.py` for raster pixelization rather than relying
+  on CSS alone.
+- Update this file and the relevant agent documentation when the curated set or
+  its licensing changes.
+
+The robot pack README references the Robotica font, but Slope Invaders does not
+ship or depend on that font. The app retains its existing Press Start 2P and
+readable monospace typography.

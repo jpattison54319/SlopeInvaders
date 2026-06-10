@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { icons, type IconKey } from '../../assets/assetMap';
-import { IconButton } from './IconButton';
+import { TacticalButton } from './TacticalButton';
 
 interface ModalProps {
   title: string;
@@ -23,16 +23,16 @@ export function Modal({ title, onClose, children, icon }: ModalProps) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
-        className="modal"
+        className="modal tactical-modal"
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="modal__header">
+        <header className={`modal__header ${icon ? 'modal__header--with-icon' : ''}`.trim()}>
           {icon && <img className="modal__icon" src={icons[icon]} alt="" draggable={false} />}
           <h2>{title}</h2>
-          <IconButton icon="close" label="Close" className="modal__close" onClick={onClose} />
+          <TacticalButton asset="close" label="Close" size="small" className="modal__close" onClick={onClose} />
         </header>
         <div className="modal__body">{children}</div>
       </div>

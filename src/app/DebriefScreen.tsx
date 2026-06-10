@@ -1,5 +1,7 @@
 import type { Zone } from '../game/campaign/types';
 import { ReflectionQuestionCard } from '../game/components/ReflectionQuestionCard';
+import { CoachPanel } from '../game/components/CoachPanel';
+import { TacticalButton } from '../game/components/TacticalButton';
 import { ScreenChrome } from './ScreenChrome';
 
 interface DebriefScreenProps {
@@ -21,7 +23,9 @@ export function DebriefScreen({ zone, onBack, onOpenSettings }: DebriefScreenPro
       <section className="debrief" aria-labelledby="debrief-title">
         <span className="menu__panel-label">Zone {zone.number} Complete</span>
         <h2 id="debrief-title">{debrief?.title ?? 'Mission Debrief'}</h2>
-        <p className="debrief__intro">Great work clearing {zone.name}! Let&rsquo;s reflect.</p>
+        <CoachPanel tone="success">
+          <p>Great work clearing {zone.name}. Review the decisions that made the route successful.</p>
+        </CoachPanel>
 
         {reflections.length > 0 && (
           <div className="debrief__quiz">
@@ -42,9 +46,14 @@ export function DebriefScreen({ zone, onBack, onOpenSettings }: DebriefScreenPro
           </>
         )}
 
-        <button type="button" className="btn btn--fire debrief__continue" onClick={onBack}>
-          ▶ Back to Campaign
-        </button>
+        <TacticalButton
+          asset="forward"
+          label="Back to Campaign"
+          text="Back to Campaign"
+          size="large"
+          className="debrief__continue"
+          onClick={onBack}
+        />
       </section>
     </ScreenChrome>
   );
