@@ -23,6 +23,8 @@ import { ZoneLevelsScreen } from './ZoneLevelsScreen';
 import { DebriefScreen } from './DebriefScreen';
 import { CampaignCompleteScreen } from './CampaignCompleteScreen';
 import { PilotProfileScreen } from './PilotProfileScreen';
+import { ClassroomScreen } from './ClassroomScreen';
+import { TeacherDashboardScreen } from './TeacherDashboardScreen';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
@@ -39,10 +41,26 @@ type Screen =
   | { name: 'game'; levelId: string }
   | { name: 'debrief'; zoneId: string }
   | { name: 'campaign-complete' }
-  | { name: 'pilot-profile'; from: 'mode-select' | 'galaxy' | 'campaign-map' };
+  | { name: 'pilot-profile'; from: 'mode-select' | 'galaxy' | 'campaign-map' }
+  | { name: 'classroom'; joinCode?: string }
+  | { name: 'teacher-dashboard'; teacherKey?: string };
 
 /** The last available zone — clearing its debrief completes the campaign. */
 const lastAvailableZoneId = zones.filter((z) => z.status === 'available').at(-1)?.id;
+
+/** Open straight to the classroom/teacher screen when a capability link is used. */
+function initialScreen(): Screen {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const teacher = params.get('teacher');
+    if (teacher) return { name: 'teacher-dashboard', teacherKey: teacher };
+    const cls = params.get('class');
+    if (cls) return { name: 'classroom', joinCode: cls.toUpperCase() };
+  } catch {
+    /* ignore malformed URLs */
+  }
+  return { name: 'mode-select' };
+}
 
 const DEFAULT_MUSIC_VOLUME = 0.65;
 const DEFAULT_SFX_VOLUME = 0.7;
@@ -53,7 +71,7 @@ function ButtonClickSfx() {
 }
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>({ name: 'mode-select' });
+  const [screen, setScreen] = useState<Screen>(initialScreen);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [musicVolume, setMusicVolume] = usePersistentState('slope-invaders:music-volume', DEFAULT_MUSIC_VOLUME);
@@ -113,6 +131,7 @@ export default function App() {
             onSelectMode={selectMode}
             onOpenSettings={openSettings}
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'mode-select' })}
+            onOpenClassroom={() => setScreen({ name: 'classroom' })}
           />
         );
 
@@ -219,6 +238,26 @@ export default function App() {
           />
         );
       }
+
+      case 'classroom':
+        return (
+          <ClassroomScreen
+            progress={progress}
+            initialJoinCode={screen.joinCode}
+            onBack={() => setScreen({ name: 'mode-select' })}
+            onOpenSettings={openSettings}
+            onOpenTeacher={() => setScreen({ name: 'teacher-dashboard' })}
+          />
+        );
+
+      case 'teacher-dashboard':
+        return (
+          <TeacherDashboardScreen
+            initialTeacherKey={screen.teacherKey}
+            onBack={() => setScreen({ name: 'classroom' })}
+            onOpenSettings={openSettings}
+          />
+        );
 
       case 'campaign-complete':
         return (

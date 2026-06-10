@@ -20,6 +20,18 @@ Quick orientation:
 - The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the private progress
   page, opened from the astronaut/profile icon. Keep it individual — no
   comparisons or leaderboards.
+- An optional, account-free **classroom cloud** (Phase 1) lives in `src/cloud/`,
+  backed by Supabase (`supabase/migrations/0001_classroom.sql`). Teachers create
+  a class and get a dashboard; students join by class code and name a cadet;
+  their localStorage progress syncs up (`ClassroomScreen`/`TeacherDashboardScreen`,
+  a Classroom entry on the menu). It is additive — with no `VITE_SUPABASE_*` env
+  vars (`isCloudEnabled()` false) the game runs exactly as before, fully offline,
+  and sync is best-effort and never touches scoring/adaptivity. No accounts:
+  students are a device UUID + cadet name; teachers hold an unguessable secret
+  dashboard link (`?teacher=<key>`; `?class=<code>` prefills join). Storage keys
+  `slope-invaders:{student-id,cadet-name,classroom,teacher-keys}`. Live 1v1
+  Versus matchmaking is specced but not yet built. See
+  `docs/agent/10-classroom-cloud.md` and `DEPLOYMENT.md`.
 - The app uses a curated tactical cockpit system in `src/assets/ui/`, typed in
   `assetMap.ts`. Shooter-kit assets are primary; the robot appears only as
   Mission Control. See `docs/ASSET_SOURCES.md`.

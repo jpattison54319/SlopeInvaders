@@ -59,6 +59,19 @@ Current user-facing flow:
 rank/XP progress, badges, planet mastery, and a lifetime flight log. It opens
 from the profile icon and returns to its originating screen. Keep it individual
 — no comparisons, rankings, or other players.
+5h. An optional, account-free **classroom cloud** (Phase 1) adds teacher
+dashboards and student class-join, backed by Supabase. A Classroom entry on the
+menu opens `ClassroomScreen` (enter a class code + name a cadet to join); the
+teacher area (`TeacherDashboardScreen`) creates a class and shows a roster
+dashboard (cadet, last active, levels, stars, XP/rank, accuracy, per-level
+drill-down). It is additive: with no `VITE_SUPABASE_*` env vars
+(`isCloudEnabled()` false) the whole game runs exactly as before, fully offline,
+and a friendly notice replaces the cloud actions. No accounts — students are a
+device UUID + cadet name; teachers hold an unguessable secret dashboard link
+(`?teacher=<key>` opens it, `?class=<code>` prefills join). Progress sync is
+best-effort and never affects scoring/adaptivity. Live 1v1 Versus matchmaking is
+specced (Dr. Mario–style dual live boards + attack items) but not yet built. See
+`docs/agent/10-classroom-cloud.md` and `DEPLOYMENT.md`.
 6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
 6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
@@ -121,6 +134,9 @@ npm run build
 - `src/game/campaign/rewards.ts` defines `CompletionRewards` (XP award + new badges), returned by `useCampaignProgress.markComplete` and rendered by `VictoryOverlay`.
 - `src/game/campaign/profileStats.ts` holds the `ProfileStats` shape (game-layer so badges can read it; re-exported from `useCampaignProgress`).
 - `src/app/PilotProfileScreen.tsx` renders the Pilot Profile (rank card, badge grid, planet mastery, flight log).
+- `src/app/ClassroomScreen.tsx` (student class-join + cadet name) and `src/app/TeacherDashboardScreen.tsx` (teacher create + roster dashboard) are the cloud-gated classroom screens; both show an offline notice when `isCloudEnabled()` is false.
+- `src/cloud/` is the classroom cloud layer: `supabaseClient.ts` (lazy client + `isCloudEnabled()`), `identity.ts` (device student id, cadet name, joined-class + teacher-class records), `classroom.ts` (RPC wrappers; `pushProgress` best-effort/silent), `progressPayload.ts` (pure `buildProgressPayload` snapshot → `{summary, levels}`). `useCampaignProgress` debounce-syncs on change and exposes `syncNow()` for post-join backfill.
+- `supabase/migrations/0001_classroom.sql` is the Postgres schema (`classrooms`/`students`/`level_results`), RLS default-deny, and the four `SECURITY DEFINER` RPCs gated on unguessable codes. `.env.example` + `DEPLOYMENT.md` cover setup.
 - The `direction`/`facing` control mechanic: `Game.tsx` derives the effective fired line (`fireM = facing === 'right' ? m : -m`, `fireB` through the ship) and feeds it to hit detection, the board, and the equation; it also orients the shot segment to start at the ship so the projectile flies outward. `hitDetection.ts` and `coordinateTransform.ts` take a `facing` param (right reaches `x ≥ fromX`, left reaches `x ≤ fromX`). `EquationLine.tsx` draws the two-tone preview, `EquationControls.tsx` the toggle (and shows the facing-mirrored slope in the equation), and `Ship.tsx` flips the sprite.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
 - `src/game/levels/types.ts` defines the reusable level model and campaign-mode optional fields.
@@ -164,6 +180,7 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:xp` stores `{ totalXp, levelBestXp }` — the lifetime XP total and each level's best single-run XP (the best-run-banking baseline). Never subtract from it.
 - `slope-invaders:badges` stores earned badges (badge id → epoch ms). Badges are never revoked.
 - XP and badges must never be keyed on calculator opens, tweak counts, or speed.
+- `slope-invaders:student-id` is the account-free per-device UUID (the cloud `students` row key); `slope-invaders:cadet-name` is the chosen display name; `slope-invaders:classroom` is the joined class record; `slope-invaders:teacher-keys` remembers classes this device created (with their secret teacher keys). These power the optional classroom cloud and stay empty/unused when cloud is off.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
 - Calculator opens and tweaks are recorded but not scored.
