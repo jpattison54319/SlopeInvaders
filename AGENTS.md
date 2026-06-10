@@ -27,6 +27,7 @@ The `docs/agent/` folder contains the foundational theory behind design decision
 - `docs/agent/07-zone-3-negative-slopes.md`: Zone 3 (negative slopes, Quadrant IV) learning focus, scaffold, and design decisions.
 - `docs/agent/08-zone-4-full-grid.md`: Zone 4 (full grid, facing direction, infinite-line-vs-one-way-shot) learning focus, scaffold, and design decisions.
 - `docs/agent/09-zone-5-walls.md`: Zone 5 (shields/walls) learning focus, the wall-blocking model, star adherence, and SRL intent.
+- `docs/agent/10-classroom-cloud.md`: the optional Supabase classroom cloud (teacher dashboards, account-free student join, progress sync) and the Phase 2 live-Versus matchmaking spec.
 - `docs/agent/sources.md`: bibliography-style source notes.
 
 Before adding or changing gameplay, pedagogy, UI, audio, feedback, adaptivity, gamification, or multiplayer behavior, consult the relevant `docs/agent` file and keep the implementation rooted in that source-backed design theory.
@@ -39,7 +40,7 @@ Current product flow:
 
 - App starts inside a tactical space-cockpit mode-select screen. The coordinate
   board and core game art retain the pixel-art identity.
-- Campaign is the available mode; Arcade and Versus are coming soon.
+- Campaign and (cloud-gated) Versus are available modes; Arcade is coming soon.
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating
   dial. Selecting a planet zooms to its surface map, where gold regions and
   faction banners launch levels directly. A "List view" toggle keeps the classic
@@ -55,6 +56,21 @@ Current product flow:
   never failures), per-planet mastery bars, lifetime flight log. It opens from
   the astronaut/profile icon and must stay individual (no comparisons or
   leaderboards).
+- Optional **classroom cloud** (Phase 1, account-free): a Supabase backend
+  (`src/cloud/`) lets teachers create a class and get a dashboard, and lets
+  students join by class code and name a cadet, syncing their existing
+  localStorage progress. It is additive — with no `VITE_SUPABASE_*` env vars the
+  game runs exactly as before, fully offline; sync is best-effort and never
+  affects scoring/adaptivity. No accounts: students are a device UUID + cadet
+  name; teachers hold an unguessable secret dashboard link.
+- **Live 1v1 Versus** (Phase 2, cloud-gated) is built: classmates create/join a
+  match (`matches` table + `0002_versus.sql` RPCs, atomic join enforces the
+  2-player cap + same class), then race on live side-by-side boards over a
+  Supabase Realtime broadcast channel. A shared `level_seed` derives the field
+  deterministically (`src/game/versus/field.ts`); `+2`/freeze attack pickups send
+  effects to the opponent. Code: `src/cloud/versus.ts`, `src/game/versus/*`,
+  `src/app/Versus{Lobby,Match}Screen.tsx`. See `docs/agent/10-classroom-cloud.md`
+  and `DEPLOYMENT.md`.
 - The visual shell uses a curated tactical UI bundle in `src/assets/ui/`.
   Shooter-kit art is the primary cockpit language; the robot is instructional
   Mission Control only. See `docs/ASSET_SOURCES.md`.
@@ -106,6 +122,9 @@ npm run dev -- --host 127.0.0.1
 - `src/game/campaign/badges.ts`: badge registry and per-completion evaluation.
 - `src/game/campaign/rewards.ts`: the `CompletionRewards` contract returned by `markComplete`.
 - `src/app/PilotProfileScreen.tsx`: the private Pilot Profile (rank, badges, mastery, flight log).
+- `src/app/ClassroomScreen.tsx` and `src/app/TeacherDashboardScreen.tsx`: the student class-join screen and the teacher create/dashboard screen (cloud-gated, with offline notices).
+- `src/cloud/`: the classroom cloud layer — `supabaseClient.ts` (`isCloudEnabled()`), `identity.ts` (account-free device id + cadet name + class/teacher records), `classroom.ts` (RPC wrappers; `pushProgress` is best-effort/silent), and `progressPayload.ts` (pure snapshot → sync payload).
+- `supabase/migrations/0001_classroom.sql`: the Postgres schema + RLS-locked `SECURITY DEFINER` RPCs (`create_classroom`, `join_classroom`, `sync_progress`, `get_class_dashboard`).
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/TacticalButton.tsx`, `TacticalPanel.tsx`, and
   `CoachPanel.tsx`: shared tactical shell primitives.

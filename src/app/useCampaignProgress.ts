@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { zones } from '../game/campaign/zones';
 import type { Zone } from '../game/campaign/types';
 import {
@@ -11,6 +11,8 @@ import { starsForLevel, type StarCount } from '../game/campaign/stars';
 import { bankXp, computeRunXp, EMPTY_XP_STORE, type XpStore } from '../game/campaign/xp';
 import { evaluateNewBadges, type EarnedBadges } from '../game/campaign/badges';
 import type { CompletionRewards } from '../game/campaign/rewards';
+import { buildProgressPayload } from '../cloud/progressPayload';
+import { pushProgress } from '../cloud/classroom';
 
 import type { ProfileStats } from '../game/campaign/profileStats';
 
@@ -229,6 +231,9 @@ export interface CampaignProgress {
   getTotalXp: () => number;
   /** Earned badges: badge id → epoch ms when first earned. */
   getEarnedBadges: () => EarnedBadges;
+  /** Best-effort push of the current progress to the cloud (no-op when cloud is
+   *  disabled or no class is joined). Used to backfill right after joining. */
+  syncNow: () => void;
   resetProgress: () => void;
 }
 
@@ -320,6 +325,36 @@ export function useCampaignProgress(): CampaignProgress {
     [completed, stats, stars, profile, xp, badges],
   );
 
+  // --- Cloud sync (additive, best-effort) ---------------------------------
+  // Keep a ref to the latest snapshot so we can push current state on demand
+  // (e.g. right after joining a class) without waiting for a re-render. The ref
+  // is refreshed in an effect (before the debounce effect below runs).
+  const snapshotRef = useRef({ completed, stats, stars, profile, xp });
+  useEffect(() => {
+    snapshotRef.current = { completed, stats, stars, profile, xp };
+  }, [completed, stats, stars, profile, xp]);
+
+  const syncNow = useCallback(() => {
+    const snap = snapshotRef.current;
+    void pushProgress(
+      buildProgressPayload({
+        profile: snap.profile,
+        totalXp: snap.xp.totalXp,
+        levelStats: snap.stats,
+        levelStars: snap.stars,
+        completedLevelIds: [...snap.completed],
+      }),
+    );
+  }, []);
+
+  // Debounced auto-sync whenever progress changes (covers level completions).
+  // `pushProgress` is a no-op when cloud is disabled or no class is joined, so
+  // this stays free for solo players.
+  useEffect(() => {
+    const t = setTimeout(syncNow, 800);
+    return () => clearTimeout(t);
+  }, [completed, stats, stars, profile, xp, syncNow]);
+
   const resetProgress = useCallback(() => {
     setCompleted(new Set());
     setStats({});
@@ -382,7 +417,8 @@ export function useCampaignProgress(): CampaignProgress {
       getProfileStats: () => profile,
       getTotalXp: () => xp.totalXp,
       getEarnedBadges: () => badges,
+      syncNow,
       resetProgress,
     };
-  }, [completed, stats, stars, profile, xp, badges, markComplete, resetProgress]);
+  }, [completed, stats, stars, profile, xp, badges, markComplete, syncNow, resetProgress]);
 }

@@ -6,7 +6,7 @@ Quick orientation:
 
 - This is **Slope Invaders**, a Vite + React + TypeScript + React Konva educational math game.
 - The repo folder is `SlopeBlasters`, but the game title is `Slope Invaders`.
-- Campaign is the playable mode today; Arcade and Versus are coming soon.
+- Campaign and (cloud-gated) live 1v1 Versus are playable; Arcade is coming soon.
 - Campaign opens an atmospheric galaxy where zones are planets on a rotating
   dial. Clicking a planet zooms to a surface map with gold regions and faction
   banners that launch missions directly; "List view" keeps the classic fallback.
@@ -20,6 +20,25 @@ Quick orientation:
 - The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the private progress
   page, opened from the astronaut/profile icon. Keep it individual — no
   comparisons or leaderboards.
+- An optional, account-free **classroom cloud** (Phase 1) lives in `src/cloud/`,
+  backed by Supabase (`supabase/migrations/0001_classroom.sql`). Teachers create
+  a class and get a dashboard; students join by class code and name a cadet;
+  their localStorage progress syncs up (`ClassroomScreen`/`TeacherDashboardScreen`,
+  a Classroom entry on the menu). It is additive — with no `VITE_SUPABASE_*` env
+  vars (`isCloudEnabled()` false) the game runs exactly as before, fully offline,
+  and sync is best-effort and never touches scoring/adaptivity. No accounts:
+  students are a device UUID + cadet name; teachers hold an unguessable secret
+  dashboard link (`?teacher=<key>`; `?class=<code>` prefills join). Storage keys
+  `slope-invaders:{student-id,cadet-name,classroom,teacher-keys}`.
+- **Live 1v1 Versus** (Phase 2, cloud-gated) is built: `supabase/migrations/0002_versus.sql`
+  adds a `matches` table + RPCs (atomic `join_match` enforces the 2-player cap and
+  same-class rule). Classmates create/join from `VersusLobbyScreen`, then race on
+  live side-by-side boards (`VersusMatchScreen`) over a Supabase Realtime broadcast
+  channel. The field is derived deterministically from a shared `level_seed`
+  (`src/game/versus/field.ts`); `useVersusMatch` drives the board, items, and
+  win/lose; `+2`/freeze attack pickups send effects to the opponent. Cloud-off and
+  not-joined users see a notice. See `docs/agent/10-classroom-cloud.md` and
+  `DEPLOYMENT.md`.
 - The app uses a curated tactical cockpit system in `src/assets/ui/`, typed in
   `assetMap.ts`. Shooter-kit assets are primary; the robot appears only as
   Mission Control. See `docs/ASSET_SOURCES.md`.

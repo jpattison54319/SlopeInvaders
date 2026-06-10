@@ -3963,3 +3963,324 @@ body {
     transition: none;
   }
 }
+
+/* --- Classroom + Teacher dashboard (Phase 1 cloud) --------------------- */
+.classroom,
+.teacher {
+  width: min(820px, 100%);
+  margin: 0 auto;
+  padding: 1.4rem 1rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.classroom__head h2,
+.teacher header h2 {
+  margin: 0.2rem 0 0;
+  font-size: clamp(1.1rem, 4vw, 1.6rem);
+}
+
+.classroom__notice,
+.classroom__teacher-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.classroom__form,
+.classroom__joined,
+.teacher__share {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.1rem 1.15rem;
+}
+
+.classroom__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.classroom__field input {
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  padding: 0.6rem 0.7rem;
+  color: var(--text);
+  background: rgba(7, 14, 34, 0.85);
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+  text-transform: none;
+}
+
+.classroom__field input:focus-visible {
+  outline: none;
+  border-color: var(--tactical-cyan);
+  box-shadow: 0 0 0 2px rgba(143, 248, 255, 0.25);
+}
+
+.classroom__code-line strong,
+.teacher__share strong {
+  font-family: var(--mono);
+  letter-spacing: 0.16em;
+  color: var(--tactical-gold);
+}
+
+.classroom__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.classroom__error {
+  margin: 0;
+  color: var(--rose);
+  font-size: 0.72rem;
+}
+
+.teacher__class-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.teacher__class-list button {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--panel);
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.teacher__class-list button span {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.teacher__status {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.teacher__roster {
+  display: flex;
+  flex-direction: column;
+  border: 2px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.teacher__roster-head,
+.teacher__roster-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1.1fr 0.7fr 0.7fr 1.1fr 0.8fr;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.6rem 0.7rem;
+  font-size: 0.72rem;
+}
+
+.teacher__roster-head {
+  background: rgba(19, 44, 89, 0.7);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.58rem;
+}
+
+.teacher__roster-row {
+  width: 100%;
+  text-align: left;
+  background: var(--panel);
+  border: none;
+  border-top: 1px solid rgba(94, 241, 255, 0.12);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.teacher__roster-row:hover {
+  background: rgba(19, 44, 89, 0.55);
+}
+
+.teacher__cadet {
+  font-weight: 700;
+  color: var(--tactical-cyan);
+}
+
+.teacher__detail {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem 0.7rem 0.7rem;
+  background: rgba(7, 14, 34, 0.6);
+  display: grid;
+  gap: 0.3rem;
+}
+
+.teacher__detail li {
+  display: grid;
+  grid-template-columns: 1.6fr 0.7fr 1fr 0.9fr;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.teacher__detail-level {
+  color: var(--text);
+}
+
+@media (max-width: 560px) {
+  .teacher__roster-head {
+    display: none;
+  }
+  .teacher__roster-row {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 0.2rem;
+  }
+  .teacher__detail li {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* --- Versus (live 1v1 duel) -------------------------------------------- */
+.versus {
+  min-height: 100vh;
+  padding: 0.8rem 1rem 2rem;
+  background: linear-gradient(rgba(3, 7, 20, 0.6), rgba(3, 7, 20, 0.9));
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.versus__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.versus__title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.versus__frozen {
+  color: var(--tactical-cyan);
+}
+
+.versus__arena {
+  display: flex;
+  gap: 1.2rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.versus__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 400px;
+  max-width: 100%;
+}
+
+.versus__side--mirror {
+  opacity: 0.96;
+}
+
+.versus__side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.4rem 0.6rem;
+  background: var(--panel);
+  border: 2px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.versus__name {
+  font-weight: 700;
+  color: var(--tactical-cyan);
+  font-size: 0.82rem;
+}
+
+.versus__side--mirror .versus__name {
+  color: var(--tactical-gold);
+}
+
+.versus__hearts {
+  display: flex;
+  gap: 2px;
+}
+
+.versus__hearts img {
+  width: 18px;
+  height: 18px;
+  image-rendering: pixelated;
+}
+
+.versus__count {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.versus__mirror-note {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+.versus__lobby-intro {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.versus__result {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(3, 7, 20, 0.8);
+  z-index: 40;
+}
+
+.versus__result-card {
+  text-align: center;
+  padding: 1.6rem 1.8rem;
+  background: var(--panel);
+  border: 2px solid var(--tactical-frame);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.versus__result-card h2 {
+  margin: 0;
+  color: var(--tactical-gold);
+}
+
+@media (max-width: 900px) {
+  .versus__side {
+    width: min(420px, 100%);
+  }
+}

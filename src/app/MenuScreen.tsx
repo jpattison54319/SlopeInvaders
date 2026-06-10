@@ -10,10 +10,17 @@ interface MenuScreenProps {
   onSelectMode: (id: GameModeId) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
+  onOpenClassroom: () => void;
 }
 
 /** The landing screen: title, how-to, and the game-mode selector. */
-export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile }: MenuScreenProps) {
+export function MenuScreen({
+  modes,
+  onSelectMode,
+  onOpenSettings,
+  onOpenProfile,
+  onOpenClassroom,
+}: MenuScreenProps) {
   const [briefingOpen, setBriefingOpen] = useState(false);
   const campaign = modes.find((m) => m.id === 'campaign');
   const campaignReady = campaign?.status === 'available';
@@ -33,6 +40,7 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile 
         </div>
         <div className="menu__actions">
           <TacticalButton asset="info" label="Mission briefing" size="small" onClick={() => setBriefingOpen(true)} />
+          <TacticalButton asset="hangar" label="Classroom" size="small" onClick={onOpenClassroom} />
           <TacticalButton asset="profile" label="Pilot Profile" size="small" onClick={onOpenProfile} />
           <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />
         </div>
