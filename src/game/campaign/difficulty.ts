@@ -46,6 +46,10 @@ export interface LevelStats {
   heartsRemaining: number;
 
   // --- attempts ---
+  /** Whether the very first shot of the visit was a hit (drives an XP bonus). */
+  firstShotHit?: boolean;
+  /** Resolved trajectory-preview mode this visit was played with. */
+  trajectoryPreview?: TrajectoryMode;
   /** Times the player ran out of hearts before finally winning. */
   losses: number;
   /** "Reset Level" / "Replay" presses (not counting post-loss retries). */

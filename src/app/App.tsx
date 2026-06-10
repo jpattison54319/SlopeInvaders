@@ -22,6 +22,7 @@ import { CampaignMapScreen } from './CampaignMapScreen';
 import { ZoneLevelsScreen } from './ZoneLevelsScreen';
 import { DebriefScreen } from './DebriefScreen';
 import { CampaignCompleteScreen } from './CampaignCompleteScreen';
+import { PilotProfileScreen } from './PilotProfileScreen';
 import { SettingsModal } from './SettingsModal';
 import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
@@ -37,7 +38,8 @@ type Screen =
   | { name: 'zone-levels'; zoneId: string }
   | { name: 'game'; levelId: string }
   | { name: 'debrief'; zoneId: string }
-  | { name: 'campaign-complete' };
+  | { name: 'campaign-complete' }
+  | { name: 'pilot-profile'; from: 'mode-select' | 'galaxy' | 'campaign-map' };
 
 /** The last available zone — clearing its debrief completes the campaign. */
 const lastAvailableZoneId = zones.filter((z) => z.status === 'available').at(-1)?.id;
@@ -105,7 +107,14 @@ export default function App() {
   function renderScreen() {
     switch (screen.name) {
       case 'mode-select':
-        return <MenuScreen modes={modes} onSelectMode={selectMode} onOpenSettings={openSettings} />;
+        return (
+          <MenuScreen
+            modes={modes}
+            onSelectMode={selectMode}
+            onOpenSettings={openSettings}
+            onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'mode-select' })}
+          />
+        );
 
       case 'galaxy':
         return (
@@ -117,6 +126,7 @@ export default function App() {
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'campaign-map' })}
+            onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'galaxy' })}
           />
         );
 
@@ -149,6 +159,7 @@ export default function App() {
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'galaxy' })}
+            onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'campaign-map' })}
           />
         );
 
@@ -179,6 +190,28 @@ export default function App() {
             onBack={() =>
               setScreen(isFinalZone ? { name: 'campaign-complete' } : { name: 'galaxy', zoneId: zone.id })
             }
+            onOpenSettings={openSettings}
+          />
+        );
+      }
+
+      case 'pilot-profile': {
+        const from = screen.from;
+        const returnToProfileSource = () => {
+          if (from === 'mode-select') {
+            setScreen({ name: 'mode-select' });
+          } else if (from === 'galaxy') {
+            setScreen({ name: 'galaxy' });
+          } else {
+            setScreen({ name: 'campaign-map' });
+          }
+        };
+
+        return (
+          <PilotProfileScreen
+            progress={progress}
+            backLabel={from === 'mode-select' ? 'Menu' : from === 'galaxy' ? 'Galaxy' : 'Zones'}
+            onBack={returnToProfileSource}
             onOpenSettings={openSettings}
           />
         );

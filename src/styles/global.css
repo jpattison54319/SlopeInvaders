@@ -1199,6 +1199,103 @@ input:focus-visible {
   gap: 10px;
 }
 
+/* XP breakdown inside the victory panel: one row per earned bonus + banked total. */
+.game-overlay__xp {
+  margin: 0 0 16px;
+  padding: 10px 12px 4px;
+  text-align: left;
+  border: 1px solid rgba(94, 241, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 14, 36, 0.6);
+}
+.xp-breakdown {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.xp-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+}
+.xp-row + .xp-row {
+  border-top: 1px dashed rgba(94, 241, 255, 0.14);
+}
+.xp-row__text {
+  display: block;
+  min-width: 0;
+}
+.xp-row__label {
+  display: block;
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  text-transform: uppercase;
+}
+.xp-row__reason {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+.xp-row__points {
+  flex: 0 0 auto;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--green);
+}
+.game-overlay__xp .xp-banked {
+  margin: 8px 0 6px;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  line-height: 1.5;
+  color: var(--cyan);
+  text-align: center;
+}
+.game-overlay__xp .xp-banked--held {
+  color: var(--text-dim);
+}
+
+/* Badge announcement inside the victory panel. */
+.game-overlay__badges {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.badge-chip {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  text-align: center;
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  border-radius: 8px;
+  background: rgba(79, 52, 8, 0.32);
+  box-shadow: inset 0 0 18px rgba(255, 209, 102, 0.08);
+}
+.badge-chip__title {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  letter-spacing: 1px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.badge-chip__name {
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--amber);
+  line-height: 1.4;
+}
+.badge-chip__desc {
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* ---------- Shared 8-bit mastery stars ---------- */
 .star-rating {
   --star-pixel: 3px;
@@ -1665,6 +1762,319 @@ input:focus-visible {
   padding: 12px 8px;
 }
 
+/* ---------- Pilot Profile (private XP / badges / mastery / flight log) ---------- */
+.profile {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding-bottom: 40px;
+}
+
+/* Hero pilot card: avatar + rank + XP bar + quick chips. */
+.pilot-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 2px solid var(--panel-border);
+  border-radius: 14px;
+  background: rgba(11, 16, 42, 0.85);
+  box-shadow: inset 0 0 40px rgba(94, 241, 255, 0.06), 0 14px 40px rgba(0, 0, 0, 0.4);
+}
+.pilot-card__avatar {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border: 2px solid rgba(94, 241, 255, 0.4);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(94, 241, 255, 0.16), transparent 70%),
+    rgba(5, 9, 28, 0.9);
+  box-shadow: 0 0 18px rgba(94, 241, 255, 0.18);
+}
+.pilot-card__avatar img {
+  width: 56px;
+  height: auto;
+  image-rendering: pixelated;
+  transform: rotate(-45deg);
+  filter: drop-shadow(0 0 8px rgba(124, 255, 178, 0.5));
+}
+.pilot-card__id {
+  min-width: 0;
+}
+.pilot-card__rank {
+  margin: 6px 0 10px;
+  font-family: var(--pixel-font);
+  font-size: clamp(15px, 2.6vw, 22px);
+  color: var(--amber);
+  text-shadow: 0 0 14px rgba(255, 209, 102, 0.3);
+}
+.pilot-card__xp-bar {
+  display: block;
+  height: 12px;
+  max-width: 340px;
+  border: 1px solid rgba(94, 241, 255, 0.45);
+  border-radius: 3px;
+  background: rgba(5, 9, 28, 0.9);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+.pilot-card__xp-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #1d7f95, var(--cyan));
+  box-shadow: 0 0 10px rgba(94, 241, 255, 0.6);
+}
+.pilot-card__xp-label {
+  display: block;
+  margin-top: 7px;
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+.pilot-card__chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.pilot-card__chips li {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 8px 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  background: rgba(13, 20, 48, 0.75);
+  white-space: nowrap;
+}
+.pilot-card__chips strong {
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  color: var(--amber);
+}
+.pilot-card__chips span {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* Section frames: pixel header + meta line. */
+.profile__section {
+  margin-top: 26px;
+}
+.profile__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+.profile__section-head h3 {
+  margin: 0;
+  font-family: var(--pixel-font);
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--cyan);
+  text-transform: uppercase;
+  text-shadow: 0 0 12px rgba(94, 241, 255, 0.3);
+}
+.profile__section-meta {
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* Badge collection. */
+.badge-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.badge-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 209, 102, 0.55);
+  border-radius: 10px;
+  background: rgba(79, 52, 8, 0.32);
+  box-shadow: inset 0 0 18px rgba(255, 209, 102, 0.08), 0 0 12px rgba(255, 209, 102, 0.1);
+}
+.badge-card__emblem {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 209, 102, 0.4);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, rgba(255, 209, 102, 0.16), transparent 72%), rgba(5, 9, 28, 0.85);
+}
+.badge-card__emblem img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.badge-card__text {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.badge-card__name {
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  line-height: 1.5;
+  color: var(--amber);
+}
+.badge-card__desc {
+  color: var(--text);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.badge-card__date {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+/* Locked badges read as upcoming missions, never as failures. */
+.badge-card--locked {
+  border-color: var(--panel-border);
+  background: rgba(13, 20, 48, 0.55);
+  box-shadow: none;
+}
+.badge-card--locked .badge-card__emblem {
+  border-color: var(--panel-border);
+  background: rgba(5, 9, 28, 0.85);
+}
+.badge-card--locked .badge-card__emblem img {
+  filter: grayscale(1) brightness(0.7);
+  opacity: 0.55;
+}
+.badge-card--locked .badge-card__name,
+.badge-card--locked .badge-card__desc {
+  color: var(--text-dim);
+}
+
+/* Per-planet mastery rows: planet art + star progress bar. */
+.profile__zones {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.profile__zone-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.profile__zone-planet {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 6px rgba(94, 241, 255, 0.25));
+}
+.profile__zone-text {
+  flex: 1 1 auto;
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+.profile__zone-name {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.profile__zone-bar {
+  display: block;
+  height: 8px;
+  border: 1px solid rgba(255, 209, 102, 0.4);
+  border-radius: 3px;
+  background: rgba(5, 9, 28, 0.9);
+  overflow: hidden;
+}
+.profile__zone-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #8a6a1d, var(--amber));
+  box-shadow: 0 0 8px rgba(255, 209, 102, 0.55);
+}
+.profile__zone-stars {
+  flex: 0 0 auto;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  color: var(--amber);
+}
+
+/* Flight log: compact stat tiles. */
+.profile__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+.profile__stats li {
+  display: grid;
+  gap: 6px;
+  padding: 14px 12px;
+  text-align: center;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.profile__stats strong {
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(94, 241, 255, 0.35);
+}
+.profile__stats span {
+  font-family: var(--pixel-font);
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+
+/* Narrow screens: stack the pilot card and let chips flow horizontally. */
+@media (max-width: 720px) {
+  .pilot-card {
+    grid-template-columns: auto 1fr;
+  }
+  .pilot-card__chips {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  .pilot-card__chips li {
+    justify-content: center;
+  }
+}
+
 /* ---------- Galaxy mission select (planet dial) ---------- */
 .galaxy {
   width: 100%;
@@ -1685,6 +2095,21 @@ input:focus-visible {
   font-size: clamp(15px, 2.6vw, 22px);
   color: var(--amber);
   text-shadow: 0 0 14px rgba(255, 209, 102, 0.3);
+}
+/* Lifetime XP pill (mirrors the mastery pill, in cyan). */
+.galaxy__xp {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border: 1px solid rgba(94, 241, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(10, 38, 52, 0.45);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.26), 0 0 12px rgba(94, 241, 255, 0.16);
+  color: var(--cyan);
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 1px;
+  line-height: 1;
+  text-transform: uppercase;
 }
 .chrome-toggle-btn {
   flex: 0 0 auto;

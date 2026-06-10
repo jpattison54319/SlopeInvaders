@@ -27,6 +27,7 @@ import iconCloseUrl from './icon-close.png';
 import iconTrophyUrl from './icon-trophy.png';
 import iconNextUrl from './icon-next.png';
 import iconBackUrl from './icon-back.png';
+import iconPilotUrl from './icon-pilot.png';
 
 // Heart/life sprites (sliced from the pixel heart sheet).
 import heartFullUrl from './heart-full.png';
@@ -86,6 +87,8 @@ export const icons = {
   trophy: iconTrophyUrl,
   next: iconNextUrl,
   back: iconBackUrl,
+  /** Helmeted astronaut portrait for the Pilot Profile. */
+  pilot: iconPilotUrl,
 } as const;
 
 /** Heart/life sprites (full, half, empty). */

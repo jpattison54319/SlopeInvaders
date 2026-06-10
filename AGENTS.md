@@ -42,8 +42,11 @@ Current product flow:
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating dial; the active planet's level "hotspots" replace the level list, and a "List view" toggle keeps the classic zone/level screens. Launching a level plays a brief warp transition into gameplay.
 - Planet art lives in `src/assets/planets/` (wired via `assetMap`); each zone unlocks once the previous zone is fully cleared, and later zones are coming soon.
 - Campaign levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
-- Zones 1–5 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control; Zone 5 keeps Zone 4 controls and adds walls/shields that block shots crossing them. The coordinate plane renders any-quadrant bounds.
+- Zones 1–8 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control; Zone 5 keeps Zone 4 controls and adds walls/shields that block shots crossing them; Zone 6 is linked asteroids (one line must clear a whole chain); Zone 7 adds friendly ships that scrub any shot crossing them; Zone 8 is the moving cannon (`y = m(x − h) + b` via the x-offset control). The coordinate plane renders any-quadrant bounds.
 - Walls block shots: `hitDetection.isPathBlocked`/`firstWallHit` (segment intersection, honoring `WallSpec.gaps`) stop a shot at the first wall on the ship→target path; a blocked shot counts as a miss (costs a star). A per-level 1–3 star rating (`src/game/campaign/stars.ts`, `slope-invaders:level-stars`) shows in the victory overlay + planet banners.
+- XP rewards learning behavior per `docs/agent/03`: each win computes bonuses (`src/game/campaign/xp.ts`) shown with per-bonus reasons in the victory overlay, but only the improvement over that level's best run is banked (`slope-invaders:xp`) — XP never subtracts and never rewards grinding. Lifetime XP maps to a pilot rank that never demotes.
+- Badges (`src/game/campaign/badges.ts`, persisted in `slope-invaders:badges`) reward zone mastery, sharpshooting, and growth behaviors; they are never revoked, never keyed on calculator/tweak use, and are announced in the victory overlay. `markComplete` returns the run's `CompletionRewards` (XP award + new badges).
+- The Pilot Profile (`src/app/PilotProfileScreen.tsx`) is the private progress page — rank/XP card, badge collection (locked badges framed as "Next mission", never failures), per-planet mastery bars, lifetime flight log. It opens from the main menu's ship icon and the campaign screens' top bar; it must stay individual (no comparisons or leaderboards).
 - A line is infinite both ways but a shot fires one way: Zone 4's ship is a cannon — slope tilts the aim up/down, the facing control (left/right) picks the side, and facing left mirrors the aim across the ship (right fires `y = mx + b`, left fires `y = -mx + b`). The projectile leaves the ship outward, the preview is bright forward / faded backward, and the equation/dashed line show the facing-mirrored slope while the stepper keeps the dialed value.
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
 - Top-right Settings controls music and SFX volume/mute, and has a "Change Controls" sub-screen for remapping keyboard controls.
@@ -75,7 +78,7 @@ npm run dev -- --host 127.0.0.1
 - `src/app/CampaignMapScreen.tsx`, `src/app/ZoneLevelsScreen.tsx`: the classic zone/level-list screens, kept as a "List view" fallback.
 - `src/app/DebriefScreen.tsx`: end-of-zone reflection/debrief.
 - `src/app/SettingsModal.tsx`: music and SFX controls.
-- `src/app/useCampaignProgress.ts`: localStorage progress, rich stats, profile aggregate, unlock rules, adaptive tier selection.
+- `src/app/useCampaignProgress.ts`: localStorage progress, rich stats, profile aggregate, XP banking, badge evaluation, unlock rules, adaptive tier selection.
 - `src/game/Game.tsx`: gameplay state machine, hearts/losses, calculator toggle, stats instrumentation.
 - `src/game/components/GuidedTour.tsx`: first-visit spotlight walkthrough used by levels that opt in.
 - `src/game/audio/buttonClick.ts`: delegated global button-click SFX; respect `data-button-sfx="none"` for buttons with their own sound.
@@ -86,7 +89,12 @@ npm run dev -- --host 127.0.0.1
 - `src/game/campaign/levels/zone3.ts`: Zone 3 (negative slopes, Quadrant IV) levels and adaptive flags/variants.
 - `src/game/campaign/levels/zone4.ts`: Zone 4 (full grid, all quadrants, facing direction) levels and adaptive flags/variants.
 - `src/game/campaign/levels/zone5.ts`: Zone 5 (shields/walls) levels and adaptive flags/variants.
+- `src/game/campaign/levels/zone6.ts`–`zone8.ts`: Zone 6 (linked asteroids), Zone 7 (friendly ships), Zone 8 (moving cannon) levels.
 - `src/game/campaign/zones.ts`: zone registry and navigation helpers.
+- `src/game/campaign/xp.ts`: XP bonus computation, best-run banking, pilot ranks.
+- `src/game/campaign/badges.ts`: badge registry and per-completion evaluation.
+- `src/game/campaign/rewards.ts`: the `CompletionRewards` contract returned by `markComplete`.
+- `src/app/PilotProfileScreen.tsx`: the private Pilot Profile (rank, badges, mastery, flight log).
 - `src/game/components/Calculator.tsx`, `src/game/components/calc.ts`, and `src/game/components/calculatorPosition.ts`: in-level calculator, safe expression evaluation, draggable placement, and persisted viewport-safe positioning.
 - `src/game/components/`: Konva board and DOM gameplay UI.
 - `src/game/logic/`: pure, tested math/game logic.

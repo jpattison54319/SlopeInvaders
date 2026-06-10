@@ -6,10 +6,11 @@ interface MenuScreenProps {
   modes: ModeDescriptor[];
   onSelectMode: (id: GameModeId) => void;
   onOpenSettings: () => void;
+  onOpenProfile: () => void;
 }
 
 /** The landing screen: title, how-to, and the game-mode selector. */
-export function MenuScreen({ modes, onSelectMode, onOpenSettings }: MenuScreenProps) {
+export function MenuScreen({ modes, onSelectMode, onOpenSettings, onOpenProfile }: MenuScreenProps) {
   const campaign = modes.find((m) => m.id === 'campaign');
   const campaignReady = campaign?.status === 'available';
   const availableCount = modes.filter((m) => m.status === 'available').length;
@@ -27,7 +28,7 @@ export function MenuScreen({ modes, onSelectMode, onOpenSettings }: MenuScreenPr
           <span>Slope Invaders</span>
         </div>
         <div className="menu__actions">
-          <IconButton icon="trophy" label="Achievements" className="chrome-icon-btn" disabled />
+          <IconButton icon="pilot" label="Pilot Profile" className="chrome-icon-btn" onClick={onOpenProfile} />
           <IconButton icon="settings" label="Settings" className="chrome-icon-btn" onClick={onOpenSettings} />
         </div>
       </nav>
