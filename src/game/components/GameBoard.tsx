@@ -1,6 +1,7 @@
-import { Stage, Layer, Rect, Line, Image as KonvaImage, Group, Circle, Text } from 'react-konva';
+import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
 import type { Facing, LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 import type { Point } from '../logic/lineMath';
+import type { VersusItem } from '../versus/types';
 import { getYAtX } from '../logic/lineMath';
 import { createViewport, graphToScreen } from '../logic/coordinateTransform';
 import { assets } from '../../assets/assetMap';
@@ -15,6 +16,7 @@ import { Wall } from './Wall';
 import { Chain } from './Chain';
 import { Friendly } from './Friendly';
 import { Explosion } from './Explosion';
+import { VersusPickup } from './VersusPickup';
 
 /** A live explosion the board should render. */
 export interface ExplosionInstance {
@@ -53,7 +55,7 @@ interface GameBoardProps {
   /** Draw the line both ways (bright forward, faded back) — Zone 4 preview. */
   bidirectional?: boolean;
   /** Optional Versus attack pickups to render on the grid. */
-  items?: ReadonlyArray<{ id: string; point: Point; kind: string }>;
+  items?: ReadonlyArray<Pick<VersusItem, 'id' | 'point' | 'kind'>>;
 }
 
 function lerp(a: Point, b: Point, t: number): Point {
@@ -173,29 +175,14 @@ export function GameBoard({
           ))}
 
         {/* Versus attack pickups */}
-        {items.map((it) => {
-          const px = graphToScreen(it.point, vp);
-          const r = vp.unit * 0.42;
-          const add = it.kind === 'add';
-          const color = add ? COLORS.beam : '#8ff8ff';
-          return (
-            <Group key={it.id} x={px.x} y={px.y} listening={false}>
-              <Circle radius={r} fill="rgba(7,11,32,0.7)" stroke={color} strokeWidth={2} shadowColor={color} shadowBlur={10} />
-              <Text
-                text={add ? '+2' : '❄'}
-                fontSize={r}
-                fontStyle="bold"
-                fill={color}
-                width={r * 2}
-                height={r * 2}
-                offsetX={r}
-                offsetY={r}
-                align="center"
-                verticalAlign="middle"
-              />
-            </Group>
-          );
-        })}
+        {items.map((item) => (
+          <VersusPickup
+            key={item.id}
+            vp={vp}
+            item={item}
+            showCoordinates={showCoordinates}
+          />
+        ))}
 
         {/* Firing beam */}
         {beam && (

@@ -53,12 +53,17 @@ export interface MissionPathPoint extends HotspotPos {
 }
 
 const BANNER_KEYS = Object.keys(factionBanners) as FactionBannerKey[];
-const SAFE_CENTER = 0.5;
-const SAFE_RADIUS = 0.305;
-const PATH_MIN_X = 0.22;
-const PATH_MAX_X = 0.78;
+// The planet dome is bordered on top and sides only and is pushed partly below
+// the fold, so markers must stay in the upper-middle band to read as "on the
+// planet". Horizontally the face is centered at 0.5; vertically the safe band is
+// centered higher (0.44) with a conservative radius.
+const SAFE_CENTER_X = 0.5;
+const SAFE_CENTER_Y = 0.44;
+const SAFE_RADIUS = 0.3;
+const PATH_MIN_X = 0.24;
+const PATH_MAX_X = 0.76;
 const BANNER_STEP = 7;
-const PATH_Y_PATTERN = [0.62, 0.46, 0.64, 0.5, 0.43, 0.58];
+const PATH_Y_PATTERN = [0.48, 0.34, 0.5, 0.38, 0.32, 0.44];
 
 function stableHash(s: string): number {
   let h = 0;
@@ -70,17 +75,18 @@ function round(n: number): number {
   return Number(n.toFixed(3));
 }
 
+/** Clamp a point into the planet's safe ellipse (centered high, full-width). */
 function clampToPlanetFace(x: number, y: number): HotspotPos {
-  const dx = x - SAFE_CENTER;
-  const dy = y - SAFE_CENTER;
+  const dx = x - SAFE_CENTER_X;
+  const dy = y - SAFE_CENTER_Y;
   const maxAbsDy = Math.sqrt(Math.max(0, SAFE_RADIUS * SAFE_RADIUS - dx * dx));
-  const safeY = Math.abs(dy) > maxAbsDy ? SAFE_CENTER + Math.sign(dy) * maxAbsDy : y;
+  const safeY = Math.abs(dy) > maxAbsDy ? SAFE_CENTER_Y + Math.sign(dy) * maxAbsDy : y;
   return { x: round(x), y: round(safeY) };
 }
 
 /**
  * Deterministic left-to-right mission path across the active planet face.
- * Positions are normalized and clamped to a conservative inner planet circle so
+ * Positions are normalized and clamped to a conservative inner planet ellipse so
  * larger banner art has room to stay visually planted on the planet.
  */
 export function missionPathLayout(zoneId: string, count: number): MissionPathPoint[] {
@@ -89,7 +95,7 @@ export function missionPathLayout(zoneId: string, count: number): MissionPathPoi
   const bannerFor = (i: number) => BANNER_KEYS[(bannerOffset + i * BANNER_STEP) % BANNER_KEYS.length];
 
   if (count === 1) {
-    return [{ x: 0.5, y: 0.56, bannerKey: bannerFor(0) }];
+    return [{ x: 0.5, y: 0.42, bannerKey: bannerFor(0) }];
   }
 
   const out: MissionPathPoint[] = [];
