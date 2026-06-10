@@ -27,17 +27,21 @@ or even `file://` — `vite.config.ts` uses a relative `base`).
    (default-deny) and expose only `SECURITY DEFINER` RPCs to the anon role.
 3. In **Project Settings → API**, copy the **Project URL** and the **anon public**
    key.
-4. Set the two env vars (locally in a `.env` file — see `.env.example` — and in
-   your host's environment for production builds):
+4. Set the env vars (locally in a `.env` file — see `.env.example` — and in your
+   host's environment for production builds). This is a **Vite** app, so browser
+   vars must be prefixed `VITE_`, and the key may be the legacy anon JWT **or**
+   the new publishable key (`sb_publishable_…`):
 
    ```
    VITE_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
-   VITE_SUPABASE_ANON_KEY=YOUR-ANON-PUBLIC-KEY
+   VITE_SUPABASE_ANON_KEY=YOUR-ANON-OR-PUBLISHABLE-KEY
    ```
 
-5. Rebuild (`npm run build`). The Classroom button and Teacher Dashboard now go
-   live. The anon key is **safe to ship** — every write/read goes through the
-   capability-gated RPCs; direct table access is denied by RLS.
+5. Rebuild (`npm run build`). The Classroom button, Teacher Dashboard, and
+   Versus now go live. The anon/publishable key is **safe to ship** — every
+   read/write goes through the capability-gated RPCs; direct table access is
+   denied by RLS. (Vite inlines env vars at build time, so rebuild after changing
+   them.)
 
 > Running in Claude Code on the web? The session's **network policy** must allow
 > outbound HTTPS to `*.supabase.co` for live sync during development.
