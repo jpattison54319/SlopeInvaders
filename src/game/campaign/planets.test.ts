@@ -3,9 +3,9 @@ import { factionBanners } from '../../assets/assetMap';
 import { missionPathLayout } from './planets';
 
 describe('campaign planet mission path layout', () => {
-  it('centers a single mission on the planet face', () => {
+  it('centers a single mission in the upper-middle of the planet face', () => {
     expect(missionPathLayout('tutorial', 1)).toEqual([
-      expect.objectContaining({ x: 0.5, y: 0.56 }),
+      expect.objectContaining({ x: 0.5, y: 0.42 }),
     ]);
   });
 
@@ -18,13 +18,21 @@ describe('campaign planet mission path layout', () => {
   });
 
   it('keeps mission markers within the conservative planet safe area', () => {
-    const center = 0.5;
-    const safeRadius = 0.31;
+    // Safe ellipse is centered horizontally at 0.5 and vertically high (0.44),
+    // so banners read as planted on the visible upper dome (not the open bottom).
+    const centerX = 0.5;
+    const centerY = 0.44;
+    const safeRadius = 0.305;
 
-    for (const point of missionPathLayout('zone-1', 4)) {
-      const dx = point.x - center;
-      const dy = point.y - center;
-      expect(Math.sqrt(dx * dx + dy * dy)).toBeLessThanOrEqual(safeRadius);
+    for (const zone of ['zone-1', 'zone-2', 'zone-8'] as const) {
+      const count = zone === 'zone-1' ? 4 : 5;
+      for (const point of missionPathLayout(zone, count)) {
+        const dx = point.x - centerX;
+        const dy = point.y - centerY;
+        expect(Math.sqrt(dx * dx + dy * dy)).toBeLessThanOrEqual(safeRadius);
+        // And never in the lower (un-bordered) part of the dome.
+        expect(point.y).toBeLessThanOrEqual(0.55);
+      }
     }
   });
 

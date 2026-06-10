@@ -7,4 +7,9 @@ export default defineConfig({
   // or hosted from a subdirectory.
   base: './',
   plugins: [react()],
+  // Honor a PORT env var (e.g. when a preview/launch tool assigns one) and bind
+  // to it strictly; otherwise fall back to Vite's default port selection.
+  server: process.env.PORT
+    ? { port: Number(process.env.PORT), strictPort: true }
+    : undefined,
 })

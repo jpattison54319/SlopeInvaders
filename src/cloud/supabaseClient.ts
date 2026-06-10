@@ -9,11 +9,11 @@
  */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const env = import.meta.env;
-// The key may be the legacy anon JWT or the new publishable key (sb_publishable_…);
-// supabase-js accepts either, and both are safe to ship.
-const url = env.VITE_SUPABASE_URL;
-const anonKey = env.VITE_SUPABASE_ANON_KEY ?? env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const url = import.meta.env.VITE_SUPABASE_URL;
+// Supabase's newer "publishable" key (sb_publishable_…) is the safe client-side
+// key; we read it first and fall back to the legacy anon key name for back-compat.
+const anonKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 let client: SupabaseClient | null = null;
 
