@@ -175,13 +175,14 @@ export function ClassroomScreen({
         )}
 
         <CoachPanel compact className="classroom__teacher-link">
-          <strong>Are you a teacher?</strong>
+          <strong>Are you a teacher?</strong>{' '}
           <span>Create a class and get a dashboard of your students&rsquo; progress.</span>
           <TacticalButton
             asset="trophy"
             label="Open teacher area"
             text="Teacher area"
             size="small"
+            style={{ marginTop: '0.5em' }}
             onClick={onOpenTeacher}
           />
         </CoachPanel>
