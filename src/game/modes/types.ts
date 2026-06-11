@@ -1,8 +1,6 @@
 /**
- * Game modes. Only Campaign is playable in this prototype; Arcade and
- * Multiplayer-Versus are declared so the Mode Select screen can show them as
- * "coming soon" and so future modes plug in by adding a descriptor + content
- * module + an App route — campaign code stays untouched.
+ * Game modes are declared separately from their content so app routing and the
+ * mode-select screen can evolve without coupling their gameplay systems.
  */
 export type GameModeId = 'campaign' | 'arcade' | 'versus';
 

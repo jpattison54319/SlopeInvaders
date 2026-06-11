@@ -6,12 +6,14 @@ import { rankForXp } from '../game/campaign/xp';
 import { assets, icons, sprites } from '../assets/assetMap';
 import type { CampaignProgress } from './useCampaignProgress';
 import { TacticalPanel, TacticalProgress } from '../game/components/TacticalPanel';
+import type { ArcadeRecords } from '../game/arcade/types';
 
 interface PilotProfileScreenProps {
   progress: CampaignProgress;
   backLabel?: string;
   onBack: () => void;
   onOpenSettings: () => void;
+  arcadeRecords?: ArcadeRecords;
 }
 
 const BADGE_GROUPS: ReadonlyArray<{ category: BadgeCategory; title: string; blurb: string }> = [
@@ -54,6 +56,7 @@ export function PilotProfileScreen({
   backLabel = 'Back',
   onBack,
   onOpenSettings,
+  arcadeRecords,
 }: PilotProfileScreenProps) {
   const profile = progress.getProfileStats();
   const earnedBadges = progress.getEarnedBadges();
@@ -241,6 +244,37 @@ export function PilotProfileScreen({
                 <span>Latest flight</span>
               </li>
             )}
+          </ul>
+        </section>
+
+        <section className="profile__section" aria-label="Arcade records">
+          <header className="profile__section-head">
+            <h3>Arcade Records</h3>
+            <span className="profile__section-meta">
+              Personal endless-run records. Arcade does not award campaign XP or stars.
+            </span>
+          </header>
+          <ul className="profile__stats profile__stats--arcade">
+            <li>
+              <strong>{arcadeRecords?.highScore ?? 0}</strong>
+              <span>High score</span>
+            </li>
+            <li>
+              <strong>{arcadeRecords?.bestWave || '—'}</strong>
+              <span>Best wave</span>
+            </li>
+            <li>
+              <strong>{arcadeRecords?.longestStreak || '—'}</strong>
+              <span>Longest streak</span>
+            </li>
+            <li>
+              <strong>{arcadeRecords?.totalRuns ?? 0}</strong>
+              <span>Runs flown</span>
+            </li>
+            <li>
+              <strong>{arcadeRecords?.totalDestroyed ?? 0}</strong>
+              <span>Asteroids intercepted</span>
+            </li>
           </ul>
         </section>
       </section>

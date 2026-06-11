@@ -34,6 +34,9 @@ import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
+import { ArcadeBriefingScreen } from './ArcadeBriefingScreen';
+import { ArcadeGame } from '../game/arcade/ArcadeGame';
+import { useArcadeRecords } from '../game/arcade/useArcadeRecords';
 
 type Screen =
   | { name: 'mode-select' }
@@ -49,6 +52,8 @@ type Screen =
   | { name: 'classroom'; joinCode?: string }
   | { name: 'teacher-dashboard'; teacherKey?: string }
   | { name: 'versus' }
+  | { name: 'arcade-briefing' }
+  | { name: 'arcade-game' }
   | {
       name: 'versus-match';
       matchId: string;
@@ -95,9 +100,14 @@ export default function App() {
   const keyBindings = withDefaults(storedKeyBindings);
 
   const progress = useCampaignProgress();
+  const arcade = useArcadeRecords();
   const reducedMotion = usePrefersReducedMotion();
+  const campaignComplete = zones
+    .filter((zone) => zone.status === 'available')
+    .every((zone) => progress.isZoneComplete(zone.id));
 
-  const inGame = screen.name === 'game' || screen.name === 'versus-match';
+  const inGame =
+    screen.name === 'game' || screen.name === 'versus-match' || screen.name === 'arcade-game';
   useMusic(inGame ? music.game : music.menu, musicVolume, musicMuted);
 
   useEffect(() => {
@@ -109,7 +119,7 @@ export default function App() {
   const selectMode = (id: GameModeId) => {
     if (id === 'campaign') setScreen({ name: 'galaxy' });
     else if (id === 'versus') setScreen({ name: 'versus' });
-    // Arcade is coming soon — no-op for now.
+    else if (id === 'arcade' && campaignComplete) setScreen({ name: 'arcade-briefing' });
   };
 
   const advance = (levelId: string) => {
@@ -142,6 +152,7 @@ export default function App() {
         return (
           <MenuScreen
             modes={modes}
+            arcadeUnlocked={campaignComplete}
             onSelectMode={selectMode}
             onOpenSettings={openSettings}
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'mode-select' })}
@@ -246,6 +257,7 @@ export default function App() {
         return (
           <PilotProfileScreen
             progress={progress}
+            arcadeRecords={arcade.records}
             backLabel={from === 'mode-select' ? 'Menu' : from === 'galaxy' ? 'Galaxy' : 'Zones'}
             onBack={returnToProfileSource}
             onOpenSettings={openSettings}
@@ -280,6 +292,30 @@ export default function App() {
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onOpenClassroom={() => setScreen({ name: 'classroom' })}
+          />
+        );
+
+      case 'arcade-briefing':
+        return (
+          <ArcadeBriefingScreen
+            records={arcade.records}
+            onStart={() => setScreen({ name: 'arcade-game' })}
+            onBack={() => setScreen({ name: 'mode-select' })}
+            onOpenSettings={openSettings}
+          />
+        );
+
+      case 'arcade-game':
+        return (
+          <ArcadeGame
+            records={arcade.records}
+            keyBindings={keyBindings}
+            keyboardEnabled={!settingsOpen}
+            externallyPaused={settingsOpen}
+            reducedMotion={reducedMotion}
+            onOpenSettings={openSettings}
+            onRecordRun={arcade.recordRun}
+            onExit={() => setScreen({ name: 'mode-select' })}
           />
         );
 
@@ -358,6 +394,7 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
         />
       )}
+
     </SfxProvider>
   );
 }

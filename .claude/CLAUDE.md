@@ -43,7 +43,16 @@ Current user-facing flow:
 
 1. The app opens on a tactical space-cockpit mode-select screen while retaining
    pixel-art game imagery and typography.
-2. Campaign and (cloud-gated) live 1v1 Versus are available; Arcade is a coming-soon mode.
+2. Campaign, endless Arcade, and (cloud-gated) live 1v1 Versus are available.
+2a. Arcade is an endless full-grid `y = mx + b` survival mode implemented
+separately under `src/game/arcade/`. Asteroids pause at five descending
+vertices, can be intercepted mid-fall through swept collision, and damage one
+of three shields only when they breach the bottom. Vertex hold starts at `5.0s`
+and has a hard `2.75s` floor. Learners may enter immediately, but unfinished
+Campaign progress triggers a recommendation notice. Private local records use
+`slope-invaders:arcade-records-v1` and appear in Pilot Profile; Arcade awards no
+Campaign XP, stars, badges, unlocks, or adaptive-tier data. See
+`docs/agent/11-arcade-mode.md`.
 3. Campaign opens a galaxy planet dial. Selecting a planet zooms to its surface
    map, where gold regions and faction banners launch levels directly. A "List
    view" toggle keeps the classic zone/level-list screens.
@@ -126,6 +135,10 @@ npm run build
 - `src/app/App.test.tsx` covers menu/settings/game shell behavior.
 - `src/app/useCampaignProgress.test.tsx` covers progress/stats/adaptive-tier persistence behavior.
 - `src/game/Game.tsx` owns live gameplay state: equation values, score, hearts, destroyed asteroids, shot animation, calculator toggle, feedback, reset/retry, the mission banner, and rich stats instrumentation.
+- `src/game/arcade/` owns Arcade's separate pure simulation, swept moving-target
+  collision, score/record rules, board, and runtime controller.
+- `src/app/ArcadeBriefingScreen.tsx` explains Arcade rules and shows personal
+  records before a run.
 - `src/game/components/GuidedTour.tsx` renders the first-visit spotlight walkthrough used by levels that opt in.
 - `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock.
 - `src/game/audio/sfx.tsx` and `src/game/audio/sfxContext.ts` provide SFX playback.
@@ -197,6 +210,8 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:student-id` is the account-free per-device UUID (the cloud `students` row key); `slope-invaders:cadet-name` is the chosen display name; `slope-invaders:classroom` is the joined class record; `slope-invaders:teacher-keys` remembers classes this device created (with their secret teacher keys). These power the optional classroom cloud and stay empty/unused when cloud is off.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
+- `slope-invaders:arcade-records-v1` stores private Arcade personal bests and
+  lifetime Arcade totals. Do not mix it into Campaign or classroom progress.
 - Calculator opens and tweaks are recorded but not scored.
 
 ## Guided Tour and Mission Banner

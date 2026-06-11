@@ -112,6 +112,32 @@ describe('PilotProfileScreen', () => {
     expect(host.textContent).toContain('Top rank reached');
   });
 
+  it('shows private Arcade personal records separately from campaign progress', async () => {
+    await act(async () => {
+      root.render(
+        <PilotProfileScreen
+          progress={fakeProgress()}
+          arcadeRecords={{
+            highScore: 2400,
+            bestWave: 6,
+            longestStreak: 9,
+            totalRuns: 4,
+            totalDestroyed: 31,
+            totalPlaytimeMs: 120000,
+            lastRun: null,
+          }}
+          onBack={vi.fn()}
+          onOpenSettings={vi.fn()}
+        />,
+      );
+    });
+
+    expect(host.textContent).toContain('Arcade Records');
+    expect(host.textContent).toContain('2400');
+    expect(host.textContent).toContain('Best wave');
+    expect(host.textContent).toContain('Arcade does not award campaign XP or stars');
+  });
+
   it('returns via the back button using the provided label', async () => {
     const onBack = vi.fn();
     await act(async () => {

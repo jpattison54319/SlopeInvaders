@@ -14,7 +14,25 @@ import {
 } from './identity';
 
 beforeEach(() => {
-  localStorage.clear();
+  const store = new Map<string, string>();
+  const storage: Storage = {
+    getItem: (key) => store.get(key) ?? null,
+    setItem: (key, value) => store.set(key, String(value)),
+    removeItem: (key) => store.delete(key),
+    clear: () => store.clear(),
+    key: (index) => Array.from(store.keys())[index] ?? null,
+    get length() {
+      return store.size;
+    },
+  };
+  Object.defineProperty(globalThis, 'localStorage', {
+    configurable: true,
+    value: storage,
+  });
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: storage,
+  });
 });
 
 describe('identity', () => {

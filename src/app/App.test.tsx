@@ -116,6 +116,54 @@ vi.mock('../game/Game', () => ({
   ),
 }));
 
+vi.mock('../game/arcade/ArcadeGame', () => ({
+  ArcadeGame: ({
+    onOpenSettings,
+    onRecordRun,
+    onExit,
+  }: {
+    onOpenSettings: () => void;
+    onRecordRun: (run: {
+      score: number;
+      wave: number;
+      longestStreak: number;
+      destroyed: number;
+      shots: number;
+      misses: number;
+      durationMs: number;
+      endedAt: number;
+    }) => void;
+    onExit: () => void;
+  }) => (
+    <section aria-label="Mock arcade screen">
+      <h1>Arcade Run Active</h1>
+      <button type="button" onClick={onOpenSettings}>
+        Arcade settings
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onRecordRun({
+            score: 1250,
+            wave: 4,
+            longestStreak: 7,
+            destroyed: 16,
+            shots: 20,
+            misses: 4,
+            durationMs: 60000,
+            endedAt: 100,
+          })
+        }
+      >
+        Finish arcade mock
+      </button>
+      <button type="button" onClick={onExit}>
+        Exit arcade mock
+      </button>
+    </section>
+  ),
+}));
+
 // Skip the launch warp's timed animation in tests — advance straight to gameplay.
 vi.mock('./LaunchTransition', async () => {
   const { useEffect } = await import('react');
@@ -245,7 +293,7 @@ afterEach(() => {
 });
 
 describe('App shell', () => {
-  test('starts on the mode-select menu with Campaign playable and other modes coming soon', async () => {
+  test('starts with Arcade locked until Campaign is complete', async () => {
     await renderApp();
 
     const buttonLabels = Array.from(host.querySelectorAll('button')).map((button) =>
@@ -257,7 +305,13 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Choose a Mode');
     expect(host.textContent).toContain('Arcade');
     expect(host.textContent).toContain('Versus');
-    expect(host.textContent).toContain('Coming Soon');
+    expect(host.textContent).not.toContain('Coming Soon');
+    expect(host.textContent).toContain('Beat Campaign to Unlock');
+    expect(host.textContent?.match(/Ready/g)?.length).toBe(2);
+    const arcadeButton = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => button.textContent?.includes('Arcade'),
+    );
+    expect(arcadeButton?.disabled).toBe(true);
     const settingsButton = host.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
     const profileButton = host.querySelector<HTMLButtonElement>('button[aria-label="Pilot Profile"]');
     const settingsIcon = settingsButton?.querySelector<HTMLImageElement>(
@@ -275,6 +329,43 @@ describe('App shell', () => {
     expect(buttonLabels.some((l) => l === 'Settings')).toBe(false);
     expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
+  });
+
+  test('does not offer an Arcade bypass before Campaign completion', async () => {
+    await renderApp();
+
+    const arcadeButton = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(
+      (button) => button.textContent?.includes('Arcade'),
+    );
+    expect(arcadeButton?.disabled).toBe(true);
+    expect(host.textContent).not.toContain('Campaign Recommended');
+    expect(host.textContent).not.toContain('Play Arcade Anyway');
+  });
+
+  test('campaign graduates can enter Arcade and complete its app flow', async () => {
+    seedCompletedLevels(orderedLevels.map(({ level }) => level.id));
+    await renderApp();
+
+    expect(host.textContent).not.toContain('Beat Campaign to Unlock');
+    expect(host.textContent?.match(/Ready/g)?.length).toBe(3);
+    await click('Arcade');
+    expect(host.textContent).toContain('Arcade Run');
+    expect(host.textContent).toContain('Flight Plan');
+
+    await click('Start Arcade Run');
+    expect(host.textContent).toContain('Arcade Run Active');
+    expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.game, 0.65, false);
+
+    await click('Arcade settings');
+    expect(host.textContent).toContain('Music Volume');
+    await click('Close');
+    await click('Finish arcade mock');
+    await click('Exit arcade mock');
+
+    await click('Pilot Profile');
+    expect(host.textContent).toContain('Arcade Records');
+    expect(host.textContent).toContain('1250');
+    expect(host.textContent).toContain('High score');
   });
 
   test('settings dialog controls music and sound-effect volume', async () => {

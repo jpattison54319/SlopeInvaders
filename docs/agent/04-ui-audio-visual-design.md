@@ -33,6 +33,11 @@ Use:
 - equation controls near the graph
 - visual highlights only for relevant targets and constraints
 
+Arcade may use moving targets, but concurrency and timing must remain bounded:
+one target in early waves, at most two in Revision 1, and a minimum `2.75s`
+vertex hold. Coordinates remain visible while moving so urgency does not remove
+the mathematical information needed to act.
+
 ## Multimedia design rules
 
 Use words and visuals together when they support the same concept.

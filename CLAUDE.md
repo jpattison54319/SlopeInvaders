@@ -6,7 +6,13 @@ Quick orientation:
 
 - This is **Slope Invaders**, a Vite + React + TypeScript + React Konva educational math game.
 - The repo folder is `SlopeBlasters`, but the game title is `Slope Invaders`.
-- Campaign and (cloud-gated) live 1v1 Versus are playable; Arcade is coming soon.
+- Campaign, endless Arcade, and (cloud-gated) live 1v1 Versus are playable.
+- Arcade uses a separate pure simulation under `src/game/arcade/`: falling
+  asteroids pause at vertices, swept collision permits mid-fall hits, three
+  breaches end a run, and wave pressure has a `2.75s` reasoning-time floor.
+  Personal records persist in `slope-invaders:arcade-records-v1` and appear in
+  Pilot Profile; Arcade never awards Campaign XP/stars/badges. See
+  `docs/agent/11-arcade-mode.md`.
 - Campaign opens an atmospheric galaxy where zones are planets on a rotating
   dial. Clicking a planet zooms to a surface map with gold regions and faction
   banners that launch missions directly; "List view" keeps the classic fallback.

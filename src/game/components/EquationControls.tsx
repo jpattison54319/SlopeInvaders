@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { ControlKey, EquationForm, Facing } from '../levels/types';
+import type { UiButtonKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
 
 interface EquationControlsProps {
@@ -18,6 +19,10 @@ interface EquationControlsProps {
   won: boolean;
   controls: ControlKey[];
   equationForm: EquationForm;
+  secondaryLabel?: string;
+  secondaryText?: string;
+  secondaryAsset?: UiButtonKey;
+  secondaryClassName?: string;
 }
 
 function fmt(n: number): string {
@@ -156,6 +161,10 @@ export function EquationControls({
   won,
   controls,
   equationForm,
+  secondaryLabel = 'Reset Level',
+  secondaryText = 'Reset Level',
+  secondaryAsset = 'replay',
+  secondaryClassName = 'btn--reset',
 }: EquationControlsProps) {
   // Facing left mirrors the line across the ship, so the equation (and the
   // dashed aim line it matches) shows the negated slope while the slope stepper
@@ -242,11 +251,11 @@ export function EquationControls({
           disabled={disabled || won}
         />
         <TacticalButton
-          asset="replay"
-          label="Reset Level"
-          text="Reset Level"
+          asset={secondaryAsset}
+          label={secondaryLabel}
+          text={secondaryText}
           size="large"
-          className="btn btn--reset btn--split"
+          className={`btn ${secondaryClassName} btn--split`}
           onClick={onReset}
         />
       </div>
