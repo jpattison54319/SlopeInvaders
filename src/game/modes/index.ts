@@ -2,8 +2,8 @@ import type { ModeDescriptor } from './types';
 
 /**
  * The mode catalog read by the Mode Select screen. Campaign is the focus of this
- * prototype; the others are placeholders kept here so the concept of "modes" is
- * visible and future modes drop in without touching existing code.
+ * prototype. Runtime progression gates, such as Arcade's Campaign-completion
+ * requirement, are applied by the app shell rather than duplicated here.
  */
 export const modes: ModeDescriptor[] = [
   {
@@ -17,9 +17,10 @@ export const modes: ModeDescriptor[] = [
   {
     id: 'arcade',
     name: 'Arcade',
-    tagline: 'Endless target practice.',
-    description: 'Free play and high-score runs across any unlocked level. Coming soon.',
-    status: 'coming-soon',
+    tagline: 'Endless equation defense.',
+    description:
+      'Survive escalating waves, intercept falling asteroids, and set a personal high score.',
+    status: 'available',
   },
   {
     id: 'versus',

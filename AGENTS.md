@@ -28,6 +28,8 @@ The `docs/agent/` folder contains the foundational theory behind design decision
 - `docs/agent/08-zone-4-full-grid.md`: Zone 4 (full grid, facing direction, infinite-line-vs-one-way-shot) learning focus, scaffold, and design decisions.
 - `docs/agent/09-zone-5-walls.md`: Zone 5 (shields/walls) learning focus, the wall-blocking model, star adherence, and SRL intent.
 - `docs/agent/10-classroom-cloud.md`: the optional Supabase classroom cloud (teacher dashboards, account-free student join, progress sync) and the Phase 2 live-Versus matchmaking spec.
+- `docs/agent/11-arcade-mode.md`: endless Arcade timing, swept collision,
+  scoring, records, accessibility, and pedagogy guardrails.
 - `docs/agent/sources.md`: bibliography-style source notes.
 
 Before adding or changing gameplay, pedagogy, UI, audio, feedback, adaptivity, gamification, or multiplayer behavior, consult the relevant `docs/agent` file and keep the implementation rooted in that source-backed design theory.
@@ -40,7 +42,15 @@ Current product flow:
 
 - App starts inside a tactical space-cockpit mode-select screen. The coordinate
   board and core game art retain the pixel-art identity.
-- Campaign and (cloud-gated) Versus are available modes; Arcade is coming soon.
+- Campaign, Arcade, and (cloud-gated) Versus are available modes.
+- Arcade is an endless full-grid `y = mx + b` survival mode. Asteroids pause at
+  five descending vertices, can be hit mid-fall through swept collision, and
+  breach one of three shields if they leave the grid. Hold time decreases from
+  `5.0s` to a `2.75s` floor; waves 1–2 show one target and Wave 3 onward can show
+  two. Incomplete Campaign players receive a recommendation notice but may play.
+- Arcade records are private/local (`slope-invaders:arcade-records-v1`) and
+  appear in Pilot Profile. Arcade does not award Campaign XP, stars, badges, or
+  adaptive data.
 - Campaign opens an atmospheric galaxy where each zone is a planet on a rotating
   dial. Selecting a planet zooms to its surface map, where gold regions and
   faction banners launch levels directly. A "List view" toggle keeps the classic
@@ -107,6 +117,10 @@ npm run dev -- --host 127.0.0.1
 - `src/app/SettingsModal.tsx`: music and SFX controls.
 - `src/app/useCampaignProgress.ts`: localStorage progress, rich stats, profile aggregate, XP banking, badge evaluation, unlock rules, adaptive tier selection.
 - `src/game/Game.tsx`: gameplay state machine, hearts/losses, calculator toggle, stats instrumentation.
+- `src/game/arcade/`: the separate endless Arcade simulation, swept collision,
+  score/record rules, Konva board, and runtime screen.
+- `src/app/ArcadeBriefingScreen.tsx`: Arcade rules, controls, and personal-best
+  briefing before a run.
 - `src/game/components/GuidedTour.tsx`: first-visit spotlight walkthrough used by levels that opt in.
 - `src/game/audio/buttonClick.ts`: delegated global button-click SFX; respect `data-button-sfx="none"` for buttons with their own sound.
 - `src/game/campaign/difficulty.ts`: adaptive tiers, `LevelStats`, scoring, tier config transforms.
@@ -145,6 +159,9 @@ npm run dev -- --host 127.0.0.1
 - Keep app-shell work in `src/app/`; keep gameplay work in `src/game/`.
 - Keep pure math and hit/scoring logic framework-free and covered by tests.
 - Keep campaign pedagogy and sequencing consistent with `docs/agent/`.
+- Keep Arcade separate from finite Campaign state and follow
+  `docs/agent/11-arcade-mode.md`; timing must never fall below the documented
+  reasoning floor.
 - Preserve the tactical arcade cockpit around the existing pixel-art game. The
   graph and math must remain higher contrast than surrounding artwork.
 - Keep all dynamic labels as HTML; do not introduce baked-in text assets.

@@ -16,6 +16,10 @@ interface AsteroidProps {
   showCoordinates?: boolean;
   /** Whether this asteroid is currently targetable (sequential mode). Default true. */
   active?: boolean;
+  /** Override the coordinate text for moving targets. */
+  coordinateLabel?: string;
+  /** Disable the decorative core pulse for reduced-motion contexts. */
+  animate?: boolean;
 }
 
 // 7×7 pixel mask for a chunky, roundish 8-bit rock.
@@ -42,13 +46,15 @@ export function Asteroid({
   size = 1.0,
   showCoordinates = true,
   active = true,
+  coordinateLabel,
+  animate = true,
 }: AsteroidProps) {
   const coreRef = useRef<Konva.Group>(null);
 
   // Self-contained pulse for the weak-point core (no React re-render). Only the
   // active target pulses; inactive (sequential) asteroids stay still.
   useEffect(() => {
-    if (!active) return;
+    if (!active || !animate) return;
     const node = coreRef.current;
     const layer = node?.getLayer();
     if (!node || !layer) return;
@@ -63,7 +69,7 @@ export function Asteroid({
     return () => {
       anim.stop();
     };
-  }, [active]);
+  }, [active, animate]);
 
   const center = graphToScreen(asteroid.weakPoint, vp);
   const rockPx = size * vp.unit;
@@ -94,10 +100,11 @@ export function Asteroid({
   }
 
   const coreR = rockPx * 0.16;
-  const coordinateLabel = `(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`;
+  const renderedCoordinateLabel =
+    coordinateLabel ?? `(${asteroid.weakPoint.x}, ${asteroid.weakPoint.y})`;
   const coordinateLabelFontSize = 11;
   const coordinateLabelBox = coordinateLabelLayout(
-    coordinateLabel,
+    renderedCoordinateLabel,
     rockPx,
     coordinateLabelFontSize,
   );
@@ -119,7 +126,7 @@ export function Asteroid({
           width={coordinateLabelBox.width}
           align="center"
           wrap={coordinateLabelBox.wrap}
-          text={coordinateLabel}
+          text={renderedCoordinateLabel}
           fontSize={coordinateLabelFontSize}
           fontFamily="monospace"
           fill={COLORS.weakPointGlow}

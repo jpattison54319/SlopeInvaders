@@ -7,6 +7,7 @@ import type { GameModeId, ModeDescriptor } from '../game/modes';
 
 interface MenuScreenProps {
   modes: ModeDescriptor[];
+  arcadeUnlocked: boolean;
   onSelectMode: (id: GameModeId) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
@@ -16,6 +17,7 @@ interface MenuScreenProps {
 /** The landing screen: title, how-to, and the game-mode selector. */
 export function MenuScreen({
   modes,
+  arcadeUnlocked,
   onSelectMode,
   onOpenSettings,
   onOpenProfile,
@@ -24,7 +26,9 @@ export function MenuScreen({
   const [briefingOpen, setBriefingOpen] = useState(false);
   const campaign = modes.find((m) => m.id === 'campaign');
   const campaignReady = campaign?.status === 'available';
-  const availableCount = modes.filter((m) => m.status === 'available').length;
+  const availableCount = modes.filter(
+    (mode) => mode.status === 'available' && (mode.id !== 'arcade' || arcadeUnlocked),
+  ).length;
 
   return (
     <main
@@ -88,7 +92,13 @@ export function MenuScreen({
 
         <div className="level-grid">
           {modes.map((mode) => {
-            const playable = mode.status === 'available';
+            const requiresCampaign = mode.id === 'arcade' && !arcadeUnlocked;
+            const playable = mode.status === 'available' && !requiresCampaign;
+            const status = playable
+              ? 'Ready'
+              : requiresCampaign
+                ? 'Beat Campaign to Unlock'
+                : 'Coming Soon';
             return (
               <button
                 type="button"
@@ -105,7 +115,7 @@ export function MenuScreen({
                   <span>{mode.tagline}</span>
                 </span>
                 <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
-                  {playable ? 'Ready' : 'Coming Soon'}
+                  {status}
                 </span>
               </button>
             );

@@ -129,6 +129,20 @@ Support tools should be teacher-controlled or mode-dependent so they do not bypa
 
 Multiplayer should be a practice/application mode, not the main learning path.
 
+## Arcade
+
+Arcade is also an application mode, not a replacement for Campaign instruction.
+It remains locked until the learner completes every available Campaign level.
+The disabled main-menu tile explains the requirement; do not add a bypass that
+lets an unfinished learner enter Arcade.
+
+Its score rewards accurate interceptions, moving-target reasoning, multi-hit
+equations, and sustained streaks. It does not award Campaign XP, stars, badges,
+or unlocks. Personal bests are private and local in Revision 1; do not add public
+rankings without applying the competition guardrails below.
+
+See `11-arcade-mode.md` for the implemented rules.
+
 Recommended modes:
 
 - Duel Mode: 1v1 short rounds
