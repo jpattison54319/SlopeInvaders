@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ArcadeRecords } from '../game/arcade/types';
 import { CoachPanel } from '../game/components/CoachPanel';
 import { TacticalButton } from '../game/components/TacticalButton';
@@ -6,7 +7,7 @@ import { ScreenChrome } from './ScreenChrome';
 
 interface ArcadeBriefingScreenProps {
   records: ArcadeRecords;
-  onStart: () => void;
+  onStart: (options: { noPreview: boolean }) => void;
   onBack: () => void;
   onOpenSettings: () => void;
 }
@@ -17,6 +18,8 @@ export function ArcadeBriefingScreen({
   onBack,
   onOpenSettings,
 }: ArcadeBriefingScreenProps) {
+  const [noPreview, setNoPreview] = useState(false);
+
   return (
     <ScreenChrome onBack={onBack} backLabel="Modes" onOpenSettings={onOpenSettings}>
       <section className="arcade-briefing" aria-labelledby="arcade-briefing-title">
@@ -60,6 +63,25 @@ export function ArcadeBriefingScreen({
                 { label: 'Best Streak', value: records.longestStreak || '—' },
               ]}
             />
+            <TacticalPanel className="arcade-briefing__modifiers" tone="standard" style={{ marginTop: '1rem' }}>
+              <h3>Modifiers</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                <div style={{ paddingRight: '12px' }}>
+                  <strong style={{ color: '#fff', fontSize: '0.82rem', display: 'block' }}>No Aim Preview</strong>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                    Hide the trajectory preview line. Activates 50% bonus XP!
+                  </span>
+                </div>
+                <TacticalButton
+                  asset={noPreview ? 'confirm' : 'back'}
+                  label="Toggle no-preview modifier"
+                  text={noPreview ? 'ON (+50% XP)' : 'OFF'}
+                  size="small"
+                  onClick={() => setNoPreview(!noPreview)}
+                  style={{ minWidth: '135px' }}
+                />
+              </div>
+            </TacticalPanel>
           </div>
         </div>
 
@@ -69,7 +91,7 @@ export function ArcadeBriefingScreen({
           text="Start Run"
           size="large"
           className="arcade-briefing__start"
-          onClick={onStart}
+          onClick={() => onStart({ noPreview })}
         />
       </section>
     </ScreenChrome>

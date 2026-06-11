@@ -64,31 +64,35 @@ export function projectAsteroidMotion(
 
     if (current.phase === 'holding') {
       const nextVertex = current.vertexIndex + 1;
+      const vertices = current.vertices || ARCADE_VERTICES;
       current = {
         ...current,
         phase: 'falling',
         fromY: current.y,
         toY:
-          nextVertex < ARCADE_VERTICES.length
-            ? ARCADE_VERTICES[nextVertex]
+          nextVertex < vertices.length
+            ? vertices[nextVertex]
             : ARCADE_BOUNDS.minY,
         phaseElapsedMs: 0,
         phaseDurationMs: ARCADE_FALL_MS,
       };
-    } else if (current.vertexIndex + 1 < ARCADE_VERTICES.length) {
-      const vertexIndex = current.vertexIndex + 1;
-      current = {
-        ...current,
-        phase: 'holding',
-        vertexIndex,
-        y: ARCADE_VERTICES[vertexIndex],
-        fromY: ARCADE_VERTICES[vertexIndex],
-        toY: ARCADE_VERTICES[vertexIndex],
-        phaseElapsedMs: 0,
-        phaseDurationMs: holdMs,
-      };
     } else {
-      break;
+      const vertices = current.vertices || ARCADE_VERTICES;
+      if (current.vertexIndex + 1 < vertices.length) {
+        const vertexIndex = current.vertexIndex + 1;
+        current = {
+          ...current,
+          phase: 'holding',
+          vertexIndex,
+          y: vertices[vertexIndex],
+          fromY: vertices[vertexIndex],
+          toY: vertices[vertexIndex],
+          phaseElapsedMs: 0,
+          phaseDurationMs: holdMs,
+        };
+      } else {
+        break;
+      }
     }
   }
 
@@ -159,6 +163,19 @@ function closestApproach(
   return { timeMs, distance, projectilePoint, asteroidPoint };
 }
 
+function segmentIntersection(p1: Point, p2: Point, p3: Point, p4: Point): Point | null {
+  const d1x = p2.x - p1.x;
+  const d1y = p2.y - p1.y;
+  const d2x = p4.x - p3.x;
+  const d2y = p4.y - p3.y;
+  const denom = d1x * d2y - d1y * d2x;
+  if (Math.abs(denom) < 1e-12) return null; // parallel or collinear
+  const t = ((p3.x - p1.x) * d2y - (p3.y - p1.y) * d2x) / denom;
+  const u = ((p3.x - p1.x) * d1y - (p3.y - p1.y) * d1x) / denom;
+  if (t < 0 || t > 1 || u < 0 || u > 1) return null;
+  return { x: p1.x + t * d1x, y: p1.y + t * d1y };
+}
+
 export function evaluateArcadeShot(
   projectileStart: Point,
   projectileEnd: Point,
@@ -192,13 +209,34 @@ export function evaluateArcadeShot(
       };
     }
     if (asteroidNearest.distance <= hitRadius) {
-      collisions.push({
-        asteroidId: asteroid.id,
-        timeMs: asteroidNearest.timeMs,
-        point: asteroidNearest.asteroidPoint,
-        moving,
-        distance: asteroidNearest.distance,
-      });
+      // Check if any orbital wall blocks the laser segment from projectileStart to asteroidPoint
+      let blockedByWall = false;
+      if (asteroid.walls) {
+        for (const wall of asteroid.walls) {
+          const wStart = {
+            x: asteroidNearest.asteroidPoint.x + wall.from.x,
+            y: asteroidNearest.asteroidPoint.y + wall.from.y,
+          };
+          const wEnd = {
+            x: asteroidNearest.asteroidPoint.x + wall.to.x,
+            y: asteroidNearest.asteroidPoint.y + wall.to.y,
+          };
+          if (segmentIntersection(projectileStart, asteroidNearest.asteroidPoint, wStart, wEnd)) {
+            blockedByWall = true;
+            break;
+          }
+        }
+      }
+
+      if (!blockedByWall) {
+        collisions.push({
+          asteroidId: asteroid.id,
+          timeMs: asteroidNearest.timeMs,
+          point: asteroidNearest.asteroidPoint,
+          moving,
+          distance: asteroidNearest.distance,
+        });
+      }
     }
   }
 

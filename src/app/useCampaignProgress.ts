@@ -253,6 +253,7 @@ export interface CampaignProgress {
    *  disabled or no class is joined). Used to backfill right after joining. */
   syncNow: () => void;
   resetProgress: () => void;
+  earnArcadeXp: (amount: number) => void;
 }
 
 /**
@@ -389,6 +390,17 @@ export function useCampaignProgress(): CampaignProgress {
     clearStoredProgress();
   }, []);
 
+  const earnArcadeXp = useCallback((amount: number) => {
+    setXp((prev) => {
+      const next = {
+        ...prev,
+        totalXp: prev.totalXp + amount,
+      };
+      saveXp(next);
+      return next;
+    });
+  }, []);
+
   // Improvement #7: emit an adaptivity trace whenever a non-diagnostic level's
   // tier is consulted. We queue the trace payload in a ref during render, then
   // flush it in a post-render effect so the impure Date.now() / localStorage
@@ -509,6 +521,7 @@ export function useCampaignProgress(): CampaignProgress {
       getEarnedBadges: () => badges,
       syncNow,
       resetProgress,
+      earnArcadeXp,
     };
-  }, [completed, stats, stars, profile, xp, badges, markComplete, syncNow, resetProgress]);
+  }, [completed, stats, stars, profile, xp, badges, markComplete, syncNow, resetProgress, earnArcadeXp]);
 }

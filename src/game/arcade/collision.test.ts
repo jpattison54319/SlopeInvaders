@@ -13,6 +13,7 @@ function asteroid(overrides: Partial<ArcadeAsteroid> = {}): ArcadeAsteroid {
     toY: 4,
     phaseElapsedMs: 0,
     phaseDurationMs: 5000,
+    vertices: [7, 4, 1, -2, -5],
     ...overrides,
   };
 }
@@ -72,5 +73,33 @@ describe('arcade swept collision', () => {
       5000,
     );
     expect(result.collisions.map((hit) => hit.asteroidId)).toEqual(['a1', 'a2']);
+  });
+
+  it('blocks a shot when the shot crosses a relative orbital wall', () => {
+    const blockedResult = evaluateArcadeShot(
+      { x: 0, y: 0 },
+      { x: 8, y: 8 },
+      700,
+      [
+        asteroid({
+          walls: [{ from: { x: -0.7, y: -0.7 }, to: { x: -0.7, y: 0.7 } }],
+        }),
+      ],
+      5000,
+    );
+    expect(blockedResult.collisions).toHaveLength(0);
+
+    const clearResult = evaluateArcadeShot(
+      { x: 8, y: 4 },
+      { x: 0, y: 4 },
+      700,
+      [
+        asteroid({
+          walls: [{ from: { x: -0.7, y: -0.7 }, to: { x: -0.7, y: 0.7 } }],
+        }),
+      ],
+      5000,
+    );
+    expect(clearResult.collisions).toHaveLength(1);
   });
 });

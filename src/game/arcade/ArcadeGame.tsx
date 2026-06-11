@@ -20,6 +20,7 @@ import { useSfx } from '../audio/sfxContext';
 import { ArcadeBoard } from './ArcadeBoard';
 import { evaluateArcadeShot } from './collision';
 import {
+  ARCADE_HIT_RADIUS,
   ARCADE_SHOT_MS,
   ARCADE_THREATS_PER_WAVE,
   difficultyForWave,
@@ -30,7 +31,7 @@ import {
   recordArcadeShot,
   stepArcadeSimulation,
 } from './simulation';
-import { multiplierForStreak, scoreArcadeHit } from './scoring';
+import { computeArcadeXp, multiplierForStreak, scoreArcadeHit } from './scoring';
 import type {
   ArcadeCollision,
   ArcadeExplosion,
@@ -49,6 +50,7 @@ interface ArcadeGameProps {
   keyboardEnabled?: boolean;
   externallyPaused?: boolean;
   reducedMotion?: boolean;
+  noPreview?: boolean;
   onOpenSettings: () => void;
   onRecordRun: (run: ArcadeRunStats) => void;
   onExit: () => void;
@@ -83,6 +85,7 @@ export function ArcadeGame({
   keyboardEnabled = true,
   externallyPaused = false,
   reducedMotion = false,
+  noPreview = false,
   onOpenSettings,
   onRecordRun,
   onExit,
@@ -92,6 +95,7 @@ export function ArcadeGame({
   const [m, setM] = useState(1);
   const [b, setB] = useState(0);
   const [facing, setFacing] = useState<Facing>('right');
+  const [xOffset, setXOffset] = useState(0);
   const [shot, setShot] = useState<ArcadeShot | null>(null);
   const [explosions, setExplosions] = useState<ArcadeExplosion[]>([]);
   const [scorePopups, setScorePopups] = useState<ArcadeScorePopup[]>([]);
@@ -125,8 +129,10 @@ export function ArcadeGame({
     endConfirmOpen;
   const difficulty = difficultyForWave(simulation.wave);
   const firing = shot !== null;
+  const shipX = xOffset;
+  const bEff = b - m * xOffset;
   const fireM = facing === 'right' ? m : -m;
-  const fireB = b;
+  const fireB = bEff + shipX * (m - fireM);
 
   useEffect(() => {
     simulationRef.current = simulation;
@@ -211,11 +217,28 @@ export function ArcadeGame({
           if (context.elapsedMs >= ARCADE_SHOT_MS) {
             if (!context.resolved) {
               setSimulation((current) => recordArcadeShot(current, []));
-              setFeedback({
-                tone: 'warning',
-                headline: 'Missed intercept.',
-                detail: missFeedback(context.nearest),
-              });
+              
+              const nearestAsteroid = context.nearest
+                ? simulationRef.current.asteroids.find((a) => a.id === context.nearest?.asteroidId)
+                : null;
+              const isBlocked =
+                nearestAsteroid &&
+                context.nearest &&
+                context.nearest.distance <= ARCADE_HIT_RADIUS;
+
+              if (isBlocked && nearestAsteroid.walls && nearestAsteroid.walls.length > 0) {
+                setFeedback({
+                  tone: 'warning',
+                  headline: 'Shot blocked!',
+                  detail: 'The asteroid’s orbital wall blocked your laser. Reposition Δx or change your slope to shoot around it!',
+                });
+              } else {
+                setFeedback({
+                  tone: 'warning',
+                  headline: 'Missed intercept.',
+                  detail: missFeedback(context.nearest),
+                });
+              }
             }
             shotContextRef.current = null;
             setShot(null);
@@ -258,7 +281,7 @@ export function ArcadeGame({
       maxX: 8,
       minY: -8,
       maxY: 8,
-    }, 0, facing);
+    }, shipX, facing);
     playLaser();
 
     if (!raw) {
@@ -297,7 +320,7 @@ export function ArcadeGame({
       ),
     };
     setShot({ start: segment.start, end: segment.end, progress: 0 });
-  }, [facing, fireB, fireM, firing, paused, playLaser]);
+  }, [facing, fireB, fireM, firing, paused, playLaser, shipX]);
 
   const changeM = useCallback((value: number) => setM(value), []);
   const changeB = useCallback((value: number) => setB(value), []);
@@ -338,8 +361,11 @@ export function ArcadeGame({
           setFacing('right');
           break;
         case 'xOffsetUp':
+          setXOffset(round(xOffset + 1));
+          break;
         case 'xOffsetDown':
-          return;
+          setXOffset(round(xOffset - 1));
+          break;
       }
       event.preventDefault();
     };
@@ -357,6 +383,7 @@ export function ArcadeGame({
     m,
     paused,
     simulation.phase,
+    xOffset,
   ]);
 
   const endRun = useCallback(() => {
@@ -373,6 +400,7 @@ export function ArcadeGame({
     setSimulation(createArcadeSimulation());
     setM(1);
     setB(0);
+    setXOffset(0);
     setFacing('right');
     setShot(null);
     setExplosions([]);
@@ -397,6 +425,7 @@ export function ArcadeGame({
     simulation.phase === 'countdown' ? Math.max(1, Math.ceil(simulation.countdownMs / 1000)) : null;
   const newHighScore =
     simulation.phase === 'gameover' && simulation.score > baselineHighScore;
+  const xpEarned = computeArcadeXp(simulation.score, !!noPreview);
   const accuracy =
     simulation.shots > 0
       ? Math.round(((simulation.shots - simulation.misses) / simulation.shots) * 100)
@@ -464,6 +493,8 @@ export function ArcadeGame({
               reducedMotion={reducedMotion}
               onExplosionDone={removeExplosion}
               onScorePopupDone={removeScorePopup}
+              xOffset={xOffset}
+              showPreview={!noPreview}
             />
 
             {countdownNumber !== null && (
@@ -561,17 +592,17 @@ export function ArcadeGame({
           <EquationControls
             m={m}
             b={b}
-            xOffset={0}
+            xOffset={xOffset}
             facing={facing}
             onChangeM={changeM}
             onChangeB={changeB}
-            onChangeXOffset={() => {}}
+            onChangeXOffset={setXOffset}
             onChangeFacing={setFacing}
             onFire={handleFire}
             onReset={() => setEndConfirmOpen(true)}
             disabled={paused || firing || simulation.phase !== 'playing'}
             won={simulation.phase === 'gameover'}
-            controls={['slope', 'yIntercept', 'direction']}
+            controls={['slope', 'yIntercept', 'xOffset', 'direction']}
             equationForm="y=mx+b"
             secondaryLabel="End run"
             secondaryText="End Run"
@@ -619,6 +650,7 @@ export function ArcadeGame({
               label="Arcade result"
               items={[
                 { label: 'Score', value: simulation.score },
+                { label: 'XP Earned', value: noPreview ? `${xpEarned} (+50% bonus)` : xpEarned },
                 { label: 'Accuracy', value: `${accuracy}%` },
                 { label: 'Best Streak', value: simulation.longestStreak || '—' },
               ]}

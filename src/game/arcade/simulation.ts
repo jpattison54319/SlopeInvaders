@@ -10,9 +10,42 @@ import {
   difficultyForWave,
 } from './difficulty';
 import { scoreArcadeHit, type ArcadeTargetScore } from './scoring';
-import type { ArcadeAsteroid, ArcadeSimulation } from './types';
+import type { ArcadeAsteroid, ArcadeSimulation, ArcadeWall } from './types';
 
 const X_COLUMNS = [-7, -6, -5, -4, -3, -2, 2, 3, 4, 5, 6, 7] as const;
+
+const RELATIVE_WALLS: readonly ArcadeWall[] = [
+  // Left wall
+  { from: { x: -0.7, y: -0.7 }, to: { x: -0.7, y: 0.7 } },
+  // Right wall
+  { from: { x: 0.7, y: -0.7 }, to: { x: 0.7, y: 0.7 } },
+  // Top wall
+  { from: { x: -0.7, y: 0.7 }, to: { x: 0.7, y: 0.7 } },
+  // Bottom wall
+  { from: { x: -0.7, y: -0.7 }, to: { x: 0.7, y: -0.7 } },
+  // Top-Right diagonal wall
+  { from: { x: 0.1, y: 0.7 }, to: { x: 0.7, y: 0.1 } },
+  // Top-Left diagonal wall
+  { from: { x: -0.7, y: 0.1 }, to: { x: -0.1, y: 0.7 } },
+  // Bottom-Left diagonal wall
+  { from: { x: -0.7, y: -0.1 }, to: { x: -0.1, y: -0.7 } },
+  // Bottom-Right diagonal wall
+  { from: { x: 0.1, y: -0.7 }, to: { x: 0.7, y: -0.1 } },
+] as const;
+
+function chooseAsteroidWalls(wave: number, random: () => number): ArcadeWall[] {
+  if (wave < 4) return [];
+
+  const wallProb = wave === 4 ? 0.25 : wave === 5 ? 0.45 : 0.60;
+  if (random() > wallProb) return [];
+
+  const count = (wave >= 5 && random() < 0.3) ? 2 : 1;
+  const indices = new Set<number>();
+  while (indices.size < count) {
+    indices.add(Math.floor(random() * RELATIVE_WALLS.length));
+  }
+  return Array.from(indices).map((idx) => RELATIVE_WALLS[idx]);
+}
 
 export function createArcadeSimulation(): ArcadeSimulation {
   return {
@@ -43,18 +76,35 @@ function chooseColumn(state: ArcadeSimulation, random: () => number): number {
   return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
 }
 
+function generateAsteroidVertices(random: () => number): number[] {
+  const pool = [7, 6, 8];
+  const startY = pool[Math.min(2, Math.floor(random() * 3))];
+  const vertices = [startY];
+  let currentY = startY;
+  const stepPool = [3, 2, 4];
+  while (currentY > -5) {
+    const step = stepPool[Math.min(2, Math.floor(random() * 3))];
+    currentY -= step;
+    vertices.push(currentY);
+  }
+  return vertices;
+}
+
 function spawnAsteroid(state: ArcadeSimulation, random: () => number): ArcadeSimulation {
   const holdMs = difficultyForWave(state.wave).holdMs;
+  const vertices = generateAsteroidVertices(random);
   const asteroid: ArcadeAsteroid = {
     id: `arcade-${state.nextAsteroidId}`,
     x: chooseColumn(state, random),
-    y: ARCADE_VERTICES[0],
+    y: vertices[0],
     phase: 'holding',
     vertexIndex: 0,
-    fromY: ARCADE_VERTICES[0],
-    toY: ARCADE_VERTICES[0],
+    fromY: vertices[0],
+    toY: vertices[0],
     phaseElapsedMs: 0,
     phaseDurationMs: holdMs,
+    vertices,
+    walls: chooseAsteroidWalls(state.wave, random),
   };
   return {
     ...state,
@@ -67,8 +117,9 @@ function spawnAsteroid(state: ArcadeSimulation, random: () => number): ArcadeSim
 
 function beginFall(asteroid: ArcadeAsteroid): ArcadeAsteroid {
   const nextVertex = asteroid.vertexIndex + 1;
+  const vertices = asteroid.vertices || ARCADE_VERTICES;
   const toY =
-    nextVertex < ARCADE_VERTICES.length ? ARCADE_VERTICES[nextVertex] : ARCADE_BOUNDS.minY;
+    nextVertex < vertices.length ? vertices[nextVertex] : ARCADE_BOUNDS.minY;
   return {
     ...asteroid,
     phase: 'falling',
@@ -106,18 +157,19 @@ function updateAsteroid(
       continue;
     }
 
-    if (current.vertexIndex + 1 >= ARCADE_VERTICES.length) {
+    const vertices = current.vertices || ARCADE_VERTICES;
+    if (current.vertexIndex + 1 >= vertices.length) {
       return { asteroid: null, breached: true };
     }
 
     const vertexIndex = current.vertexIndex + 1;
     current = {
       ...current,
-      y: ARCADE_VERTICES[vertexIndex],
+      y: vertices[vertexIndex],
       phase: 'holding',
       vertexIndex,
-      fromY: ARCADE_VERTICES[vertexIndex],
-      toY: ARCADE_VERTICES[vertexIndex],
+      fromY: vertices[vertexIndex],
+      toY: vertices[vertexIndex],
       phaseElapsedMs: 0,
       phaseDurationMs: holdMs,
     };
