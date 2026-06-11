@@ -14,7 +14,11 @@ import {
   getJoinedClassroom,
   getOrCreateStudentId,
 } from './identity';
-import type { LevelResultPayload, ProgressPayload } from './progressPayload';
+import type {
+  LevelAdaptivityInfo,
+  LevelResultPayload,
+  ProgressPayload,
+} from './progressPayload';
 
 export interface ClassroomInfo {
   classroomId: string;
@@ -47,12 +51,32 @@ export interface DashboardLevelResult {
   accuracy: number;
   attempts: number;
   completedAt: string | null;
+  /**
+   * Teacher-only adaptivity transparency: the tier this level resolves to and
+   * why. Null for rows synced before migration 0003 / older clients.
+   */
+  adaptivity: LevelAdaptivityInfo | null;
 }
 
 export interface DashboardData {
   classroom: ClassroomInfo;
   students: DashboardStudent[];
   levelResults: DashboardLevelResult[];
+}
+
+/** Defensive parse of the `adaptivity` object riding in the stats jsonb. */
+function parseAdaptivity(stats: unknown): LevelAdaptivityInfo | null {
+  if (!stats || typeof stats !== 'object') return null;
+  const a = (stats as { adaptivity?: unknown }).adaptivity;
+  if (!a || typeof a !== 'object') return null;
+  const { tier, ema, sampleCount, reason } = a as Record<string, unknown>;
+  if (tier !== 'support' && tier !== 'standard' && tier !== 'challenge') return null;
+  return {
+    tier,
+    ...(typeof ema === 'number' && Number.isFinite(ema) ? { ema } : {}),
+    sampleCount: typeof sampleCount === 'number' ? sampleCount : 0,
+    reason: typeof reason === 'string' ? reason : '',
+  };
 }
 
 class CloudDisabledError extends Error {
@@ -145,6 +169,7 @@ export async function getDashboard(teacherKey: string): Promise<DashboardData> {
       accuracy: Number(r.accuracy ?? 0),
       attempts: Number(r.attempts ?? 0),
       completedAt: (r.completed_at as string | null) ?? null,
+      adaptivity: parseAdaptivity(r.stats),
     })),
   };
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ACTIONS,
   ACTION_LABELS,
@@ -10,6 +10,7 @@ import {
   type GameAction,
   type KeyBindings,
 } from '../game/controls/keybindings';
+import { useFocusTrap } from './useFocusTrap';
 
 interface ControlsSettingsProps {
   keyBindings: KeyBindings;
@@ -27,6 +28,15 @@ interface Conflict {
 export function ControlsSettings({ keyBindings, onChange, onBack }: ControlsSettingsProps) {
   const [listening, setListening] = useState<GameAction | null>(null);
   const [conflict, setConflict] = useState<Conflict | null>(null);
+  const conflictRef = useRef<HTMLDivElement>(null);
+  // Improvement #8: keep keyboard focus inside the conflict dialog while it
+  // is open and restore focus to the underlying row button on close.
+  useFocusTrap(conflictRef, conflict !== null, () => {
+    if (!conflict) return null;
+    return document.querySelector<HTMLButtonElement>(
+      `button[aria-label="Change key for ${ACTION_LABELS[conflict.conflictAction]}"]`,
+    );
+  });
 
   // While listening for a key, capture the next keypress. Use the capture phase
   // + stopImmediatePropagation so the press never reaches the Modal's
@@ -97,7 +107,13 @@ export function ControlsSettings({ keyBindings, onChange, onBack }: ControlsSett
       </button>
 
       {conflict && (
-        <div className="keybind-confirm" role="dialog" aria-label="Reassign key">
+        <div
+          ref={conflictRef}
+          className="keybind-confirm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Reassign key"
+        >
           <div className="keybind-confirm__panel">
             <strong>Key already used</strong>
             <p>
@@ -106,7 +122,12 @@ export function ControlsSettings({ keyBindings, onChange, onBack }: ControlsSett
               will be left unassigned.
             </p>
             <div className="keybind-confirm__actions">
-              <button type="button" className="btn btn--fire" onClick={confirmReassign}>
+              <button
+                type="button"
+                className="btn btn--fire"
+                onClick={confirmReassign}
+                autoFocus
+              >
                 Reassign
               </button>
               <button type="button" className="btn btn--reset" onClick={() => setConflict(null)}>

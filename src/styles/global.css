@@ -3947,11 +3947,6 @@ body {
 }
 
 /* Result screens */
-.game-overlay {
-  inset: 9px;
-  border-radius: 4px;
-}
-
 .game-overlay__panel--framed {
   position: relative;
   width: min(455px, 100%);
@@ -4543,7 +4538,8 @@ body {
 
 .teacher__detail li {
   display: grid;
-  grid-template-columns: 1.6fr 0.7fr 1fr 0.9fr;
+  grid-template-columns: 1.6fr 0.7fr 1fr 0.9fr 0.9fr;
+  align-items: center;
   gap: 0.65rem;
   font-family: var(--mono);
   font-size: 0.68rem;
@@ -4558,6 +4554,25 @@ body {
 
 .teacher__detail-level {
   color: var(--text);
+}
+
+/* Teacher-only adaptivity tier chip (hover/focus shows the reason). */
+.teacher__tier {
+  justify-self: start;
+  padding: 2px 7px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: help;
+}
+.teacher__tier--support {
+  color: #6ee7a0;
+}
+.teacher__tier--challenge {
+  color: #ffc861;
 }
 
 @media (max-width: 560px) {
@@ -4699,4 +4714,213 @@ body {
   .versus__side {
     width: min(420px, 100%);
   }
+}
+
+/* ========================================================================
+   Suspense screen loader (improvement #6: code splitting feedback)
+   ======================================================================== */
+.app__loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.2rem;
+  min-height: 60vh;
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-dim);
+  font-family: var(--pixel-font);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.app__loader p {
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.app__loader-spinner {
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(94, 241, 255, 0.18);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: app__loader-spin 0.9s linear infinite;
+}
+
+.app__loader-spinner--reduced {
+  animation-duration: 3s;
+  border-top-color: var(--text-dim);
+}
+
+@keyframes app__loader-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================================================
+   Keyboard shortcuts overlay (improvement #8)
+   ======================================================================== */
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.shortcuts-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 9, 25, 0.78);
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.shortcuts-panel {
+  position: relative;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 4rem);
+  overflow: auto;
+  padding: 1.6rem 1.8rem 1.4rem;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, rgba(11, 18, 48, 0.95), rgba(7, 12, 32, 0.95)),
+    var(--panel);
+  box-shadow: 0 0 0 3px rgba(4, 9, 25, 0.92), 0 0 32px rgba(80, 208, 255, 0.18);
+  color: var(--text);
+}
+
+.shortcuts-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 0.6rem;
+}
+
+.shortcuts-panel__head h2 {
+  margin: 0;
+  font-family: var(--pixel-font);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: var(--cyan);
+  text-shadow: 0 0 10px rgba(94, 241, 255, 0.35);
+}
+
+.shortcuts-panel__close {
+  appearance: none;
+  border: 1px solid var(--panel-border);
+  background: rgba(94, 241, 255, 0.08);
+  color: var(--text);
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.shortcuts-section__title {
+  margin: 1rem 0 0.4rem;
+  font-family: var(--pixel-font);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  text-transform: uppercase;
+}
+
+.shortcuts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.shortcuts-list__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 0.6fr) 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.shortcuts-list__row:nth-child(odd) {
+  background: rgba(94, 241, 255, 0.05);
+}
+
+.shortcuts-list__key {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 1px solid var(--panel-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(7, 12, 32, 0.8);
+  font-family: var(--pixel-font);
+  font-size: 0.65rem;
+  color: var(--cyan);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.shortcuts-panel__hint {
+  margin: 1rem 0 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* ========================================================================
+   Focus visibility (improvement #8) — keyboard users see *where they are*
+   ======================================================================== */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+.tactical-button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+  box-shadow: 0 0 0 4px rgba(94, 241, 255, 0.2);
+}
+
+/* Skip-to-content link — improvement #8 (becomes visible only when focused). */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 12px;
+  z-index: 9999;
+  padding: 8px 14px;
+  border: 2px solid var(--cyan);
+  border-radius: 6px;
+  background: var(--space-1);
+  color: var(--cyan);
+  font-family: var(--pixel-font);
+  font-size: 0.7rem;
+  text-decoration: none;
+  transition: top 0.15s ease-in-out;
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 12px;
 }

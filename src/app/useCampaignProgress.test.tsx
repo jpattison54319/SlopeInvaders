@@ -192,8 +192,8 @@ describe('useCampaignProgress', () => {
       progress.markComplete('z1-l1', stats({ levelId: 'z1-l1', score: 1 }));
     });
 
-    expect(progress.tierForLevel(zoneOne, 0)).toBe('standard');
-    expect(progress.tierForLevel(zoneOne, 1)).toBe('challenge');
+    expect(progress.tierForLevel(zoneOne, 0).tier).toBe('standard');
+    expect(progress.tierForLevel(zoneOne, 1).tier).toBe('challenge');
   });
 
   it('rolls the Zone 2 tier from prior Zone 2 stats, independent of Zone 1', async () => {
@@ -202,9 +202,9 @@ describe('useCampaignProgress', () => {
     });
 
     // First Zone 2 level is always the fixed standard diagnostic.
-    expect(progress.tierForLevel(zoneTwo, 0)).toBe('standard');
+    expect(progress.tierForLevel(zoneTwo, 0).tier).toBe('standard');
     // A flawless z2-l1 lifts the next Zone 2 level to challenge.
-    expect(progress.tierForLevel(zoneTwo, 1)).toBe('challenge');
+    expect(progress.tierForLevel(zoneTwo, 1).tier).toBe('challenge');
   });
 
   it('rolls the Zone 3 tier from prior Zone 3 stats, independent of earlier zones', async () => {
@@ -212,8 +212,8 @@ describe('useCampaignProgress', () => {
       progress.markComplete('z3-l1', stats({ levelId: 'z3-l1', score: 1 }));
     });
 
-    expect(progress.tierForLevel(zoneThree, 0)).toBe('standard');
-    expect(progress.tierForLevel(zoneThree, 1)).toBe('challenge');
+    expect(progress.tierForLevel(zoneThree, 0).tier).toBe('standard');
+    expect(progress.tierForLevel(zoneThree, 1).tier).toBe('challenge');
   });
 
   it('rolls the Zone 4 tier from prior Zone 4 stats, independent of earlier zones', async () => {
@@ -221,8 +221,8 @@ describe('useCampaignProgress', () => {
       progress.markComplete('z4-l1', stats({ levelId: 'z4-l1', score: 1 }));
     });
 
-    expect(progress.tierForLevel(zoneFour, 0)).toBe('standard');
-    expect(progress.tierForLevel(zoneFour, 1)).toBe('challenge');
+    expect(progress.tierForLevel(zoneFour, 0).tier).toBe('standard');
+    expect(progress.tierForLevel(zoneFour, 1).tier).toBe('challenge');
   });
 
   it('rolls the Zone 5 tier from prior Zone 5 stats, independent of earlier zones', async () => {
@@ -230,8 +230,40 @@ describe('useCampaignProgress', () => {
       progress.markComplete('z5-l1', stats({ levelId: 'z5-l1', score: 1 }));
     });
 
-    expect(progress.tierForLevel(zoneFive, 0)).toBe('standard');
-    expect(progress.tierForLevel(zoneFive, 1)).toBe('challenge');
+    expect(progress.tierForLevel(zoneFive, 0).tier).toBe('standard');
+    expect(progress.tierForLevel(zoneFive, 1).tier).toBe('challenge');
+  });
+
+  it('emits a structured adaptivity trace for non-diagnostic level reads', async () => {
+    await act(async () => {
+      progress.markComplete('z1-l1', stats({ levelId: 'z1-l1', score: 1 }));
+    });
+    storage.removeItem('slope-invaders:adaptivity-trace');
+
+    // Re-render so the post-render effect can flush the queue. The render is
+    // triggered by re-rendering the harness; the effect then stamps a fresh
+    // timestamp and writes the queued trace to localStorage.
+    await act(async () => {
+      progress.tierForLevel(zoneOne, 1);
+    });
+    await act(async () => {
+      root.render(<Harness onProgress={(next) => {
+        progress = next;
+      }} />);
+    });
+
+    const raw = storage.getItem('slope-invaders:adaptivity-trace');
+    expect(raw).not.toBeNull();
+    const traces = JSON.parse(raw ?? '[]');
+    expect(traces.length).toBeGreaterThanOrEqual(1);
+    expect(traces[traces.length - 1]).toMatchObject({
+      zoneId: 'zone-1',
+      levelId: 'z1-l2',
+      tier: 'challenge',
+      sampleCount: 1,
+    });
+    expect(typeof traces[traces.length - 1].decidedAt).toBe('number');
+    expect(traces[traces.length - 1].reason).toMatch(/challenge/);
   });
 
   it('banks first-clear XP, returns the award, and persists the store', async () => {

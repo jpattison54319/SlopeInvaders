@@ -88,6 +88,8 @@ Current product flow:
 - In-level calculator opens from the game bar and is a free tool for stats/adaptivity.
 - Top-right Settings controls music and SFX volume/mute, and has a "Change Controls" sub-screen for remapping keyboard controls.
 - Gameplay keyboard controls drive the equation/facing/fire (defaults Space fire, W/S y-intercept ±, A/D x-offset ∓/±, R/F slope ±, Q/E face left/right). Bindings are remappable + persisted (`slope-invaders:keybindings`), gated by the level's allowed controls (Fire always works), and ignored while typing or mid-shot.
+- App-wide keyboard accessibility: skip-to-content link, modal focus traps (`useFocusTrap`), a `?` shortcuts help panel, and `S`/`P` shortcuts (Settings / Pilot Profile) outside missions only. Screens lazy-load with a loading fallback (Konva/Supabase/React split into separate chunks).
+- Adaptivity transparency is teacher-only: tier decisions are traced locally (`slope-invaders:adaptivity-trace`), synced level stats embed the resolved tier + reason, and the teacher dashboard drill-down shows it (migration `0003_dashboard_adaptivity.sql`). Never show tiers/EMA to students.
 - Menu music: `src/assets/homescreen_background.mp3`.
 - Gameplay music: `src/assets/in_game.mp3`.
 - SFX: `src/assets/laser.wav` and `src/assets/explosion.wav`.

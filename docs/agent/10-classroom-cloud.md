@@ -84,7 +84,11 @@ disabled or no class is joined.
 - `ClassroomScreen.tsx` — student cadet-name + class-code join, leave, name edit.
 - `TeacherDashboardScreen.tsx` — create a class (shows the share code + secret
   bookmark link), and the roster (cadet, last active, levels, stars, XP/rank,
-  accuracy) with per-student per-level drill-down.
+  accuracy) with per-student per-level drill-down. Each drill-down row shows a
+  teacher-only adaptivity tier chip (support/standard/challenge) whose tooltip
+  explains why the engine chose it (migration `0003_dashboard_adaptivity.sql`
+  exposes the synced per-level stats; older rows simply omit the chip).
+  This information must never be surfaced to students.
 - `MenuScreen` has a Classroom entry; the teacher area is reachable from there.
 
 ## Phase 2 — Live 1v1 Versus (built)

@@ -15,6 +15,8 @@ interface ScreenChromeProps {
   toggleViewIcon?: Extract<UiButtonKey, 'list' | 'planet'>;
   /** Optional Pilot Profile entry in the top bar. */
   onOpenProfile?: () => void;
+  /** Optional keyboard-shortcuts entry (improvement #8). */
+  onOpenShortcuts?: () => void;
   children: ReactNode;
 }
 
@@ -31,6 +33,7 @@ export function ScreenChrome({
   toggleViewLabel,
   toggleViewIcon,
   onOpenProfile,
+  onOpenShortcuts,
   children,
 }: ScreenChromeProps) {
   return (
@@ -56,6 +59,14 @@ export function ScreenChrome({
               label={toggleViewLabel ?? 'Change view'}
               size="small"
               onClick={onToggleView}
+            />
+          )}
+          {onOpenShortcuts && (
+            <TacticalButton
+              asset="info"
+              label="Keyboard shortcuts (?)"
+              size="small"
+              onClick={onOpenShortcuts}
             />
           )}
           <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />

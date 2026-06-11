@@ -87,4 +87,47 @@ describe('buildProgressPayload', () => {
     expect(levels).toHaveLength(1);
     expect(levels[0]).toMatchObject({ levelId: 'z1-l1', stars: 3, attempts: 1 });
   });
+
+  it('attaches teacher-facing adaptivity info to each level stats payload', () => {
+    const snap: ProgressSnapshot = {
+      profile,
+      totalXp: 0,
+      levelStats: {
+        'z1-l1': levelStats({ levelId: 'z1-l1', score: 1 }),
+        'z1-l2': levelStats({ levelId: 'z1-l2' }),
+      },
+      levelStars: {},
+      completedLevelIds: ['z1-l1', 'z1-l2'],
+    };
+    const { levels } = buildProgressPayload(snap);
+
+    // Zone diagnostic (index 0): fixed standard, no history.
+    const diagnostic = levels.find((l) => l.levelId === 'z1-l1');
+    expect(diagnostic?.stats.adaptivity).toMatchObject({
+      tier: 'standard',
+      sampleCount: 0,
+    });
+    expect(diagnostic?.stats.adaptivity?.ema).toBeUndefined();
+
+    // Later level: a flawless prior run rolls the tier up to challenge.
+    const second = levels.find((l) => l.levelId === 'z1-l2');
+    expect(second?.stats.adaptivity).toMatchObject({
+      tier: 'challenge',
+      sampleCount: 1,
+    });
+    expect(second?.stats.adaptivity?.ema).toBeGreaterThanOrEqual(0.75);
+    expect(second?.stats.adaptivity?.reason).toMatch(/challenge/);
+  });
+
+  it('omits adaptivity for level ids outside the zone registry', () => {
+    const snap: ProgressSnapshot = {
+      profile,
+      totalXp: 0,
+      levelStats: { 'custom-level': levelStats({ levelId: 'custom-level' }) },
+      levelStars: {},
+      completedLevelIds: ['custom-level'],
+    };
+    const { levels } = buildProgressPayload(snap);
+    expect(levels[0].stats.adaptivity).toBeUndefined();
+  });
 });

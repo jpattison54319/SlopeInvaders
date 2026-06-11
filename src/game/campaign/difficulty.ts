@@ -11,11 +11,31 @@
  * `scorePerformance` uses — for a future learner profile / statistics page. The
  * calculator is a free tool: `calculatorOpens` (and `tweaks`) are recorded but
  * never feed the score.
+ *
+ * Observability (improvement #7): every tier decision is now a structured
+ * `TierDecision` returned by `selectTier` / `tierForLevel`, with the EMA, the
+ * raw scores, the weights, and a human-readable reason. The `adaptivityTrace`
+ * module persists these so teachers / support can audit "why was this level
+ * harder than last time?".
  */
 import type { CampaignLevel } from './types';
 import type { LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 
 export type DifficultyTier = 'support' | 'standard' | 'challenge';
+
+/**
+ * Thresholds for tier promotion / demotion. Exposed so the trace module and any
+ * A/B test harness can show / override the same numbers the engine uses.
+ */
+export const TIER_THRESHOLDS = {
+  /** EMA at or above this is promoted to challenge. */
+  challenge: 0.75,
+  /** EMA at or below this is dropped to support. */
+  support: 0.45,
+} as const;
+
+/** EMA smoothing factor for `selectTier` (higher = more recency). */
+export const TIER_EMA_ALPHA = 0.6;
 
 /**
  * Everything we capture for one *visit* to a level (cumulative across retries,
@@ -101,20 +121,67 @@ export function scorePerformance(s: ScorableStats): number {
 }
 
 /**
+ * Structured record of a tier decision (improvement #7). Returned alongside
+ * the tier itself so callers can record / display / test the reasoning.
+ */
+export interface TierDecision {
+  tier: DifficultyTier;
+  /** Exponential moving average of the input scores (NaN when none). */
+  ema: number;
+  /** Raw scores fed in, oldest first. */
+  scores: number[];
+  /** Per-score EMA weights (alpha^(n-i)), useful for transparency. */
+  weights: number[];
+  /** Thresholds used for the decision. */
+  thresholds: { challenge: number; support: number };
+  /** Number of samples that contributed. */
+  sampleCount: number;
+}
+
+/**
  * Choose a tier from prior per-level scores (chronological, oldest first).
  * Uses an exponential moving average so the most recent levels weigh most,
- * with a wide dead-band to avoid flip-flopping.
+ * with a wide dead-band to avoid flip-flopping. Returns a {@link TierDecision}
+ * that captures the EMA, weights, and thresholds for telemetry.
  */
-export function selectTier(scores: number[]): DifficultyTier {
-  if (scores.length === 0) return 'standard';
-  const alpha = 0.6;
+export function selectTier(scores: number[]): TierDecision {
+  if (scores.length === 0) {
+    return {
+      tier: 'standard',
+      ema: NaN,
+      scores: [],
+      weights: [],
+      thresholds: TIER_THRESHOLDS,
+      sampleCount: 0,
+    };
+  }
+  const alpha = TIER_EMA_ALPHA;
   let ema = scores[0];
-  for (let i = 1; i < scores.length; i++) {
+  // weights[i] = contribution of scores[i] to the final EMA:
+  //   - scores[0] contributes (1-alpha)^(n-1)  (it seeds EMA, then fades out)
+  //   - scores[i] for i > 0 contributes alpha * (1-alpha)^(n-1-i)
+  // These are *true* weights: their sum equals 1, and Σ weights[i]*scores[i] = ema.
+  const weights: number[] = [];
+  const n = scores.length;
+  for (let i = 0; i < n; i++) {
+    const exponent = n - 1 - i;
+    weights.push(i === 0 ? Math.pow(1 - alpha, exponent) : alpha * Math.pow(1 - alpha, exponent));
+  }
+  for (let i = 1; i < n; i++) {
     ema = alpha * scores[i] + (1 - alpha) * ema;
   }
-  if (ema >= 0.75) return 'challenge';
-  if (ema <= 0.45) return 'support';
-  return 'standard';
+  let tier: DifficultyTier;
+  if (ema >= TIER_THRESHOLDS.challenge) tier = 'challenge';
+  else if (ema <= TIER_THRESHOLDS.support) tier = 'support';
+  else tier = 'standard';
+  return {
+    tier,
+    ema,
+    scores: [...scores],
+    weights,
+    thresholds: TIER_THRESHOLDS,
+    sampleCount: n,
+  };
 }
 
 /**

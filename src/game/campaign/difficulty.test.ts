@@ -92,23 +92,63 @@ describe('scorePerformance', () => {
 
 describe('selectTier', () => {
   it('defaults to standard with no data', () => {
-    expect(selectTier([])).toBe('standard');
+    const d = selectTier([]);
+    expect(d.tier).toBe('standard');
+    expect(d.sampleCount).toBe(0);
+    expect(Number.isNaN(d.ema)).toBe(true);
+    expect(d.scores).toEqual([]);
   });
 
   it('promotes strong performers to challenge', () => {
-    expect(selectTier([0.9, 0.95])).toBe('challenge');
+    const d = selectTier([0.9, 0.95]);
+    expect(d.tier).toBe('challenge');
+    expect(d.sampleCount).toBe(2);
+    expect(d.ema).toBeGreaterThanOrEqual(0.75);
   });
 
   it('drops strugglers to support', () => {
-    expect(selectTier([0.2, 0.3])).toBe('support');
+    const d = selectTier([0.2, 0.3]);
+    expect(d.tier).toBe('support');
+    expect(d.ema).toBeLessThanOrEqual(0.45);
   });
 
   it('keeps middling performers at standard', () => {
-    expect(selectTier([0.6])).toBe('standard');
+    const d = selectTier([0.6]);
+    expect(d.tier).toBe('standard');
   });
 
   it('weighs recent levels most (recovery from a rough start)', () => {
-    expect(selectTier([0.2, 0.2, 0.95, 0.95])).toBe('challenge');
+    const d = selectTier([0.2, 0.2, 0.95, 0.95]);
+    expect(d.tier).toBe('challenge');
+  });
+
+  it('records weights whose weighted sum equals the reported EMA', () => {
+    // Improvement #7: weights are an explicit transparency signal.
+    const d = selectTier([0.1, 0.2, 0.3]);
+    expect(d.weights).toHaveLength(3);
+    // Weights must sum to exactly 1 (true convex combination).
+    const sum = d.weights.reduce((a, w) => a + w, 0);
+    expect(sum).toBeCloseTo(1, 6);
+    // The most recent score carries the largest weight, and each prior score
+    // decays by (1 - alpha).
+    expect(d.weights[2]).toBeGreaterThan(d.weights[1]);
+    expect(d.weights[1]).toBeGreaterThan(d.weights[0]);
+    // Recomputed EMA from weights should match the reported EMA exactly.
+    const weighted = d.scores.reduce((sum, s, i) => sum + s * d.weights[i], 0);
+    expect(weighted).toBeCloseTo(d.ema, 6);
+  });
+
+  it('weights favor the most recent score by a factor of alpha each step', () => {
+    // alpha = 0.6: most recent gets 0.6, next gets 0.24, then 0.096, ...
+    const d = selectTier([0, 0, 0, 0.5]);
+    expect(d.weights[3]).toBeCloseTo(0.6, 6);
+    expect(d.weights[2]).toBeCloseTo(0.24, 6);
+    expect(d.weights[1]).toBeCloseTo(0.096, 6);
+  });
+
+  it('echoes the thresholds the engine used for the decision', () => {
+    const d = selectTier([0.6]);
+    expect(d.thresholds).toEqual({ challenge: 0.75, support: 0.45 });
   });
 });
 
