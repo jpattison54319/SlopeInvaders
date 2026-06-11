@@ -254,6 +254,14 @@ export function TeacherDashboardScreen({
                               <span>{r.stars} ★</span>
                               <span>{Math.round(r.accuracy * 100)}% acc</span>
                               <span>{r.attempts} {r.attempts === 1 ? 'try' : 'tries'}</span>
+                              {r.adaptivity && (
+                                <span
+                                  className={`teacher__tier teacher__tier--${r.adaptivity.tier}`}
+                                  title={r.adaptivity.reason}
+                                >
+                                  {r.adaptivity.tier}
+                                </span>
+                              )}
                             </li>
                           ))}
                         </ul>

@@ -4,15 +4,20 @@ import type { Zone } from '../game/campaign/types';
 import {
   scorePerformance,
   selectTier,
-  type DifficultyTier,
   type LevelStats,
+  type TierDecision,
 } from '../game/campaign/difficulty';
 import { starsForLevel, type StarCount } from '../game/campaign/stars';
 import { bankXp, computeRunXp, EMPTY_XP_STORE, type XpStore } from '../game/campaign/xp';
 import { evaluateNewBadges, type EarnedBadges } from '../game/campaign/badges';
 import type { CompletionRewards } from '../game/campaign/rewards';
 import { buildProgressPayload } from '../cloud/progressPayload';
-import { pushProgress } from '../cloud/classroom';
+import {
+  clearAdaptivityTraces,
+  describeTierDecision,
+  recordAdaptivityTrace,
+  type AdaptivityTrace,
+} from '../game/campaign/adaptivityTrace';
 
 import type { ProfileStats } from '../game/campaign/profileStats';
 
@@ -55,6 +60,9 @@ function clearStoredProgress(): void {
   } catch {
     /* ignore */
   }
+  // Improvement #7: also wipe adaptivity traces (and the in-memory ring buffer
+  // is reset by virtue of being local to this hook).
+  clearAdaptivityTraces();
 }
 
 function loadBadges(): EarnedBadges {
@@ -222,8 +230,18 @@ export interface CampaignProgress {
   zoneClearedCount: (zoneId: string) => number;
   /** Mark a level complete; with stats, also banks XP and returns the rewards. */
   markComplete: (levelId: string, stats?: LevelStats) => CompletionRewards | undefined;
-  /** The difficulty tier a level should be played at (rolling adaptivity). */
-  tierForLevel: (zone: Zone, index: number) => DifficultyTier;
+  /**
+   * The full tier decision for a level (improvement #7): the resolved tier
+   * plus the EMA, weights, thresholds, and human-readable reason. Callers can
+   * just use the `.tier` field for the existing behaviour, or inspect the rest
+   * of the struct for transparency / telemetry.
+   */
+  tierForLevel: (zone: Zone, index: number) => TierDecision;
+  /**
+   * The most recent `TierDecision` for a (zone, levelIndex) pair. Returns null
+   * when the level has not been tier-decided yet (e.g. diagnostic levels).
+   */
+  getLastTierDecision: (zone: Zone, index: number) => TierDecision | null;
   getLevelStats: (levelId: string) => LevelStats | undefined;
   getLevelStars: (levelId: string) => StarCount;
   getProfileStats: () => ProfileStats;
@@ -336,15 +354,19 @@ export function useCampaignProgress(): CampaignProgress {
 
   const syncNow = useCallback(() => {
     const snap = snapshotRef.current;
-    void pushProgress(
-      buildProgressPayload({
-        profile: snap.profile,
-        totalXp: snap.xp.totalXp,
-        levelStats: snap.stats,
-        levelStars: snap.stars,
-        completedLevelIds: [...snap.completed],
-      }),
-    );
+    const payload = buildProgressPayload({
+      profile: snap.profile,
+      totalXp: snap.xp.totalXp,
+      levelStats: snap.stats,
+      levelStars: snap.stars,
+      completedLevelIds: [...snap.completed],
+    });
+    // Lazy-import the cloud layer so the Supabase chunk stays out of the
+    // startup bundle — sync is best-effort and a failed load must never
+    // disrupt gameplay.
+    void import('../cloud/classroom')
+      .then(({ pushProgress }) => pushProgress(payload))
+      .catch(() => {});
   }, []);
 
   // Debounced auto-sync whenever progress changes (covers level completions).
@@ -362,8 +384,33 @@ export function useCampaignProgress(): CampaignProgress {
     setProfile(EMPTY_PROFILE);
     setXp(EMPTY_XP_STORE);
     setBadges({});
+    pendingTracesRef.current = [];
+    recordedTraceKeysRef.current.clear();
     clearStoredProgress();
   }, []);
+
+  // Improvement #7: emit an adaptivity trace whenever a non-diagnostic level's
+  // tier is consulted. We queue the trace payload in a ref during render, then
+  // flush it in a post-render effect so the impure Date.now() / localStorage
+  // writes stay out of the render phase. The flush stamps a fresh timestamp
+  // onto every queued trace right before it is persisted.
+  // `recordedTraceKeysRef` dedups identical decisions across re-renders —
+  // tierForLevel runs on every App render while a level is open, but only a
+  // *changed* decision (new level or new EMA) should append to the ring buffer.
+  const pendingTracesRef = useRef<Omit<AdaptivityTrace, 'decidedAt' | 'id'>[]>([]);
+  const recordedTraceKeysRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (pendingTracesRef.current.length === 0) return;
+    const now = Date.now();
+    const queued = pendingTracesRef.current.splice(0);
+    queued.forEach((entry, offset) => {
+      recordAdaptivityTrace({
+        ...entry,
+        id: `${entry.zoneId}:${entry.levelId}:${now}:${offset}`,
+        decidedAt: now,
+      });
+    });
+  });
 
   return useMemo<CampaignProgress>(() => {
     const isLevelComplete = (levelId: string) => completed.has(levelId);
@@ -392,15 +439,57 @@ export function useCampaignProgress(): CampaignProgress {
     };
 
     // Rolling tier: the first level of a zone is a fixed standard diagnostic;
-    // later levels read the scores of *this zone's* earlier levels.
-    const tierForLevel = (zone: Zone, index: number): DifficultyTier => {
-      if (index <= 0) return 'standard';
+    // later levels read the scores of *this zone's* earlier levels. Returns
+    // the full {@link TierDecision} so callers can show *why* the engine
+    // chose this tier (improvement #7).
+    const tierForLevel = (zone: Zone, index: number): TierDecision => {
+      const decision = getTierDecision(zone, index);
+      if (index > 0) {
+        const level = zone.levels[index];
+        if (level) {
+          const key = `${zone.id}|${level.id}|${decision.tier}|${decision.sampleCount}|${decision.ema}`;
+          if (!recordedTraceKeysRef.current.has(key)) {
+            recordedTraceKeysRef.current.add(key);
+            pendingTracesRef.current.push({
+              zoneId: zone.id,
+              levelId: level.id,
+              levelIndex: index,
+              tier: decision.tier,
+              ema: decision.ema,
+              scores: decision.scores,
+              weights: decision.weights,
+              levelIds: decision.scores.map((_, i) => zone.levels[i]?.id ?? `unknown-${i}`),
+              sampleCount: decision.sampleCount,
+              thresholds: decision.thresholds,
+              reason: describeTierDecision({
+                tier: decision.tier,
+                ema: decision.ema,
+                sampleCount: decision.sampleCount,
+                thresholds: decision.thresholds,
+              }),
+              event: 'tier-decision',
+            });
+          }
+        }
+      }
+      return decision;
+    };
+
+    const getTierDecision = (zone: Zone, index: number): TierDecision => {
+      if (index <= 0) {
+        return selectTier([]);
+      }
       const scores = zone.levels
         .slice(0, index)
         .map((l) => stats[l.id])
         .filter((s): s is LevelStats => !!s)
         .map((s) => scorePerformance(s));
       return selectTier(scores);
+    };
+
+    const getLastTierDecision = (zone: Zone, index: number): TierDecision | null => {
+      if (index <= 0) return null;
+      return getTierDecision(zone, index);
     };
 
     return {
@@ -411,6 +500,7 @@ export function useCampaignProgress(): CampaignProgress {
       zoneClearedCount,
       markComplete,
       tierForLevel,
+      getLastTierDecision,
       getLevelStats: (levelId: string) => stats[levelId],
       getLevelStars: (levelId: string) =>
         stars[levelId] ?? starsForLevel(completed.has(levelId), stats[levelId]),

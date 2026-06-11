@@ -20,10 +20,13 @@ or even `file://` — `vite.config.ts` uses a relative `base`).
 
 1. Create a free project at [supabase.com](https://supabase.com).
 2. In the project's **SQL Editor**, paste and run
-   [`supabase/migrations/0001_classroom.sql`](supabase/migrations/0001_classroom.sql)
-   then [`supabase/migrations/0002_versus.sql`](supabase/migrations/0002_versus.sql).
+   [`supabase/migrations/0001_classroom.sql`](supabase/migrations/0001_classroom.sql),
+   then [`supabase/migrations/0002_versus.sql`](supabase/migrations/0002_versus.sql),
+   then [`supabase/migrations/0003_dashboard_adaptivity.sql`](supabase/migrations/0003_dashboard_adaptivity.sql).
    The first creates the `classrooms`, `students`, and `level_results` tables; the
-   second adds the `matches` table for live Versus. Both lock their tables with RLS
+   second adds the `matches` table for live Versus; the third updates the teacher
+   dashboard RPC to return each level's synced stats (including the adaptivity
+   tier + reason shown to teachers). All lock their tables with RLS
    (default-deny) and expose only `SECURITY DEFINER` RPCs to the anon role.
 3. In **Project Settings → API**, copy the **Project URL** and the
    **Publishable key** (`sb_publishable_…`; on older projects this is the **anon

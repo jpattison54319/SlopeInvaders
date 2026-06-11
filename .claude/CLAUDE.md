@@ -93,6 +93,7 @@ asteroids without losing all 5 hearts wins. `+2` (garbage asteroids) and `❄`
 opponent. Cloud-off or not-joined users get a notice instead.
 6. Settings controls music and SFX volume/mute, plus a "Change Controls" sub-screen (back button to the main settings, X always closes) for remapping the gameplay keyboard controls. There is no separate Audio button beside Play.
 6a. Gameplay has remappable keyboard controls (defaults Space = fire, W/S = y-intercept ±, A/D = x-offset ∓/±, R/F = slope ±, Q/E = face left/right). Bindings persist in `slope-invaders:keybindings`, are gated by the level's allowed controls (Fire always works), and are ignored while a text input is focused or a shot is animating. Reassigning a key that another action owns prompts a confirm and leaves the old action unassigned; a one-click Restore Defaults resets all of them.
+6b. App-wide keyboard accessibility: a skip-to-content link precedes every screen; modal dialogs (Settings, the controls reassign confirm, the shortcuts panel) trap focus and restore it on close (`useFocusTrap`); `?` toggles a shortcuts help panel anywhere; `S` opens Settings and `P` opens the Pilot Profile outside missions (never during gameplay, where letters are gameplay bindings); `:focus-visible` outlines mark the focused control. Screens are lazy-loaded (code splitting) with a "Loading…" status fallback; Konva, Supabase, and React land in separate chunks.
 7. Menu music uses `src/assets/homescreen_background.mp3`.
 8. Gameplay music uses `src/assets/in_game.mp3`.
 9. SFX use `src/assets/laser.wav` and `src/assets/explosion.wav`.
@@ -143,7 +144,9 @@ npm run build
 - `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock.
 - `src/game/audio/sfx.tsx` and `src/game/audio/sfxContext.ts` provide SFX playback.
 - `src/game/audio/buttonClick.ts` provides delegated global button-click SFX and respects `data-button-sfx="none"` for buttons with their own sound.
-- `src/game/campaign/difficulty.ts` defines `DifficultyTier`, `LevelStats`, scoring, tier selection, and tier-based config transforms.
+- `src/game/campaign/difficulty.ts` defines `DifficultyTier`, `LevelStats`, scoring, tier selection (`selectTier` returns a structured `TierDecision`), and tier-based config transforms.
+- `src/game/campaign/adaptivityTrace.ts` records tier-decision traces to a local ring buffer and builds the plain-language tier reasons (teacher-only transparency; `supabase/migrations/0003_dashboard_adaptivity.sql` exposes the synced tier info to the teacher dashboard).
+- `src/app/useFocusTrap.ts`, `src/app/SkipLink.tsx`, and `src/app/KeyboardShortcutsHelp.tsx` provide app-wide keyboard accessibility (modal focus trapping, skip-to-content, and the `?` shortcuts panel).
 - `src/game/campaign/levels/tutorial.ts` defines the Tutorial level.
 - `src/game/campaign/levels/zone1.ts` defines Zone 1 and adaptive flags/variants.
 - `src/game/campaign/levels/zone2.ts` defines Zone 2 (`y = mx + b`) and its adaptive flags/variants.
@@ -197,9 +200,9 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 ## Adaptive Difficulty and Stats
 
 - Each zone's first level is a fixed `standard` diagnostic; later levels in that zone set `adaptive: true`.
-- `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats, so adaptivity rolls per zone (Zone 2 tiers ignore Zone 1 performance).
+- `progress.tierForLevel(zone, index)` chooses support/standard/challenge from prior same-zone level stats, so adaptivity rolls per zone (Zone 2 tiers ignore Zone 1 performance). It returns a full `TierDecision` (tier + EMA + weights + thresholds); use `.tier` for gameplay.
 - `configForTier(level, tier)` applies hearts/scaffold deltas and challenge variants.
-- Do not render a visible difficulty badge; adaptivity should be invisible and non-stigmatizing.
+- Do not render a visible difficulty badge; adaptivity should be invisible and non-stigmatizing **to students**. Adaptivity transparency is teacher-only: each tier decision is traced locally (`slope-invaders:adaptivity-trace`, ring buffer, cleared on progress reset), the cloud sync embeds each level's resolved tier + plain-language reason in its stats payload, and the teacher dashboard drill-down shows it as a tier chip (migration `0003_dashboard_adaptivity.sql` exposes it). Never render tiers, EMAs, or reasons in any student-facing screen (Pilot Profile included).
 - `LevelStats` captures rich per-level visit data (including `firstShotHit` and the resolved `trajectoryPreview` mode — both optional so legacy stored stats stay valid).
 - `markComplete(levelId, stats)` returns `CompletionRewards` (the banked XP award + newly earned badges) so the victory overlay can announce them.
 - `slope-invaders:level-stats` stores the latest stats per level.
@@ -212,6 +215,7 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
 - `slope-invaders:arcade-records-v1` stores private Arcade personal bests and
   lifetime Arcade totals. Do not mix it into Campaign or classroom progress.
+- `slope-invaders:adaptivity-trace` stores the local ring buffer of tier-decision traces (teacher/support observability only; never student-facing).
 - Calculator opens and tweaks are recorded but not scored.
 
 ## Guided Tour and Mission Banner

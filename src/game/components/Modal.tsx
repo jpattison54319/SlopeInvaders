@@ -1,6 +1,7 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { icons, type IconKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
+import { useFocusTrap } from '../../app/useFocusTrap';
 
 interface ModalProps {
   title: string;
@@ -12,6 +13,9 @@ interface ModalProps {
 
 /** A centered dialog over a dimmed backdrop. Closes on Esc, backdrop click, or ✕. */
 export function Modal({ title, onClose, children, icon }: ModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -23,6 +27,7 @@ export function Modal({ title, onClose, children, icon }: ModalProps) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
+        ref={dialogRef}
         className="modal tactical-modal"
         role="dialog"
         aria-modal="true"

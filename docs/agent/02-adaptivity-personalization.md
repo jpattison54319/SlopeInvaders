@@ -96,6 +96,17 @@ Good upward adaptation:
 Challenge Route Unlocked: You cleared two levels with no misses. Try No-Preview Mode?
 ```
 
+### Implemented: teacher-only adaptivity transparency
+
+Tier selection is fully observable — but only to educators, never to the
+student. Every tier decision is recorded as a local trace (the resolved tier,
+the EMA over prior same-zone scores, and a plain-language reason such as
+"EMA 0.81 ≥ 0.75 over 3 levels → challenge"), and the cloud sync embeds each
+level's resolved tier + reason so the teacher dashboard drill-down can answer
+"why did this level play easier/harder?". No student-facing screen (gameplay,
+victory overlay, Pilot Profile) ever renders a tier, EMA, or reason — the
+in-game experience stays invisible and non-stigmatizing per this doc.
+
 ## Teacher personalization / classroom UUID mode
 
 Teachers can create a classroom with a unique join code or UUID. Students join that classroom, and the teacher can assign campaign zones or custom settings.

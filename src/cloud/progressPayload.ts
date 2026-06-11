@@ -4,7 +4,14 @@
  * shapes — there is no parallel persistence model — so the teacher dashboard
  * sees exactly the stats the Pilot Profile shows.
  */
-import type { LevelStats } from '../game/campaign/difficulty';
+import {
+  scorePerformance,
+  selectTier,
+  type DifficultyTier,
+  type LevelStats,
+} from '../game/campaign/difficulty';
+import { describeTierDecision } from '../game/campaign/adaptivityTrace';
+import { zones } from '../game/campaign/zones';
 import type { ProfileStats } from '../game/campaign/profileStats';
 import { starsForLevel, type StarCount } from '../game/campaign/stars';
 import { rankForXp } from '../game/campaign/xp';
@@ -32,6 +39,21 @@ export interface ProgressSummary {
   lastPlayedAt: number | null;
 }
 
+/**
+ * Adaptivity transparency for the *teacher* dashboard only (docs/agent/02):
+ * which difficulty tier this level resolves to given the student's current
+ * same-zone performance, and a plain-language reason. This rides inside the
+ * synced `stats` jsonb; the student-facing UI never renders it (adaptivity
+ * stays invisible and non-stigmatizing for learners).
+ */
+export interface LevelAdaptivityInfo {
+  tier: DifficultyTier;
+  /** EMA of prior same-zone scores; omitted when no history (diagnostic). */
+  ema?: number;
+  sampleCount: number;
+  reason: string;
+}
+
 /** One per-level result for drill-down on the dashboard. */
 export interface LevelResultPayload {
   levelId: string;
@@ -41,7 +63,7 @@ export interface LevelResultPayload {
   attempts: number;
   passedFirstTry: boolean;
   completedAt: number;
-  stats: LevelStats;
+  stats: LevelStats & { adaptivity?: LevelAdaptivityInfo };
 }
 
 export interface ProgressPayload {
@@ -51,6 +73,35 @@ export interface ProgressPayload {
 
 function starsFor(levelId: string, snap: ProgressSnapshot): StarCount {
   return snap.levelStars[levelId] ?? starsForLevel(true, snap.levelStats[levelId]);
+}
+
+/**
+ * Reconstruct the tier decision for a level from the snapshot, mirroring
+ * `useCampaignProgress.tierForLevel`: the first level of a zone is the fixed
+ * standard diagnostic; later levels roll an EMA over prior same-zone scores.
+ * Returns undefined for level ids outside the zone registry.
+ */
+function adaptivityFor(levelId: string, snap: ProgressSnapshot): LevelAdaptivityInfo | undefined {
+  for (const zone of zones) {
+    const index = zone.levels.findIndex((l) => l.id === levelId);
+    if (index < 0) continue;
+    const scores =
+      index <= 0
+        ? []
+        : zone.levels
+            .slice(0, index)
+            .map((l) => snap.levelStats[l.id])
+            .filter((s): s is LevelStats => !!s)
+            .map((s) => scorePerformance(s));
+    const decision = selectTier(scores);
+    return {
+      tier: decision.tier,
+      ...(Number.isFinite(decision.ema) ? { ema: decision.ema } : {}),
+      sampleCount: decision.sampleCount,
+      reason: describeTierDecision(decision),
+    };
+  }
+  return undefined;
 }
 
 export function buildProgressPayload(snap: ProgressSnapshot): ProgressPayload {
@@ -75,6 +126,7 @@ export function buildProgressPayload(snap: ProgressSnapshot): ProgressPayload {
     .map((levelId) => {
       const stats = snap.levelStats[levelId];
       if (!stats) return null; // legacy completion without rich stats — skip detail
+      const adaptivity = adaptivityFor(levelId, snap);
       return {
         levelId,
         stars: starsFor(levelId, snap),
@@ -83,7 +135,7 @@ export function buildProgressPayload(snap: ProgressSnapshot): ProgressPayload {
         attempts: stats.attempts,
         passedFirstTry: stats.passedFirstTry,
         completedAt: stats.completedAt,
-        stats,
+        stats: adaptivity ? { ...stats, adaptivity } : stats,
       } satisfies LevelResultPayload;
     })
     .filter((r): r is LevelResultPayload => r !== null);

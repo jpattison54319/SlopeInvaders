@@ -196,6 +196,7 @@ async function renderApp() {
   await act(async () => {
     root.render(<App />);
   });
+  await waitForLazy();
 }
 
 async function click(label: string | RegExp) {
@@ -208,12 +209,28 @@ async function click(label: string | RegExp) {
   await act(async () => {
     button!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   });
+  await waitForLazy();
 }
 
 async function waitForUi(ms = 650) {
   await act(async () => {
     await new Promise((resolve) => window.setTimeout(resolve, ms));
   });
+}
+
+/**
+ * Wait for any in-flight lazy-loaded screen to finish loading. The App shell
+ * wraps every navigable screen in <Suspense> with a `data-testid="screen-loader"`
+ * fallback, so we just wait for that fallback to leave the DOM. Falls through
+ * after a small timeout if nothing is loading.
+ */
+async function waitForLazy() {
+  for (let i = 0; i < 50; i++) {
+    if (!host.querySelector('[data-testid="screen-loader"]')) return;
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 20));
+    });
+  }
 }
 
 function installMemoryStorage() {
@@ -457,6 +474,35 @@ describe('App shell', () => {
     // Back returns to the audio settings; X still closes.
     await click('← Back');
     expect(host.textContent).toContain('Music Volume');
+  });
+
+  test('universal keyboard shortcuts: ? toggles the panel, S opens Settings, P opens the profile', async () => {
+    await renderApp();
+
+    const press = async (key: string) => {
+      await act(async () => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
+      });
+      await waitForLazy();
+    };
+
+    // `?` toggles the shortcuts panel.
+    await press('?');
+    expect(host.textContent).toContain('Keyboard Shortcuts');
+    await press('?');
+    expect(host.textContent).not.toContain('Keyboard Shortcuts');
+
+    // `P` opens the Pilot Profile from the menu…
+    await press('p');
+    expect(host.textContent).toContain('Pilot Profile');
+    expect(host.querySelector('#profile-title')).toBeTruthy();
+    await click(/Menu/);
+
+    // …and `S` opens Settings; while it is open, `P` is ignored.
+    await press('s');
+    expect(host.textContent).toContain('Music Volume');
+    await press('p');
+    expect(host.querySelector('#profile-title')).toBeFalsy();
   });
 
   test('campaign chrome keeps back and settings controls icon-only but accessible', async () => {

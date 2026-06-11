@@ -1,9 +1,8 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { SfxProvider } from '../game/audio/sfx';
 import { useButtonClickSfx } from '../game/audio/buttonClick';
-import { Game } from '../game/Game';
 import { modes, type GameModeId } from '../game/modes';
 import {
   zones,
@@ -15,18 +14,8 @@ import {
 import { configForTier } from '../game/campaign/difficulty';
 import { planetSrcForZone } from '../game/campaign/planets';
 import { MenuScreen } from './MenuScreen';
-import { GalaxyMapScreen } from './galaxy/GalaxyMapScreen';
 import { LaunchTransition } from './LaunchTransition';
 import { MissionFadeTransition } from './MissionFadeTransition';
-import { CampaignMapScreen } from './CampaignMapScreen';
-import { ZoneLevelsScreen } from './ZoneLevelsScreen';
-import { DebriefScreen } from './DebriefScreen';
-import { CampaignCompleteScreen } from './CampaignCompleteScreen';
-import { PilotProfileScreen } from './PilotProfileScreen';
-import { ClassroomScreen } from './ClassroomScreen';
-import { TeacherDashboardScreen } from './TeacherDashboardScreen';
-import { VersusLobbyScreen } from './VersusLobbyScreen';
-import { VersusMatchScreen } from './VersusMatchScreen';
 import { getCadetName } from '../cloud/identity';
 import type { MatchRole } from '../game/versus/types';
 import { SettingsModal } from './SettingsModal';
@@ -34,9 +23,50 @@ import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
-import { ArcadeBriefingScreen } from './ArcadeBriefingScreen';
-import { ArcadeGame } from '../game/arcade/ArcadeGame';
 import { useArcadeRecords } from '../game/arcade/useArcadeRecords';
+import { SkipLink } from './SkipLink';
+import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
+
+// --- Lazy-loaded screens (improvement #6: code splitting) ---
+// The campaign gameplay, arcade, versus, and cloud screens pull in Konva, the
+// Supabase client, or large pedagogical data — only load them when needed.
+const Game = lazy(() => import('../game/Game').then((m) => ({ default: m.Game })));
+const ArcadeGame = lazy(() =>
+  import('../game/arcade/ArcadeGame').then((m) => ({ default: m.ArcadeGame })),
+);
+const GalaxyMapScreen = lazy(() =>
+  import('./galaxy/GalaxyMapScreen').then((m) => ({ default: m.GalaxyMapScreen })),
+);
+const CampaignMapScreen = lazy(() =>
+  import('./CampaignMapScreen').then((m) => ({ default: m.CampaignMapScreen })),
+);
+const ZoneLevelsScreen = lazy(() =>
+  import('./ZoneLevelsScreen').then((m) => ({ default: m.ZoneLevelsScreen })),
+);
+const DebriefScreen = lazy(() =>
+  import('./DebriefScreen').then((m) => ({ default: m.DebriefScreen })),
+);
+const CampaignCompleteScreen = lazy(() =>
+  import('./CampaignCompleteScreen').then((m) => ({ default: m.CampaignCompleteScreen })),
+);
+const PilotProfileScreen = lazy(() =>
+  import('./PilotProfileScreen').then((m) => ({ default: m.PilotProfileScreen })),
+);
+const ClassroomScreen = lazy(() =>
+  import('./ClassroomScreen').then((m) => ({ default: m.ClassroomScreen })),
+);
+const TeacherDashboardScreen = lazy(() =>
+  import('./TeacherDashboardScreen').then((m) => ({ default: m.TeacherDashboardScreen })),
+);
+const VersusLobbyScreen = lazy(() =>
+  import('./VersusLobbyScreen').then((m) => ({ default: m.VersusLobbyScreen })),
+);
+const VersusMatchScreen = lazy(() =>
+  import('./VersusMatchScreen').then((m) => ({ default: m.VersusMatchScreen })),
+);
+const ArcadeBriefingScreen = lazy(() =>
+  import('./ArcadeBriefingScreen').then((m) => ({ default: m.ArcadeBriefingScreen })),
+);
 
 type Screen =
   | { name: 'mode-select' }
@@ -90,6 +120,7 @@ function ButtonClickSfx() {
 export default function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
   const [musicVolume, setMusicVolume] = usePersistentState('slope-invaders:music-volume', DEFAULT_MUSIC_VOLUME);
   const [musicMuted, setMusicMuted] = usePersistentState('slope-invaders:music-muted', false);
@@ -113,6 +144,40 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [screen]);
+
+  // Improvement #8: universal keyboard shortcuts.
+  // - `?` (Shift+/) toggles the in-app shortcuts panel from anywhere outside
+  //   a focused input. Skipped while the user is typing in the calculator.
+  // - `S` opens Settings and `P` opens the Pilot Profile, but never during
+  //   gameplay (letters can be gameplay bindings — default S lowers the
+  //   y-intercept), never with a modifier held, and never while a dialog is
+  //   already open.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === '?') {
+        e.preventDefault();
+        setShortcutsOpen((open) => !open);
+        return;
+      }
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (inGame || settingsOpen || shortcutsOpen) return;
+      const key = e.key.toLowerCase();
+      if (key === 's') {
+        e.preventDefault();
+        setSettingsOpen(true);
+      } else if (key === 'p' && screen.name !== 'pilot-profile') {
+        e.preventDefault();
+        const from =
+          screen.name === 'galaxy' || screen.name === 'campaign-map'
+            ? screen.name
+            : 'mode-select';
+        setScreen({ name: 'pilot-profile', from });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [inGame, settingsOpen, shortcutsOpen, screen.name]);
 
   const openSettings = () => setSettingsOpen(true);
 
@@ -349,7 +414,10 @@ export default function App() {
           zone.number === 0 ? 'Tutorial' : `Zone ${zone.number} · Level ${index + 1}`;
         // Rolling adaptivity: pick the tier from prior performance, then derive
         // the playable config (hearts/scaffolds/variants) for that tier.
-        const tier = progress.tierForLevel(zone, index);
+        // Improvement #7: tierForLevel returns a full TierDecision; we just
+        // need the .tier field to pick the variant here.
+        const tierDecision = progress.tierForLevel(zone, index);
+        const tier = tierDecision.tier;
         return (
           <Game
             key={level.id}
@@ -376,7 +444,14 @@ export default function App() {
   return (
     <SfxProvider volume={sfxVolume} muted={sfxMuted}>
       <ButtonClickSfx />
-      {renderScreen()}
+      {/* Improvement #8: skip-to-content link for keyboard users. Hidden until
+          focused so it doesn't compete with the tactical UI. */}
+      <SkipLink targetId="app-main" />
+      <div id="app-main" tabIndex={-1}>
+        <Suspense fallback={<ScreenLoader reducedMotion={reducedMotion} />}>
+          {renderScreen()}
+        </Suspense>
+      </div>
 
       {settingsOpen && (
         <SettingsModal
@@ -395,6 +470,36 @@ export default function App() {
         />
       )}
 
+      {shortcutsOpen && (
+        <KeyboardShortcutsHelp
+          keyBindings={keyBindings}
+          onClose={() => setShortcutsOpen(false)}
+        />
+      )}
+
     </SfxProvider>
+  );
+}
+
+/**
+ * Suspense fallback shown while a lazy screen chunk loads. Renders a minimal
+ * "Loading…" hint so the user gets immediate feedback (especially on slow
+ * school networks) instead of a blank page.
+ */
+function ScreenLoader({ reducedMotion }: { reducedMotion: boolean }) {
+  return (
+    <div
+      className="app__loader"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      data-testid="screen-loader"
+    >
+      <div
+        className={`app__loader-spinner${reducedMotion ? ' app__loader-spinner--reduced' : ''}`}
+        aria-hidden="true"
+      />
+      <p>Loading…</p>
+    </div>
   );
 }

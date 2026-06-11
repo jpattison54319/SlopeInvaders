@@ -58,6 +58,8 @@ Quick orientation:
 - Buttons use a shared 3D press treatment and generic click SFX; the actual Fire button opts out because it plays the laser SFX.
 - Audio settings are opened from the top-right Settings button. Settings also has a "Change Controls" sub-screen for remapping the gameplay keyboard controls.
 - Gameplay has keyboard controls that drive the equation/facing/fire (defaults Space fire, W/S y-intercept ±, A/D x-offset ∓/±, R/F slope ±, Q/E face left/right). Bindings are remappable and persisted (`slope-invaders:keybindings`); each key is gated by the level's allowed controls (Fire always works) and ignored while typing or while a shot animates.
+- App-wide keyboard accessibility: skip-to-content link, modal focus traps (`useFocusTrap`), a `?` shortcuts help panel, and `S`/`P` shortcuts (Settings / Pilot Profile) that only work outside missions. Screens are lazy-loaded with a loading fallback; Konva/Supabase/React build into separate chunks.
+- Adaptivity transparency is **teacher-only**: tier decisions are traced locally (`slope-invaders:adaptivity-trace`), synced level stats embed the resolved tier + plain-language reason, and the teacher dashboard drill-down shows it (migration `0003_dashboard_adaptivity.sql`). Students never see tiers/EMA anywhere.
 - `docs/agent/` contains the foundational source-backed theory for game, pedagogy, adaptivity, UI/audio, and Zone 1 decisions. Consult it before changing design behavior.
 - Always update `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, and relevant `docs/agent/` files whenever project architecture, flows, rules, dependencies, or design theory change.
 - Run `npm test`, `npm run lint`, and `npm run build` before handoff.
