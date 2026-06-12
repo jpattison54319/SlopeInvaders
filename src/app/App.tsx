@@ -250,8 +250,11 @@ export default function App() {
         );
 
       case 'launch': {
+        const ctx = findCampaignLevel(screen.levelId);
+        const planetSrc = ctx ? planetSrcForZone(ctx.zone.id) : '';
         return wrap('launch',
           <LaunchTransition
+            planetSrc={planetSrc}
             reducedMotion={reducedMotion}
             onDone={() => setScreen({ name: 'game', levelId: screen.levelId })}
           />
