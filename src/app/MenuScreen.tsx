@@ -24,8 +24,6 @@ export function MenuScreen({
   onOpenClassroom,
 }: MenuScreenProps) {
   const [briefingOpen, setBriefingOpen] = useState(false);
-  const campaign = modes.find((m) => m.id === 'campaign');
-  const campaignReady = campaign?.status === 'available';
   const availableCount = modes.filter(
     (mode) => mode.status === 'available' && (mode.id !== 'arcade' || arcadeUnlocked),
   ).length;
@@ -40,7 +38,6 @@ export function MenuScreen({
       <nav className="menu__topbar" aria-label="Main menu">
         <div className="menu__brand">
           <img src={assets.ship} alt="" draggable={false} />
-          <span>Slope Invaders</span>
         </div>
         <div className="menu__actions">
           <TacticalButton asset="info" label="Mission briefing" size="small" onClick={() => setBriefingOpen(true)} />
@@ -57,17 +54,6 @@ export function MenuScreen({
             Slope <span>Invaders</span>
           </h1>
           <p>Graph the line. Blast the asteroids. Master y = mx + b.</p>
-          <div className="menu__cta-row">
-            <TacticalButton
-              asset="play"
-              label="Play Campaign"
-              text="Play Campaign"
-              size="large"
-              className="menu__play"
-              disabled={!campaignReady}
-              onClick={() => onSelectMode('campaign')}
-            />
-          </div>
         </div>
 
         <div className="menu__hero-art" aria-hidden="true">

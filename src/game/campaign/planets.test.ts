@@ -3,9 +3,9 @@ import { factionBanners } from '../../assets/assetMap';
 import { missionPathLayout } from './planets';
 
 describe('campaign planet mission path layout', () => {
-  it('centers a single mission in the upper-middle of the planet face', () => {
+  it('positions the single tutorial mission inside the bottom-left bordered region', () => {
     expect(missionPathLayout('tutorial', 1)).toEqual([
-      expect.objectContaining({ x: 0.5, y: 0.42 }),
+      expect.objectContaining({ x: 0.253, y: 0.561 }),
     ]);
   });
 

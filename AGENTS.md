@@ -57,7 +57,7 @@ Current product flow:
   zone/level screens.
 - Planet art lives in `src/assets/planets/` (wired via `assetMap`); each zone unlocks once the previous zone is fully cleared, and later zones are coming soon.
 - Campaign levels use hearts, feedback, trajectory preview/scaffold settings, and reflections/debriefs.
-- Zones 1–8 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control; Zone 5 keeps Zone 4 controls and adds walls/shields that block shots crossing them; Zone 6 is linked asteroids (one line must clear a whole chain); Zone 7 adds friendly ships that scrub any shot crossing them; Zone 8 is the moving cannon (`y = m(x − h) + b` via the x-offset control). The coordinate plane renders any-quadrant bounds.
+- Zones 1–9 are playable; each uses rolling adaptive difficulty after its own first diagnostic level. Zone 1 is `y = mx`; Zone 2 adds the y-intercept (`y = mx + b`, horizontal lines); Zone 3 is negative slopes in Quadrant IV (slope-only, y-intercept removed again); Zone 4 is the full grid / all four quadrants with slope + y-intercept + a facing-direction control; Zone 5 keeps Zone 4 controls and adds walls/shields that block shots crossing them; Zone 6 is linked asteroids (one line must clear a whole chain); Zone 7 adds friendly ships that scrub any shot crossing them; Zone 8 is the moving cannon (`y = m(x − h) + b` via the x-offset control); Zone 9 is the typed-equation capstone ("Equation Forge") which disables all standard nudges/steppers, locks trajectory previews off, and requires typing equations directly into slots (decimals, negatives, and fractions are supported). The coordinate plane renders any-quadrant bounds.
 - Walls block shots: `hitDetection.isPathBlocked`/`firstWallHit` (segment intersection, honoring `WallSpec.gaps`) stop a shot at the first wall on the ship→target path; a blocked shot counts as a miss (costs a star). A per-level 1–3 star rating (`src/game/campaign/stars.ts`, `slope-invaders:level-stars`) shows in the victory overlay + planet banners.
 - XP rewards learning behavior per `docs/agent/03`: each win computes bonuses (`src/game/campaign/xp.ts`) shown with per-bonus reasons in the victory overlay, but only the improvement over that level's best run is banked (`slope-invaders:xp`) — XP never subtracts and never rewards grinding. Lifetime XP maps to a pilot rank that never demotes.
 - Badges (`src/game/campaign/badges.ts`, persisted in `slope-invaders:badges`) reward zone mastery, sharpshooting, and growth behaviors; they are never revoked, never keyed on calculator/tweak use, and are announced in the victory overlay. `markComplete` returns the run's `CompletionRewards` (XP award + new badges).
@@ -78,7 +78,8 @@ Current product flow:
   2-player cap + same class), then race on live side-by-side boards over a
   Supabase Realtime broadcast channel. A shared `level_seed` derives the field
   deterministically (`src/game/versus/field.ts`); `+2`/freeze attack pickups send
-  effects to the opponent. Code: `src/cloud/versus.ts`, `src/game/versus/*`,
+  effects to the opponent. Both Versus boards hide the trajectory preview;
+  only the fired laser supplies outcome feedback. Code: `src/cloud/versus.ts`, `src/game/versus/*`,
   `src/app/Versus{Lobby,Match}Screen.tsx`. See `docs/agent/10-classroom-cloud.md`
   and `DEPLOYMENT.md`.
 - The visual shell uses a curated tactical UI bundle in `src/assets/ui/`.

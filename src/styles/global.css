@@ -992,6 +992,49 @@ input:focus-visible {
   outline: 2px solid rgba(94, 241, 255, 0.5);
 }
 
+.slots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 20px;
+  color: var(--text);
+  margin: 16px 0;
+  padding: 12px;
+  background: #0c122b;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+.slots__text {
+  font-weight: bold;
+}
+.slots__input {
+  width: 58px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 16px;
+  color: var(--text);
+  background: #060a1e;
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+  padding: 6px 4px;
+}
+.slots__input:focus {
+  outline: 2px solid rgba(94, 241, 255, 0.5);
+  border-color: rgba(94, 241, 255, 0.7);
+}
+.slots__input::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+}
+.slots__echo {
+  text-align: center;
+  font-size: 14px;
+  color: var(--cyan);
+  margin-top: 8px;
+  margin-bottom: 16px;
+  text-shadow: 0 0 8px rgba(94, 241, 255, 0.3);
+}
+
 .direction-toggle {
   margin-top: 12px;
 }

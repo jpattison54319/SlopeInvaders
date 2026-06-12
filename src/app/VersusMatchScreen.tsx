@@ -122,6 +122,7 @@ export function VersusMatchScreen({
             shot={shot}
             explosions={explosions}
             onExplosionDone={onExplosionDone}
+            trajectoryPreview={myLevel.trajectoryPreview}
             facing={facing}
             bidirectional
             items={items}
@@ -164,6 +165,7 @@ export function VersusMatchScreen({
             shot={oppShotSeg ? { start: oppShotSeg.start, end: oppShotSeg.end, progress: 1 } : null}
             explosions={[]}
             onExplosionDone={() => {}}
+            trajectoryPreview={mirrorLevel.trajectoryPreview}
             facing={opponent?.facing ?? 'right'}
             bidirectional
             items={opponent?.items ?? []}

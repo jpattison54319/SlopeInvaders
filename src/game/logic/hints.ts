@@ -18,14 +18,24 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
 }
 
+function formatEquation(m: number, b: number): string {
+  if (m === 0) return `y = ${fmt(b)}`;
+  const mPart = m === 1 ? '' : m === -1 ? '-' : fmt(m);
+  let s = `y = ${mPart}x`;
+  if (b !== 0) {
+    s += ` ${b < 0 ? '−' : '+'} ${fmt(Math.abs(b))}`;
+  }
+  return s;
+}
+
 /**
  * Produce feedback for a shot given its per-asteroid results.
  * `asteroidsById` is currently unused but kept in the signature so feedback can
  * later reference asteroid names/types without a breaking change.
  */
 export function buildFeedback(
-  _m: number,
-  _b: number,
+  m: number,
+  b: number,
   results: ShotResult[],
   _asteroidsById?: Map<string, AsteroidSpec>,
 ): ShotFeedback {
@@ -55,9 +65,11 @@ export function buildFeedback(
   const nudge = passedBelow
     ? 'Your line passed below it — try increasing the slope or the y-intercept.'
     : 'Your line passed above it — try decreasing the slope or the y-intercept.';
+  const eq = formatEquation(m, b);
+  const delta = Math.abs(nearest.lineYAtX - y);
   return {
     hit: false,
     headline: 'Miss.',
-    detail: `At x = ${fmt(x)}, your line was at y = ${fmt(nearest.lineYAtX)}, but the asteroid was at y = ${fmt(y)}. ${nudge}`,
+    detail: `Your line ${eq} passed ${fmt(delta)} ${passedBelow ? 'below' : 'above'} the asteroid at (${fmt(x)}, ${fmt(y)}). ${nudge}`,
   };
 }

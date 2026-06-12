@@ -242,4 +242,21 @@ describe('configForTier', () => {
     expect(c.asteroids).toHaveLength(3); // challenge variant adds a fortified target
     expect(c.hearts).toBe(3); // base 4 - 1
   });
+
+  it('lockTrajectoryPreview forces preview off across all tiers', () => {
+    const lvl = campaignLevel({
+      id: 'l_locked',
+      adaptive: true,
+    });
+    lvl.config.lockTrajectoryPreview = true;
+    lvl.config.trajectoryPreview = 'always';
+    
+    const cSupport = configForTier(lvl, 'support');
+    const cStandard = configForTier(lvl, 'standard');
+    const cChallenge = configForTier(lvl, 'challenge');
+    
+    expect(cSupport.trajectoryPreview).toBe('off');
+    expect(cStandard.trajectoryPreview).toBe('off');
+    expect(cChallenge.trajectoryPreview).toBe('off');
+  });
 });

@@ -23,8 +23,8 @@ describe('buildFeedback', () => {
     const results = evaluateShot(1, 0, [{ id: 'a', weakPoint: { x: 5, y: 7 } }], 0);
     const fb = buildFeedback(1, 0, results);
     expect(fb.hit).toBe(false);
-    expect(fb.detail).toContain('y = 5');
-    expect(fb.detail).toContain('y = 7');
+    expect(fb.detail).toContain('y = x');
+    expect(fb.detail).toContain('(5, 7)');
     expect(fb.detail.toLowerCase()).toContain('increasing');
   });
 });

@@ -123,3 +123,21 @@ export function offsetGridLevel(
     ...over,
   });
 }
+
+/**
+ * Shared base for Zone 9 levels: full coordinate grid, typed equation slots,
+ * and no trajectory preview line under any tier or variant. Cannon direction
+ * is the only stepper/keyboard control allowed; all equations are entered via text.
+ */
+export function typedEquationLevel(
+  over: Partial<LevelConfig> &
+    Pick<LevelConfig, 'id' | 'name' | 'learningGoal' | 'asteroids'>,
+): LevelConfig {
+  return fullGridLevel({
+    allowedControls: ['direction'],
+    equationEntry: 'typed',
+    trajectoryPreview: 'off',
+    lockTrajectoryPreview: true,
+    ...over,
+  });
+}

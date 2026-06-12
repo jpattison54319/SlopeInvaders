@@ -24,6 +24,7 @@ const ZONE_PLANETS: Record<string, PlanetKey> = {
   'zone-6': 'volcano',
   'zone-7': 'crystal',
   'zone-8': 'celestial',
+  'zone-9': 'spacegarden',
 };
 
 const PLANET_KEYS = Object.keys(planets) as PlanetKey[];
@@ -95,7 +96,8 @@ export function missionPathLayout(zoneId: string, count: number): MissionPathPoi
   const bannerFor = (i: number) => BANNER_KEYS[(bannerOffset + i * BANNER_STEP) % BANNER_KEYS.length];
 
   if (count === 1) {
-    return [{ x: 0.5, y: 0.42, bannerKey: bannerFor(0) }];
+    const isTutorial = zoneId === 'tutorial';
+    return [{ x: isTutorial ? 0.253 : 0.5, y: isTutorial ? 0.561 : 0.42, bannerKey: bannerFor(0) }];
   }
 
   const out: MissionPathPoint[] = [];
