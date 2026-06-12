@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { motion } from 'framer-motion';
 import type { AsteroidSpec, Facing, LevelConfig } from './levels/types';
 import {
   DEFAULT_KEYBINDINGS,
@@ -636,13 +635,7 @@ export function Game({
   const showLoseOverlay = outcome === 'lost';
 
   return (
-    <motion.div
-      className="app"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.15 }}
-    >
+    <div className="app">
       <header className="game-bar">
         <TacticalButton asset="back" label="Back to levels" size="small" className="bar-btn" onClick={onExit} />
         <div className="game-bar__title">
@@ -710,26 +703,19 @@ export function Game({
           )}
 
           {showLoseOverlay && (
-            <motion.div
-              className="game-overlay"
-              role="dialog"
-              aria-label="Out of hearts"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, x: [0, -4, 4, -2, 2, 0] }}
-              transition={{ opacity: { duration: 0.1 }, x: { duration: 0.3 } }}
-            >
+            <div className="game-overlay" role="dialog" aria-label="Out of hearts">
               <div
                 className="game-overlay__panel game-overlay__panel--lose game-overlay__panel--framed"
                 style={{ '--result-frame': `url(${uiResults.defeatFrame})` } as CSSProperties}
               >
                 <strong>Out of Hearts</strong>
-                <p>Your cannon's shields are down. Try again!</p>
+                <p>Your cannon’s shields are down. Try again!</p>
                 <div className="game-overlay__actions">
                   <TacticalButton asset="replay" label="Retry" text="Retry" size="large" onClick={handleRetry} />
                   <TacticalButton asset="back" label="Back to levels" text="Levels" size="large" onClick={onExit} />
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
 
           {calcOpen && <Calculator onClose={() => setCalcOpen(false)} />}
@@ -772,6 +758,6 @@ export function Game({
       </footer>
 
       {showTour && <GuidedTour steps={TOUR_STEPS} onClose={closeTour} />}
-    </motion.div>
+    </div>
   );
 }

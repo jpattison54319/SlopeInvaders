@@ -1,10 +1,8 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { assets, uiBackgrounds, uiShips } from '../assets/assetMap';
 import { CoachPanel } from '../game/components/CoachPanel';
 import { Modal } from '../game/components/Modal';
 import { TacticalButton } from '../game/components/TacticalButton';
-import { staggerContainer, staggerItem, fadeInUp, popIn } from './animation';
 import type { GameModeId, ModeDescriptor } from '../game/modes';
 
 interface MenuScreenProps {
@@ -50,60 +48,35 @@ export function MenuScreen({
       </nav>
 
       <section className="menu__hero" aria-labelledby="menu-title">
-        <motion.div
-          className="menu__copy"
-          variants={fadeInUp}
-          initial="initial"
-          animate="animate"
-          transition={{ delay: 0.05 }}
-        >
+        <div className="menu__copy">
+          <span className="menu__kicker">Equation Defense Command</span>
           <h1 id="menu-title">
             Slope <span>Invaders</span>
           </h1>
           <p>Graph the line. Blast the asteroids. Master y = mx + b.</p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="menu__hero-art"
-          aria-hidden="true"
-          variants={popIn}
-          initial="initial"
-          animate="animate"
-          transition={{ delay: 0.15 }}
-        >
+        <div className="menu__hero-art" aria-hidden="true">
           <img src={uiShips.hero} alt="" draggable={false} />
           <span className="menu__hero-thruster" />
-        </motion.div>
+        </div>
       </section>
 
-      <motion.div variants={fadeInUp} initial="initial" animate="animate" transition={{ delay: 0.2 }}>
-        <CoachPanel compact className="menu__coach">
-          <strong>Cadet, your cannon follows the equation you build.</strong>
-          <span>Choose a campaign route and keep the graph clear.</span>
-        </CoachPanel>
-      </motion.div>
+      <CoachPanel compact className="menu__coach">
+        <strong>Cadet, your cannon follows the equation you build.</strong>
+        <span>Choose a campaign route and keep the graph clear.</span>
+      </CoachPanel>
 
       <section className="level-select" aria-labelledby="modes-title">
-        <motion.div
-          className="level-select__header"
-          variants={fadeInUp}
-          initial="initial"
-          animate="animate"
-          transition={{ delay: 0.25 }}
-        >
+        <div className="level-select__header">
           <div>
             <span className="menu__panel-label">Game Modes</span>
             <h2 id="modes-title">Choose a Mode</h2>
           </div>
           <p>{availableCount} available now</p>
-        </motion.div>
+        </div>
 
-        <motion.div
-          className="level-grid"
-          variants={staggerContainer}
-          initial="initial"
-          animate="animate"
-        >
+        <div className="level-grid">
           {modes.map((mode) => {
             const requiresCampaign = mode.id === 'arcade' && !arcadeUnlocked;
             const playable = mode.status === 'available' && !requiresCampaign;
@@ -113,28 +86,27 @@ export function MenuScreen({
                 ? 'Beat Campaign to Unlock'
                 : 'Coming Soon';
             return (
-              <motion.div key={mode.id} variants={staggerItem} style={{ display: 'contents' }}>
-                <button
-                  type="button"
-                  className={`level-card ${playable ? 'level-card--selected' : ''}`}
-                  disabled={!playable}
-                  onClick={() => onSelectMode(mode.id)}
-                >
-                  <span className="level-card__number" aria-hidden>
-                    {playable ? '01' : '—'}
-                  </span>
-                  <span className="level-card__body">
-                    <strong>{mode.name}</strong>
-                    <span>{mode.tagline}</span>
-                  </span>
-                  <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
-                    {status}
-                  </span>
-                </button>
-              </motion.div>
+              <button
+                type="button"
+                key={mode.id}
+                className={`level-card ${playable ? 'level-card--selected' : ''}`}
+                disabled={!playable}
+                onClick={() => onSelectMode(mode.id)}
+              >
+                <span className="level-card__number" aria-hidden>
+                  {playable ? '01' : '—'}
+                </span>
+                <span className="level-card__body">
+                  <strong>{mode.name}</strong>
+                  <span>{mode.tagline}</span>
+                </span>
+                <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
+                  {status}
+                </span>
+              </button>
             );
           })}
-        </motion.div>
+        </div>
       </section>
 
       {briefingOpen && (
