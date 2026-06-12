@@ -169,6 +169,7 @@ export function Game({
   const [hearts, setHearts] = useState(level.hearts ?? Infinity);
   const [feedback, setFeedback] = useState<ShotFeedback | null>(null);
   const [shot, setShot] = useState<ShotState | null>(null);
+  const [resetKey, setResetKey] = useState(0);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
   const [calcOpen, setCalcOpen] = useState(false);
   const [earnedStars, setEarnedStars] = useState<StarCount>(0);
@@ -482,8 +483,8 @@ export function Game({
       results,
       applied: new Set<string>(),
       finalized: false,
-      m: fireM,
-      b: fireB,
+      m,
+      b,
       blocked: hits.length === 0 && results.some((r) => r.blocked),
       partialGroups,
       friendlyScrub,
@@ -527,6 +528,7 @@ export function Game({
       setExplosions([]);
       setEarnedStars(0);
       setRewards(null);
+      setResetKey((k) => k + 1);
     },
     [level],
   );
@@ -731,6 +733,7 @@ export function Game({
             maxHearts={hasHearts ? level.hearts : undefined}
           />
           <EquationControls
+            key={resetKey}
             m={m}
             b={b}
             xOffset={xOffset}
@@ -745,6 +748,7 @@ export function Game({
             won={outcome !== 'playing'}
             controls={level.allowedControls}
             equationForm={level.equationForm}
+            entryMode={level.equationEntry ?? 'stepper'}
           />
         </aside>
       </main>

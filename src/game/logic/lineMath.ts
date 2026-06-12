@@ -4,6 +4,7 @@
  * This module is intentionally free of any rendering or React concerns so it
  * can be unit-tested in isolation and reused by hit detection, hints, etc.
  */
+import type { EquationForm } from '../levels/types';
 
 /** A point on the math coordinate plane (y up, as in algebra class). */
 export interface Point {
@@ -53,4 +54,38 @@ export function calculateSlopeBetweenPoints(a: Point, b: Point): number {
 /** Given a slope m and a point on the line, solve for b in y = m·x + b. */
 export function calculateInterceptFromPoint(m: number, point: Point): number {
   return point.y - m * point.x;
+}
+
+function fmt(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+}
+
+function coef(m: number): string {
+  if (m === 1) return '';
+  if (m === -1) return '-';
+  return fmt(m);
+}
+
+/**
+ * Build the live equation string.
+ *   • no x-offset:  y = mx + b           (e.g. "y = x", "y = 2x + 1")
+ *   • with offset h: y = m(x - h) + b     (e.g. "y = (x - 3)", "y = 2(x - 3) + 1")
+ * The y=mx form hides the intercept.
+ */
+export function equationString(m: number, b: number, h: number, form: EquationForm): string {
+  const showB = form !== 'y=mx';
+
+  // Horizontal line: no x term at all.
+  if (m === 0) return `y = ${showB ? fmt(b) : '0'}`;
+
+  const xPart =
+    h === 0
+      ? `${coef(m)}x`
+      : `${coef(m)}(x ${h < 0 ? '+' : '-'} ${fmt(Math.abs(h))})`;
+
+  let s = `y = ${xPart}`;
+  if (showB && b !== 0) {
+    s += ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}`;
+  }
+  return s;
 }

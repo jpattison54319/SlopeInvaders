@@ -35,6 +35,8 @@ interface ArcadeBoardProps {
   reducedMotion: boolean;
   onExplosionDone: (id: string) => void;
   onScorePopupDone: (id: string) => void;
+  xOffset?: number;
+  showPreview?: boolean;
 }
 
 function formatCoordinate(value: number, moving: boolean): string {
@@ -55,11 +57,14 @@ export function ArcadeBoard({
   reducedMotion,
   onExplosionDone,
   onScorePopupDone,
+  xOffset = 0,
+  showPreview = true,
 }: ArcadeBoardProps) {
   const viewport = createViewport(width, height, ARCADE_BOUNDS);
   const starfield = useImage(assets.starfield);
   const bolt = useImage(assets.bolt);
-  const launchPoint = { x: 0, y: getYAtX(m, b, 0) };
+  const shipX = xOffset;
+  const launchPoint = { x: shipX, y: getYAtX(m, b, shipX) };
   const boltSize = viewport.unit * 0.7;
 
   const beam = shot
@@ -100,16 +105,18 @@ export function ArcadeBoard({
         />
         <Grid vp={viewport} bounds={ARCADE_BOUNDS} />
         <Axes vp={viewport} bounds={ARCADE_BOUNDS} showLabels />
-        <EquationLine
-          vp={viewport}
-          bounds={ARCADE_BOUNDS}
-          m={m}
-          b={b}
-          fromX={0}
-          faded={!!shot}
-          facing={facing}
-          showReverse
-        />
+        {showPreview && (
+          <EquationLine
+            vp={viewport}
+            bounds={ARCADE_BOUNDS}
+            m={m}
+            b={b}
+            fromX={shipX}
+            faded={!!shot}
+            facing={facing}
+            showReverse
+          />
+        )}
 
         {asteroids.map((asteroid) => {
           const center = graphToScreen({ x: asteroid.x, y: asteroid.y }, viewport);
@@ -149,6 +156,24 @@ export function ArcadeBoard({
                   />
                 </Group>
               )}
+              {asteroid.walls && asteroid.walls.map((wall, idx) => {
+                const a = graphToScreen({ x: asteroid.x + wall.from.x, y: asteroid.y + wall.from.y }, viewport);
+                const b = graphToScreen({ x: asteroid.x + wall.to.x, y: asteroid.y + wall.to.y }, viewport);
+                return (
+                  <Line
+                    key={`${asteroid.id}-wall-${idx}`}
+                    points={[a.x, a.y, b.x, b.y]}
+                    stroke={COLORS.wall}
+                    strokeWidth={5}
+                    opacity={0.7}
+                    dash={[2, 4]}
+                    lineCap="round"
+                    shadowColor={COLORS.wall}
+                    shadowBlur={reducedMotion ? 0 : 8}
+                    listening={false}
+                  />
+                );
+              })}
               <Asteroid
                 vp={viewport}
                 asteroid={{ id: asteroid.id, weakPoint: { x: asteroid.x, y: asteroid.y } }}

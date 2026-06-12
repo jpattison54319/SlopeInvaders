@@ -318,7 +318,7 @@ describe('App shell', () => {
     );
 
     expect(host.textContent).toContain('Slope Invaders');
-    expect(host.textContent).toContain('Play Campaign');
+    expect(host.textContent).toContain('Campaign');
     expect(host.textContent).toContain('Choose a Mode');
     expect(host.textContent).toContain('Arcade');
     expect(host.textContent).toContain('Versus');
@@ -507,7 +507,7 @@ describe('App shell', () => {
 
   test('campaign chrome keeps back and settings controls icon-only but accessible', async () => {
     await renderApp();
-    await click('Play Campaign');
+    await click('Campaign');
 
     const nav = host.querySelector('nav[aria-label="Navigation"]');
     expect(nav).toBeTruthy();
@@ -526,7 +526,7 @@ describe('App shell', () => {
   test('navigates mode → galaxy → mission → game, swaps to game music, and back', async () => {
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     expect(host.textContent).toContain('Choose your destination');
 
     expect(host.querySelectorAll('.hotspot')).toHaveLength(0);
@@ -551,7 +551,7 @@ describe('App shell', () => {
   test('galaxy dial rotates between planets and locks unreached missions', async () => {
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     expect(host.textContent).toContain('Tutorial');
 
     // Rotate to the next planet (Zone 1), which is locked until Tutorial clears.
@@ -571,7 +571,7 @@ describe('App shell', () => {
     });
 
     await renderApp();
-    await click('Play Campaign');
+    await click('Campaign');
 
     expect(host.textContent).toContain('1 / 4 missions cleared');
     const status = host.querySelector('dl[aria-label="Campaign navigation status"]');
@@ -584,7 +584,7 @@ describe('App shell', () => {
     seedCompletedLevels(['tut-1']);
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     expect(host.querySelectorAll('.hotspot')).toHaveLength(0);
     expect(host.querySelectorAll('.surface-banner')).toHaveLength(0);
 
@@ -609,7 +609,7 @@ describe('App shell', () => {
     });
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
 
     await click('Enter Slope Training');
     await waitForUi();
@@ -633,7 +633,7 @@ describe('App shell', () => {
   test('view toggle switches between galaxy and classic list views', async () => {
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     expect(host.textContent).toContain('Choose your destination');
 
     // The top-bar toggle (not the back button) switches to the list view.
@@ -661,7 +661,7 @@ describe('App shell', () => {
   test('Pilot Profile opens from the galaxy and returns to it', async () => {
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     const status = host.querySelector('dl[aria-label="Campaign navigation status"]');
     expect(status?.textContent).toContain('Pilot XP0');
 
@@ -675,7 +675,7 @@ describe('App shell', () => {
   test('back from the classic list view exits to the mode select, not the galaxy', async () => {
     await renderApp();
 
-    await click('Play Campaign');
+    await click('Campaign');
     await click('List view');
     expect(host.textContent).toContain('Choose a Zone');
 
@@ -687,20 +687,20 @@ describe('App shell', () => {
   test('final zone completion routes through debrief into the campaign finale', async () => {
     const completedBeforeFinal = orderedLevels
       .map(({ level }) => level.id)
-      .filter((id) => id !== 'z8-l5');
+      .filter((id) => id !== 'z9-l5');
     seedCompletedLevels(completedBeforeFinal);
 
     await renderApp();
-    await click('Play Campaign');
+    await click('Campaign');
     await click('List view');
-    await click('Zone 8: Moving Cannon');
-    await click('Final Mastery Check');
+    await click('Zone 9: Equation Forge');
+    await click('Forge Mastery');
 
-    expect(host.textContent).toContain('Playing Final Mastery Check');
+    expect(host.textContent).toContain('Playing Forge Mastery');
     await click('Win mock');
 
     expect(host.textContent).toContain('Final Debrief');
-    expect(host.textContent).toContain('Zone 8 Complete');
+    expect(host.textContent).toContain('Zone 9 Complete');
 
     await click('Back to Campaign');
     expect(host.textContent).toContain('You beat Slope Invaders!');

@@ -124,4 +124,8 @@ export interface LevelConfig {
    * (persisted per level in localStorage). Used by the Tutorial.
    */
   guidedTour?: boolean;
+  /** Method used to enter the equation (default 'stepper'). */
+  equationEntry?: 'stepper' | 'typed';
+  /** If true, trajectory preview cannot be enabled under any tier or override. */
+  lockTrajectoryPreview?: boolean;
 }

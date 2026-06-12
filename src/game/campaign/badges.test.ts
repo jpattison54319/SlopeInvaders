@@ -65,7 +65,7 @@ const newIds = (c: BadgeContext, already: EarnedBadges = {}): string[] =>
 
 describe('badge registry', () => {
   it('has a concept badge for every available zone after the tutorial', () => {
-    const conceptZoneIds = ['zone-1', 'zone-2', 'zone-3', 'zone-4', 'zone-5', 'zone-6', 'zone-7', 'zone-8'];
+    const conceptZoneIds = ['zone-1', 'zone-2', 'zone-3', 'zone-4', 'zone-5', 'zone-6', 'zone-7', 'zone-8', 'zone-9'];
     for (const zoneId of conceptZoneIds) {
       // A renamed/removed zone must fail loudly here, not silently never award.
       expect(zones.some((z) => z.id === zoneId && z.levels.length > 0), zoneId).toBe(true);

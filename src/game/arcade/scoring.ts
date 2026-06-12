@@ -39,3 +39,8 @@ export function scoreArcadeHit(
     awards,
   };
 }
+
+export function computeArcadeXp(score: number, noPreview: boolean): number {
+  const base = Math.floor(score / 50);
+  return noPreview ? Math.round(base * 1.5) : base;
+}

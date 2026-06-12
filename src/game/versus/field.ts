@@ -71,7 +71,7 @@ export function buildVersusLevel(seed: number): LevelConfig {
     friendlies: [],
     maxShots: Infinity,
     hearts: VERSUS_HEARTS,
-    trajectoryPreview: 'always',
+    trajectoryPreview: 'off',
     showCoordinates: true,
   };
 }

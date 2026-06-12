@@ -2,6 +2,8 @@ import { useState } from 'react';
 import type { ControlKey, EquationForm, Facing } from '../levels/types';
 import type { UiButtonKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
+import { EquationSlots } from './EquationSlots';
+import { equationString } from '../logic/lineMath';
 
 interface EquationControlsProps {
   m: number;
@@ -23,6 +25,7 @@ interface EquationControlsProps {
   secondaryText?: string;
   secondaryAsset?: UiButtonKey;
   secondaryClassName?: string;
+  entryMode?: 'stepper' | 'typed';
 }
 
 function fmt(n: number): string {
@@ -30,35 +33,6 @@ function fmt(n: number): string {
 }
 
 /** Coefficient prefix for an x-term: 1 -> "", -1 -> "-", else the number. */
-function coef(m: number): string {
-  if (m === 1) return '';
-  if (m === -1) return '-';
-  return fmt(m);
-}
-
-/**
- * Build the live equation string.
- *   • no x-offset:  y = mx + b           (e.g. "y = x", "y = 2x + 1")
- *   • with offset h: y = m(x - h) + b     (e.g. "y = (x - 3)", "y = 2(x - 3) + 1")
- * The y=mx form hides the intercept.
- */
-function equationString(m: number, b: number, h: number, form: EquationForm): string {
-  const showB = form !== 'y=mx';
-
-  // Horizontal line: no x term at all.
-  if (m === 0) return `y = ${showB ? fmt(b) : '0'}`;
-
-  const xPart =
-    h === 0
-      ? `${coef(m)}x`
-      : `${coef(m)}(x ${h < 0 ? '+' : '-'} ${fmt(Math.abs(h))})`;
-
-  let s = `y = ${xPart}`;
-  if (showB && b !== 0) {
-    s += ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}`;
-  }
-  return s;
-}
 
 interface StepperProps {
   label: string;
@@ -165,50 +139,67 @@ export function EquationControls({
   secondaryText = 'Reset Level',
   secondaryAsset = 'replay',
   secondaryClassName = 'btn--reset',
+  entryMode = 'stepper',
 }: EquationControlsProps) {
+  const [slotsValid, setSlotsValid] = useState(false);
+
   // Facing left mirrors the line across the ship, so the equation (and the
   // dashed aim line it matches) shows the negated slope while the slope stepper
   // keeps showing the value the player dialed.
   const shownM = controls.includes('direction') && facing === 'left' ? -m : m;
   return (
     <div className="controls" data-tour="command">
-      <div className="controls__equation" aria-live="polite">
-        {equationString(shownM, b, xOffset, equationForm)}
-      </div>
+      {entryMode === 'typed' ? (
+        <EquationSlots
+          facing={facing}
+          equationForm={equationForm}
+          onChangeM={onChangeM}
+          onChangeB={onChangeB}
+          onChangeXOffset={onChangeXOffset}
+          onValidityChange={setSlotsValid}
+          disabled={disabled}
+        />
+      ) : (
+        <>
+          <div className="controls__equation" aria-live="polite">
+            {equationString(shownM, b, xOffset, equationForm)}
+          </div>
 
-      <div className="controls__steppers">
-        {controls.includes('slope') && (
-          <Stepper
-            label="slope"
-            symbol="m"
-            value={m}
-            step={0.5}
-            disabled={disabled}
-            onChange={onChangeM}
-          />
-        )}
-        {controls.includes('yIntercept') && equationForm !== 'y=mx' && (
-          <Stepper
-            label="y-intercept"
-            symbol="b"
-            value={b}
-            step={0.5}
-            disabled={disabled}
-            onChange={onChangeB}
-          />
-        )}
-        {/* Movable cannon — unlocked in later levels (not Level 1). */}
-        {controls.includes('xOffset') && (
-          <Stepper
-            label="x-offset"
-            symbol="Δx"
-            value={xOffset}
-            step={1}
-            disabled={disabled}
-            onChange={onChangeXOffset}
-          />
-        )}
-      </div>
+          <div className="controls__steppers">
+            {controls.includes('slope') && (
+              <Stepper
+                label="slope"
+                symbol="m"
+                value={m}
+                step={0.5}
+                disabled={disabled}
+                onChange={onChangeM}
+              />
+            )}
+            {controls.includes('yIntercept') && equationForm !== 'y=mx' && (
+              <Stepper
+                label="y-intercept"
+                symbol="b"
+                value={b}
+                step={0.5}
+                disabled={disabled}
+                onChange={onChangeB}
+              />
+            )}
+            {/* Movable cannon — unlocked in later levels (not Level 1). */}
+            {controls.includes('xOffset') && (
+              <Stepper
+                label="x-offset"
+                symbol="Δx"
+                value={xOffset}
+                step={1}
+                disabled={disabled}
+                onChange={onChangeXOffset}
+              />
+            )}
+          </div>
+        </>
+      )}
 
       {/* Facing direction — the shot fires only this way (Zone 4). */}
       {controls.includes('direction') && (
@@ -248,7 +239,7 @@ export function EquationControls({
           className="btn btn--fire btn--split"
           data-button-sfx="none"
           onClick={onFire}
-          disabled={disabled || won}
+          disabled={disabled || won || (entryMode === 'typed' && !slotsValid)}
         />
         <TacticalButton
           asset={secondaryAsset}

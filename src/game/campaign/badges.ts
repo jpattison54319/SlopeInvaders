@@ -70,6 +70,7 @@ export const BADGES: readonly BadgeDef[] = [
   zoneBadge('zone-6', 'point-to-point-pilot', 'Point-to-Point Pilot', 'Cleared Zone 6 — two points, one line, every time.'),
   zoneBadge('zone-7', 'friendly-fleet-protector', 'Friendly Fleet Protector', 'Cleared Zone 7 — sharp shots that keep allies safe.'),
   zoneBadge('zone-8', 'cannon-commander', 'Cannon Commander', 'Cleared Zone 8 — you steer the cannon itself with y = m(x − h) + b.'),
+  zoneBadge('zone-9', 'equation-author', 'Equation Author', 'Cleared Zone 9 — you type the full equation y = m(x − h) + b from scratch.'),
 
   // --- performance badges: strategy on a single run ---
   {

@@ -24,6 +24,7 @@ import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/cont
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
 import { useArcadeRecords } from '../game/arcade/useArcadeRecords';
+import { computeArcadeXp } from '../game/arcade/scoring';
 import { SkipLink } from './SkipLink';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
 
@@ -83,7 +84,7 @@ type Screen =
   | { name: 'teacher-dashboard'; teacherKey?: string }
   | { name: 'versus' }
   | { name: 'arcade-briefing' }
-  | { name: 'arcade-game' }
+  | { name: 'arcade-game'; noPreview?: boolean }
   | {
       name: 'versus-match';
       matchId: string;
@@ -364,13 +365,14 @@ export default function App() {
         return (
           <ArcadeBriefingScreen
             records={arcade.records}
-            onStart={() => setScreen({ name: 'arcade-game' })}
+            onStart={(options) => setScreen({ name: 'arcade-game', ...options })}
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
           />
         );
 
-      case 'arcade-game':
+      case 'arcade-game': {
+        const noPreview = screen.name === 'arcade-game' ? !!screen.noPreview : false;
         return (
           <ArcadeGame
             records={arcade.records}
@@ -378,11 +380,19 @@ export default function App() {
             keyboardEnabled={!settingsOpen}
             externallyPaused={settingsOpen}
             reducedMotion={reducedMotion}
+            noPreview={noPreview}
             onOpenSettings={openSettings}
-            onRecordRun={arcade.recordRun}
+            onRecordRun={(run) => {
+              arcade.recordRun(run);
+              const xpEarned = computeArcadeXp(run.score, noPreview);
+              if (xpEarned > 0) {
+                progress.earnArcadeXp(xpEarned);
+              }
+            }}
             onExit={() => setScreen({ name: 'mode-select' })}
           />
         );
+      }
 
       case 'versus-match':
         return (

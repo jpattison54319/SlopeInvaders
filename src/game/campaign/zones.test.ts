@@ -13,7 +13,7 @@ describe('campaign navigation', () => {
     expect(firstCampaignLevel.zone.id).toBe('tutorial');
   });
 
-  it('orderedLevels covers the tutorial, then zones 1–5', () => {
+  it('orderedLevels covers the tutorial, then all zones', () => {
     expect(orderedLevels.map((e) => e.level.id)).toEqual([
       'tut-1',
       'z1-l1',
@@ -55,6 +55,11 @@ describe('campaign navigation', () => {
       'z8-l3',
       'z8-l4',
       'z8-l5',
+      'z9-l1',
+      'z9-l2',
+      'z9-l3',
+      'z9-l4',
+      'z9-l5',
     ]);
   });
 
@@ -106,13 +111,19 @@ describe('campaign navigation', () => {
     expect(next?.zone.id).toBe('zone-8');
   });
 
+  it('nextLevel crosses the zone-8 → zone-9 boundary', () => {
+    const next = nextLevel('z8-l5');
+    expect(next?.level.id).toBe('z9-l1');
+    expect(next?.zone.id).toBe('zone-9');
+  });
+
   it('nextLevel advances within a zone', () => {
     expect(nextLevel('z1-l1')?.level.id).toBe('z1-l2');
     expect(nextLevel('z1-l3')?.level.id).toBe('z1-l4');
   });
 
   it('nextLevel is undefined at the end of available content', () => {
-    expect(nextLevel('z8-l5')).toBeUndefined();
+    expect(nextLevel('z9-l5')).toBeUndefined();
   });
 
   it('nextLevelInZone advances within a zone but stops at the zone boundary', () => {
@@ -130,6 +141,7 @@ describe('campaign navigation', () => {
     expect(nextLevelInZone('z6-l5')).toBeUndefined();
     expect(nextLevelInZone('z7-l5')).toBeUndefined();
     expect(nextLevelInZone('z8-l5')).toBeUndefined();
+    expect(nextLevelInZone('z9-l5')).toBeUndefined();
     expect(nextLevelInZone('tut-1')).toBeUndefined();
   });
 

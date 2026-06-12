@@ -45,6 +45,7 @@ describe('buildVersusLevel', () => {
     expect(level.allowedControls).toEqual(['slope', 'yIntercept', 'direction']);
     expect(level.hearts).toBe(VERSUS_HEARTS);
     expect(level.ship.position).toEqual({ x: 0, y: 0 });
+    expect(level.trajectoryPreview).toBe('off');
   });
 });
 

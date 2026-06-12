@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { multiplierForStreak, scoreArcadeHit } from './scoring';
+import { computeArcadeXp, multiplierForStreak, scoreArcadeHit } from './scoring';
 
 describe('arcade scoring', () => {
   it('uses the documented streak tiers', () => {
@@ -27,5 +27,16 @@ describe('arcade scoring', () => {
       multiplier: 1,
       awards: [100, 150],
     });
+  });
+
+  it('computes arcade XP and modifiers correctly', () => {
+    expect(computeArcadeXp(0, false)).toBe(0);
+    expect(computeArcadeXp(50, false)).toBe(1);
+    expect(computeArcadeXp(99, false)).toBe(1);
+    expect(computeArcadeXp(100, false)).toBe(2);
+    expect(computeArcadeXp(3000, false)).toBe(60);
+    expect(computeArcadeXp(3000, true)).toBe(90);
+    expect(computeArcadeXp(3040, true)).toBe(90);
+    expect(computeArcadeXp(3050, true)).toBe(92);
   });
 });

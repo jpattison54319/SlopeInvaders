@@ -16,6 +16,7 @@ import { zoneFive } from './levels/zone5';
 import { zoneSix } from './levels/zone6';
 import { zoneSeven } from './levels/zone7';
 import { zoneEight } from './levels/zone8';
+import { zoneNine } from './levels/zone9';
 
 /** A locked placeholder for a zone whose levels aren't built yet. */
 export function comingSoonZone(id: string, number: number, name: string, theme: string): Zone {
@@ -32,6 +33,7 @@ export const zones: Zone[] = [
   zoneSix,
   zoneSeven,
   zoneEight,
+  zoneNine,
 ];
 
 /** Flat, ordered list of every playable level across available zones. */

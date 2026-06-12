@@ -115,7 +115,10 @@ coordinate math, and `GameBoard` rather than forking gameplay.
 - **Shared field:** both clients derive the identical starting field from the
   match's `level_seed` via the pure, seeded `buildVersusLevel(seed)`
   (`src/game/versus/field.ts`, mulberry32) — all quadrants, slope + intercept +
-  facing, 5 hearts, ship at the origin. No level data crosses the wire.
+  facing, 5 hearts, ship at the origin. Trajectory preview is always off on both
+  the interactive board and read-only mirror so the duel assesses equation
+  reasoning rather than visual line matching. The fired laser remains visible
+  as outcome feedback. No level data crosses the wire.
 - **Attack items:** `+2` (garbage asteroids) and `❄` freeze pickups spawn
   probabilistically on each player's own grid with a limited lifetime
   (`spawnItem`). Shooting one (the fired line crosses it) broadcasts an `attack`

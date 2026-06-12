@@ -4,6 +4,11 @@ import type { Point } from '../logic/lineMath';
 export type ArcadePhase = 'countdown' | 'playing' | 'interwave' | 'gameover';
 export type ArcadeAsteroidPhase = 'holding' | 'falling';
 
+export interface ArcadeWall {
+  from: Point;
+  to: Point;
+}
+
 export interface ArcadeAsteroid {
   id: string;
   x: number;
@@ -14,6 +19,8 @@ export interface ArcadeAsteroid {
   toY: number;
   phaseElapsedMs: number;
   phaseDurationMs: number;
+  vertices: number[];
+  walls?: ArcadeWall[];
 }
 
 export interface ArcadeSimulation {

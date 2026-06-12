@@ -214,34 +214,44 @@ const DEFAULT_HEARTS = 4;
  */
 export function configForTier(level: CampaignLevel, tier: DifficultyTier): LevelConfig {
   const base = level.config;
-  if (!level.adaptive || tier === 'standard') return base;
+  let derived = base;
 
-  const baseHearts = base.hearts ?? DEFAULT_HEARTS;
-  let derived: LevelConfig;
+  if (level.adaptive && tier !== 'standard') {
+    const baseHearts = base.hearts ?? DEFAULT_HEARTS;
 
-  if (tier === 'support') {
-    derived = {
-      ...base,
-      hearts: baseHearts + 1,
-      trajectoryPreview: 'always',
-      trajectoryStyle: 'normal',
-      showCoordinates: true,
-    };
-  } else {
-    // challenge: one fewer heart and the next rung up the scaffold ladder.
-    const idx = Math.min(
-      SCAFFOLD_LADDER.length - 1,
-      rungIndex(base.trajectoryPreview ?? 'always', base.trajectoryStyle ?? 'normal') + 1,
-    );
-    const rung = SCAFFOLD_LADDER[idx];
-    derived = {
-      ...base,
-      hearts: Math.max(1, baseHearts - 1),
-      trajectoryPreview: rung.preview,
-      trajectoryStyle: rung.style,
+    if (tier === 'support') {
+      derived = {
+        ...base,
+        hearts: baseHearts + 1,
+        trajectoryPreview: 'always',
+        trajectoryStyle: 'normal',
+        showCoordinates: true,
+      };
+    } else {
+      // challenge: one fewer heart and the next rung up the scaffold ladder.
+      const idx = Math.min(
+        SCAFFOLD_LADDER.length - 1,
+        rungIndex(base.trajectoryPreview ?? 'always', base.trajectoryStyle ?? 'normal') + 1,
+      );
+      const rung = SCAFFOLD_LADDER[idx];
+      derived = {
+        ...base,
+        hearts: Math.max(1, baseHearts - 1),
+        trajectoryPreview: rung.preview,
+        trajectoryStyle: rung.style,
+      };
+    }
+  }
+
+  const variant = level.adaptive ? level.variants?.[tier] : undefined;
+  let finalConfig = variant ? { ...derived, ...variant } : derived;
+
+  if (base.lockTrajectoryPreview) {
+    finalConfig = {
+      ...finalConfig,
+      trajectoryPreview: 'off',
     };
   }
 
-  const variant = level.variants?.[tier];
-  return variant ? { ...derived, ...variant } : derived;
+  return finalConfig;
 }
