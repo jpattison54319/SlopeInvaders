@@ -1,10 +1,8 @@
-import { type CSSProperties } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import type { CSSProperties } from 'react';
 import { sprites, uiHud } from '../../assets/assetMap';
 import type { ShotFeedback } from '../logic/hints';
 import { CoachPanel } from './CoachPanel';
 import { TacticalStatusRail } from './TacticalPanel';
-import { fadeInUp } from '../../app/animation';
 
 interface HudProps {
   score: number;
@@ -13,10 +11,13 @@ interface HudProps {
   shotsFired: number;
   feedback: ShotFeedback | null;
   won: boolean;
+  /** Current hearts; omit (with maxHearts) for no lives display. */
   hearts?: number;
+  /** Total hearts; when finite, a hearts row is shown. */
   maxHearts?: number;
 }
 
+/** Score, progress, hearts, the learning goal, and the post-shot feedback panel. */
 export function Hud({
   score,
   remaining,
@@ -42,14 +43,12 @@ export function Hud({
           style={{ '--health-rail': `url(${uiHud.healthRail})` } as CSSProperties}
         >
           {Array.from({ length: maxHearts }).map((_, i) => (
-            <motion.img
+            <img
               key={i}
               className="hud__heart"
               src={i < heartCount ? sprites.heartFull : sprites.heartEmpty}
               alt=""
               draggable={false}
-              animate={i < heartCount ? { scale: 1, opacity: 1 } : { scale: 0.8, opacity: 0.4 }}
-              transition={{ duration: 0.2 }}
             />
           ))}
         </div>
@@ -65,63 +64,35 @@ export function Hud({
         ]}
       />
 
-      <AnimatePresence mode="wait">
-        {won ? (
-          <motion.div
-            key="win"
-            className="feedback feedback--win"
-            data-tour="hint"
-            role="status"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ type: 'tween', duration: 0.12, ease: 'easeOut' }}
-          >
-            <CoachPanel title="Mission Control" tone="success" compact>
-              <strong>Victory!</strong>
-              <p>
-                All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final
-                score: {score}.
-              </p>
-            </CoachPanel>
-          </motion.div>
-        ) : feedback ? (
-          <motion.div
-            key={feedback.hit ? 'hit' : `miss-${feedback.detail}`}
-            className={`feedback ${feedback.hit ? 'feedback--hit' : 'feedback--miss'}`}
-            data-tour="hint"
-            role="status"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ type: 'tween', duration: 0.12, ease: 'easeOut' }}
-          >
-            <CoachPanel title="Mission Control" tone={feedback.hit ? 'success' : 'warning'} compact>
-              <strong>{feedback.headline}</strong>
-              <p>{feedback.detail}</p>
-            </CoachPanel>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="idle"
-            className="feedback feedback--idle"
-            data-tour="hint"
-            role="status"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-            exit="exit"
-            transition={{ type: 'tween', duration: 0.12, ease: 'easeOut' }}
-          >
-            <CoachPanel title="Mission Control" compact>
-              <strong>Ready.</strong>
-              <p>Set your equation, check the dashed trajectory, then Fire.</p>
-            </CoachPanel>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {won ? (
+        <div className="feedback feedback--win" data-tour="hint" role="status">
+          <CoachPanel title="Mission Control" tone="success" compact>
+            <strong>Victory!</strong>
+            <p>
+              All asteroids cleared in {shotsFired} shot{shotsFired === 1 ? '' : 's'}. Final
+              score: {score}.
+            </p>
+          </CoachPanel>
+        </div>
+      ) : feedback ? (
+        <div
+          className={`feedback ${feedback.hit ? 'feedback--hit' : 'feedback--miss'}`}
+          data-tour="hint"
+          role="status"
+        >
+          <CoachPanel title="Mission Control" tone={feedback.hit ? 'success' : 'warning'} compact>
+            <strong>{feedback.headline}</strong>
+            <p>{feedback.detail}</p>
+          </CoachPanel>
+        </div>
+      ) : (
+        <div className="feedback feedback--idle" data-tour="hint" role="status">
+          <CoachPanel title="Mission Control" compact>
+            <strong>Ready.</strong>
+            <p>Set your equation, check the dashed trajectory, then Fire.</p>
+          </CoachPanel>
+        </div>
+      )}
     </div>
   );
 }

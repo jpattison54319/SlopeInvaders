@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
 import type { Zone } from '../../game/campaign/types';
 import { planetSrcForZone } from '../../game/campaign/planets';
 import { ScreenChrome } from '../ScreenChrome';
@@ -8,7 +7,6 @@ import { TacticalButton } from '../../game/components/TacticalButton';
 import { TacticalPanel, TacticalStatusRail } from '../../game/components/TacticalPanel';
 import { PlanetDial } from './PlanetDial';
 import { PlanetSurfaceMap } from './PlanetSurfaceMap';
-import { fadeInUp } from '../animation';
 
 interface GalaxyMapScreenProps {
   zones: Zone[];
@@ -143,29 +141,18 @@ export function GalaxyMapScreen({
         aria-labelledby="galaxy-title"
       >
         {!showingSurface && (
-          <motion.div
-            className="galaxy__header"
-            variants={fadeInUp}
-            initial="initial"
-            animate="animate"
-          >
+          <div className="galaxy__header">
             <div>
               <span className="menu__panel-label">Campaign · Galaxy</span>
               <h2 id="galaxy-title">Choose your destination</h2>
             </div>
             <span className="galaxy__sector-code">NAV // {String(activeIndex + 1).padStart(2, '0')}</span>
-          </motion.div>
+          </div>
         )}
 
         {!showingSurface && (
           <>
-            <motion.div
-              className={`galaxy__stage ${surfacePhase === 'approach' ? 'galaxy__stage--approach' : ''}`}
-              variants={fadeInUp}
-              initial="initial"
-              animate="animate"
-              transition={{ delay: 0.05 }}
-            >
+            <div className={`galaxy__stage ${surfacePhase === 'approach' ? 'galaxy__stage--approach' : ''}`}>
               <TacticalButton
                 asset="back"
                 size="medium"
@@ -191,15 +178,9 @@ export function GalaxyMapScreen({
                 disabled={activeIndex === zones.length - 1 || surfacePhase !== 'space'}
                 onClick={() => rotate(1)}
               />
-            </motion.div>
+            </div>
 
-            <motion.div
-              variants={fadeInUp}
-              initial="initial"
-              animate="animate"
-              transition={{ delay: 0.1 }}
-            >
-              <TacticalPanel className="galaxy__console" tone={locked ? 'standard' : 'gold'} aria-live="polite">
+            <TacticalPanel className="galaxy__console" tone={locked ? 'standard' : 'gold'} aria-live="polite">
               <div className="galaxy__caption">
                 <strong>
                   {activeZone.number === 0 ? activeZone.name : `Zone ${activeZone.number}: ${activeZone.name}`}
@@ -226,7 +207,6 @@ export function GalaxyMapScreen({
                 ]}
               />
             </TacticalPanel>
-            </motion.div>
           </>
         )}
 

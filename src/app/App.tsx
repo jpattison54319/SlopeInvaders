@@ -1,5 +1,4 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
-import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { SfxProvider } from '../game/audio/sfx';
@@ -28,7 +27,6 @@ import { useArcadeRecords } from '../game/arcade/useArcadeRecords';
 import { computeArcadeXp } from '../game/arcade/scoring';
 import { SkipLink } from './SkipLink';
 import { KeyboardShortcutsHelp } from './KeyboardShortcutsHelp';
-import { screenTransition } from './animation';
 
 // --- Lazy-loaded screens (improvement #6: code splitting) ---
 // The campaign gameplay, arcade, versus, and cloud screens pull in Konva, the
@@ -215,15 +213,9 @@ export default function App() {
   };
 
   function renderScreen() {
-    const wrap = (key: string, element: ReactNode) => (
-      <motion.div key={key} variants={screenTransition} initial={false} animate="animate" exit="exit">
-        {element}
-      </motion.div>
-    );
-
     switch (screen.name) {
       case 'mode-select':
-        return wrap('mode-select',
+        return (
           <MenuScreen
             modes={modes}
             arcadeUnlocked={campaignComplete}
@@ -235,12 +227,12 @@ export default function App() {
         );
 
       case 'galaxy':
-        return wrap('galaxy',
+        return (
           <GalaxyMapScreen
             zones={zones}
             progress={progress}
             initialZoneId={screen.zoneId}
-            onPlayLevel={(levelId) => setScreen({ name: 'launch', levelId })}
+            onPlayLevel={(levelId) => setScreen({ name: 'fade', levelId })}
             onBack={() => setScreen({ name: 'mode-select' })}
             onOpenSettings={openSettings}
             onToggleView={() => setScreen({ name: 'campaign-map' })}
@@ -252,7 +244,7 @@ export default function App() {
       case 'launch': {
         const ctx = findCampaignLevel(screen.levelId);
         const planetSrc = ctx ? planetSrcForZone(ctx.zone.id) : '';
-        return wrap('launch',
+        return (
           <LaunchTransition
             planetSrc={planetSrc}
             reducedMotion={reducedMotion}
@@ -262,7 +254,7 @@ export default function App() {
       }
 
       case 'fade':
-        return wrap('fade',
+        return (
           <MissionFadeTransition
             reducedMotion={reducedMotion}
             onDone={() => setScreen({ name: 'game', levelId: screen.levelId })}
@@ -270,7 +262,7 @@ export default function App() {
         );
 
       case 'campaign-map':
-        return wrap('campaign-map',
+        return (
           <CampaignMapScreen
             zones={zones}
             progress={progress}
@@ -286,7 +278,7 @@ export default function App() {
       case 'zone-levels': {
         const zone = findZone(screen.zoneId);
         if (!zone) return null;
-        return wrap('zone-levels',
+        return (
           <ZoneLevelsScreen
             zone={zone}
             progress={progress}
@@ -302,8 +294,10 @@ export default function App() {
       case 'debrief': {
         const zone = findZone(screen.zoneId);
         if (!zone) return null;
+        // After the final zone's debrief, run the campaign finale; otherwise
+        // return to the galaxy.
         const isFinalZone = zone.id === lastAvailableZoneId;
-        return wrap('debrief',
+        return (
           <DebriefScreen
             zone={zone}
             onBack={() =>
@@ -326,7 +320,7 @@ export default function App() {
           }
         };
 
-        return wrap('pilot-profile',
+        return (
           <PilotProfileScreen
             progress={progress}
             arcadeRecords={arcade.records}
@@ -338,7 +332,7 @@ export default function App() {
       }
 
       case 'classroom':
-        return wrap('classroom',
+        return (
           <ClassroomScreen
             progress={progress}
             initialJoinCode={screen.joinCode}
@@ -349,7 +343,7 @@ export default function App() {
         );
 
       case 'teacher-dashboard':
-        return wrap('teacher-dashboard',
+        return (
           <TeacherDashboardScreen
             initialTeacherKey={screen.teacherKey}
             onBack={() => setScreen({ name: 'classroom' })}
@@ -358,7 +352,7 @@ export default function App() {
         );
 
       case 'versus':
-        return wrap('versus',
+        return (
           <VersusLobbyScreen
             onStartMatch={(p) => setScreen({ name: 'versus-match', ...p })}
             onBack={() => setScreen({ name: 'mode-select' })}
@@ -368,7 +362,7 @@ export default function App() {
         );
 
       case 'arcade-briefing':
-        return wrap('arcade-briefing',
+        return (
           <ArcadeBriefingScreen
             records={arcade.records}
             onStart={(options) => setScreen({ name: 'arcade-game', ...options })}
@@ -379,7 +373,7 @@ export default function App() {
 
       case 'arcade-game': {
         const noPreview = screen.name === 'arcade-game' ? !!screen.noPreview : false;
-        return wrap('arcade-game',
+        return (
           <ArcadeGame
             records={arcade.records}
             keyBindings={keyBindings}
@@ -401,7 +395,7 @@ export default function App() {
       }
 
       case 'versus-match':
-        return wrap('versus-match',
+        return (
           <VersusMatchScreen
             matchId={screen.matchId}
             seed={screen.seed}
@@ -413,7 +407,7 @@ export default function App() {
         );
 
       case 'campaign-complete':
-        return wrap('campaign-complete',
+        return (
           <CampaignCompleteScreen
             progress={progress}
             reducedMotion={reducedMotion}
@@ -428,9 +422,13 @@ export default function App() {
         const { zone, level, index } = ctx;
         const label =
           zone.number === 0 ? 'Tutorial' : `Zone ${zone.number} · Level ${index + 1}`;
+        // Rolling adaptivity: pick the tier from prior performance, then derive
+        // the playable config (hearts/scaffolds/variants) for that tier.
+        // Improvement #7: tierForLevel returns a full TierDecision; we just
+        // need the .tier field to pick the variant here.
         const tierDecision = progress.tierForLevel(zone, index);
         const tier = tierDecision.tier;
-        return wrap('game',
+        return (
           <Game
             key={level.id}
             level={configForTier(level, tier)}
@@ -456,43 +454,39 @@ export default function App() {
   return (
     <SfxProvider volume={sfxVolume} muted={sfxMuted}>
       <ButtonClickSfx />
-      <MotionConfig
-        reducedMotion={reducedMotion ? 'always' : 'never'}
-        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      >
-        <SkipLink targetId="app-main" />
-        <div id="app-main" tabIndex={-1}>
-          <Suspense fallback={<ScreenLoader reducedMotion={reducedMotion} />}>
-            <AnimatePresence>
-              {renderScreen()}
-            </AnimatePresence>
-          </Suspense>
-        </div>
+      {/* Improvement #8: skip-to-content link for keyboard users. Hidden until
+          focused so it doesn't compete with the tactical UI. */}
+      <SkipLink targetId="app-main" />
+      <div id="app-main" tabIndex={-1}>
+        <Suspense fallback={<ScreenLoader reducedMotion={reducedMotion} />}>
+          {renderScreen()}
+        </Suspense>
+      </div>
 
-        {settingsOpen && (
-          <SettingsModal
-            musicVolume={musicVolume}
-            musicMuted={musicMuted}
-            sfxVolume={sfxVolume}
-            sfxMuted={sfxMuted}
-            activeTrack={inGame ? 'game' : 'menu'}
-            keyBindings={keyBindings}
-            onChangeMusicVolume={setMusicVolume}
-            onChangeMusicMuted={setMusicMuted}
-            onChangeSfxVolume={setSfxVolume}
-            onChangeSfxMuted={setSfxMuted}
-            onChangeKeyBindings={setKeyBindings}
-            onClose={() => setSettingsOpen(false)}
-          />
-        )}
+      {settingsOpen && (
+        <SettingsModal
+          musicVolume={musicVolume}
+          musicMuted={musicMuted}
+          sfxVolume={sfxVolume}
+          sfxMuted={sfxMuted}
+          activeTrack={inGame ? 'game' : 'menu'}
+          keyBindings={keyBindings}
+          onChangeMusicVolume={setMusicVolume}
+          onChangeMusicMuted={setMusicMuted}
+          onChangeSfxVolume={setSfxVolume}
+          onChangeSfxMuted={setSfxMuted}
+          onChangeKeyBindings={setKeyBindings}
+          onClose={() => setSettingsOpen(false)}
+        />
+      )}
 
-        {shortcutsOpen && (
-          <KeyboardShortcutsHelp
-            keyBindings={keyBindings}
-            onClose={() => setShortcutsOpen(false)}
-          />
-        )}
-      </MotionConfig>
+      {shortcutsOpen && (
+        <KeyboardShortcutsHelp
+          keyBindings={keyBindings}
+          onClose={() => setShortcutsOpen(false)}
+        />
+      )}
+
     </SfxProvider>
   );
 }
