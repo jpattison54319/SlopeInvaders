@@ -233,14 +233,15 @@ export function useVersusMatch(
       (it) => facingOk(it.point) && isPointOnLine(fireM, fireB, it.point, DEFAULT_HIT_TOLERANCE),
     );
 
-    const seg = lineBoardSegment(fireM, fireB, VERSUS_BOUNDS, 0, facing);
-    if (!seg) {
+    const rawSeg = lineBoardSegment(fireM, fireB, VERSUS_BOUNDS, 0, facing);
+    if (!rawSeg) {
       const live = liveRef.current;
       setHearts((h) => h - 1);
       if (live.hearts - 1 <= 0) setResult((prev) => prev ?? 'lost');
       return;
     }
 
+    const seg = facing === 'left' ? { start: rawSeg.end, end: rawSeg.start } : rawSeg;
     setShot({ start: seg.start, end: seg.end, progress: 0 });
     const start = performance.now();
     const step = (now: number) => {
