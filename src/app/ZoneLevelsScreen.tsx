@@ -1,6 +1,8 @@
 import type { Zone } from '../game/campaign/types';
 import { ScreenChrome } from './ScreenChrome';
 import type { CampaignProgress } from './useCampaignProgress';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem, fadeInUp } from './animation';
 
 interface ZoneLevelsScreenProps {
   zone: Zone;
@@ -8,12 +10,10 @@ interface ZoneLevelsScreenProps {
   onSelectLevel: (levelId: string) => void;
   onBack: () => void;
   onOpenSettings: () => void;
-  /** Toggle back to the galaxy planet view. */
   onToggleView: () => void;
   toggleViewIcon?: 'planet';
 }
 
-/** Level select within a zone, with sequential unlocking + completion ticks. */
 export function ZoneLevelsScreen({
   zone,
   progress,
@@ -35,40 +35,51 @@ export function ZoneLevelsScreen({
       toggleViewIcon={toggleViewIcon}
     >
       <section className="level-select" aria-labelledby="zone-title">
-        <div className="level-select__header">
+        <motion.div
+          className="level-select__header"
+          variants={fadeInUp}
+          initial="initial"
+          animate="animate"
+        >
           <div>
             <span className="menu__panel-label">{zoneLabel} · {zone.theme}</span>
             <h2 id="zone-title">{zone.name}</h2>
           </div>
           <p>{zone.levels.length} levels</p>
-        </div>
+        </motion.div>
 
-        <div className="level-grid">
+        <motion.div
+          className="level-grid"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           {zone.levels.map((level, index) => {
             const unlocked = progress.isLevelUnlocked(zone, index);
             const complete = progress.isLevelComplete(level.id);
             return (
-              <button
-                type="button"
-                key={level.id}
-                className={`level-card ${unlocked ? 'level-card--selected' : ''} ${complete ? 'level-card--complete' : ''}`}
-                disabled={!unlocked}
-                onClick={() => onSelectLevel(level.id)}
-              >
-                <span className="level-card__number" aria-hidden>
-                  {complete ? '★' : unlocked ? index + 1 : '🔒'}
-                </span>
-                <span className="level-card__body">
-                  <strong>{level.name}</strong>
-                  <span>{level.subtitle}</span>
-                </span>
-                <span className={`level-card__status ${unlocked ? 'level-card__status--ready' : ''}`}>
-                  {complete ? 'Cleared' : unlocked ? 'Ready' : 'Locked'}
-                </span>
-              </button>
+              <motion.div key={level.id} variants={staggerItem}>
+                <button
+                  type="button"
+                  className={`level-card ${unlocked ? 'level-card--selected' : ''} ${complete ? 'level-card--complete' : ''}`}
+                  disabled={!unlocked}
+                  onClick={() => onSelectLevel(level.id)}
+                >
+                  <span className="level-card__number" aria-hidden>
+                    {complete ? '★' : unlocked ? String(index + 1) : '🔒'}
+                  </span>
+                  <span className="level-card__body">
+                    <strong>{level.name}</strong>
+                    <span>{level.subtitle}</span>
+                  </span>
+                  <span className={`level-card__status ${unlocked ? 'level-card__status--ready' : ''}`}>
+                    {complete ? 'Cleared' : unlocked ? 'Ready' : 'Locked'}
+                  </span>
+                </button>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </section>
     </ScreenChrome>
   );

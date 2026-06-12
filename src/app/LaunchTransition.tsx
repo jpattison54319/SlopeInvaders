@@ -1,31 +1,31 @@
+import { motion } from 'framer-motion';
 import { useEffect } from 'react';
+import { fadeIn } from './animation';
 
 interface LaunchTransitionProps {
-  /** Planet sprite the ship is diving toward. */
-  planetSrc: string;
   reducedMotion: boolean;
-  /** Fired when the warp finishes (advance to gameplay). */
   onDone: () => void;
 }
 
 /**
- * A brief first-person "warp into the hotspot" flourish between the galaxy and
- * the mission UI: star streaks rush past while the target planet swells and a
- * cyan flash hands off to gameplay. Reduced motion collapses it to a quick fade.
+ * Simple, smooth transition when entering a level from the galaxy.
+ * Just a clean fade-in that feels crisp and responsive.
  */
-export function LaunchTransition({ planetSrc, reducedMotion, onDone }: LaunchTransitionProps) {
+export function LaunchTransition({ reducedMotion, onDone }: LaunchTransitionProps) {
   useEffect(() => {
-    const ms = reducedMotion ? 180 : 980;
+    const ms = reducedMotion ? 90 : 200;
     const id = window.setTimeout(onDone, ms);
     return () => window.clearTimeout(id);
   }, [onDone, reducedMotion]);
 
   return (
-    <div className={`launch-warp ${reducedMotion ? 'launch-warp--reduced' : ''}`} aria-hidden="true">
-      <div className="launch-warp__stars" />
-      <img className="launch-warp__planet" src={planetSrc} alt="" draggable={false} />
-      <div className="launch-warp__flash" />
-      <p className="launch-warp__label">Approaching target…</p>
-    </div>
+    <motion.div
+      className="launch-transition"
+      aria-hidden="true"
+      variants={fadeIn}
+      initial="initial"
+      animate="animate"
+      transition={{ duration: reducedMotion ? 0.05 : 0.15, ease: 'easeOut' }}
+    />
   );
 }
