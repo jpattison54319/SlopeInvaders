@@ -13,7 +13,6 @@ import {
   firstCampaignLevel,
 } from '../game/campaign/zones';
 import { configForTier } from '../game/campaign/difficulty';
-import { planetSrcForZone } from '../game/campaign/planets';
 import { MenuScreen } from './MenuScreen';
 import { LaunchTransition } from './LaunchTransition';
 import { MissionFadeTransition } from './MissionFadeTransition';
