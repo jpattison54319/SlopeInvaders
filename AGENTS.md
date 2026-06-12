@@ -172,6 +172,7 @@ npm run dev -- --host 127.0.0.1
   use the preview-first raster script and visually inspect the result.
 - Keep navigation utilities icon-only with accessible names and hover titles.
 - Respect `prefers-reduced-motion` for decorative exhaust, bounce, and lighting.
+- **framer-motion animation infra**: `framer-motion` is used for screen transitions (`AnimatePresence` in `App.tsx`), mount animations, stagger reveals, micro-interactions, and overlays. Shared variants live in `src/app/animation.ts` (fadeIn, fadeInUp, popIn, staggerContainer, etc.). `MotionConfig` in `App.tsx` respects `usePrefersReducedMotion()` globally. Tests mock framer-motion at the top of `App.test.tsx` (replaces motion.div with plain div, AnimatePresence with a fragment).
 - Use available assets first; do not replace asset-map imports with hardcoded URLs.
 - Keep Settings as the only menu audio-control entry point.
 - Do not display adaptive tier labels to learners; adaptation should be invisible/non-stigmatizing.

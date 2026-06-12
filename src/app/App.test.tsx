@@ -15,6 +15,31 @@ import App from './App';
 const PROGRESS_KEY = 'slope-invaders:campaign-progress';
 const LEVEL_STATS_KEY = 'slope-invaders:level-stats';
 
+vi.mock('framer-motion', async () => {
+  const actual = await vi.importActual('framer-motion');
+  return {
+    ...actual,
+    AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    motion: new Proxy(
+      {},
+      {
+        get: (_target, tag) => {
+          const validTags = [
+            'div', 'span', 'p', 'img', 'li', 'ul', 'section', 'ol', 'header', 'strong', 'button', 'nav', 'main',
+          ];
+          const elementType = validTags.includes(String(tag)) ? String(tag) : 'div';
+          const Component = ({ children, ...rest }: Record<string, unknown>) => {
+            return <div {...rest}>{children as React.ReactNode}</div>;
+          };
+          Component.displayName = `motion.${elementType}`;
+          return Component;
+        },
+      },
+    ),
+    MotionConfig: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  };
+});
+
 vi.mock('../game/audio/useMusic', () => ({
   useMusic: vi.fn(),
 }));
@@ -298,6 +323,15 @@ beforeEach(() => {
   document.body.appendChild(host);
   root = createRoot(host);
   Object.defineProperty(window, 'scrollTo', { configurable: true, value: vi.fn() });
+  Object.defineProperty(window, 'matchMedia', {
+    configurable: true,
+    value: (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  });
   installMemoryStorage();
   vi.mocked(useMusic).mockClear();
 });
