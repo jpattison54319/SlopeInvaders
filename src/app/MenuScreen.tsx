@@ -12,6 +12,7 @@ interface MenuScreenProps {
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   onOpenClassroom: () => void;
+  onOpenHangar: () => void;
 }
 
 /** The landing screen: title, how-to, and the game-mode selector. */
@@ -22,6 +23,7 @@ export function MenuScreen({
   onOpenSettings,
   onOpenProfile,
   onOpenClassroom,
+  onOpenHangar,
 }: MenuScreenProps) {
   const [briefingOpen, setBriefingOpen] = useState(false);
   const availableCount = modes.filter(
@@ -40,10 +42,11 @@ export function MenuScreen({
           <img src={assets.ship} alt="" draggable={false} />
         </div>
         <div className="menu__actions">
-          <TacticalButton asset="info" label="Mission briefing" size="small" onClick={() => setBriefingOpen(true)} />
-          <TacticalButton asset="hangar" label="Classroom" size="small" onClick={onOpenClassroom} />
-          <TacticalButton asset="profile" label="Pilot Profile" size="small" onClick={onOpenProfile} />
-          <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />
+          <TacticalButton asset="info" label="Mission briefing" text="Briefing" size="small" onClick={() => setBriefingOpen(true)} />
+          <TacticalButton asset="trophy" label="Hangar" text="Hangar" size="small" onClick={onOpenHangar} />
+          <TacticalButton asset="hangar" label="Classroom" text="Classroom" size="small" onClick={onOpenClassroom} />
+          <TacticalButton asset="profile" label="Pilot Profile" text="Profile" size="small" onClick={onOpenProfile} />
+          <TacticalButton asset="settings" label="Settings" text="Settings" size="small" onClick={onOpenSettings} />
         </div>
       </nav>
 

@@ -18,7 +18,13 @@ import type { Point } from './logic/lineMath';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
 import { buildFeedback, type ShotFeedback } from './logic/hints';
-import { GameBoard, type ExplosionInstance, type ShotState } from './components/GameBoard';
+import {
+  GameBoard,
+  type ExplosionInstance,
+  type LaserVisual,
+  type ShotState,
+} from './components/GameBoard';
+import type { ShipSkinVisual } from './components/Ship';
 import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
 import { Calculator } from './components/Calculator';
@@ -127,6 +133,12 @@ interface GameProps {
   keyBindings?: KeyBindings;
   /** Disable keyboard controls (e.g. while the settings modal is open). */
   keyboardEnabled?: boolean;
+  /** Equipped cosmetic ship hull (visual only). */
+  shipSkin?: ShipSkinVisual;
+  /** Equipped cosmetic laser style (visual only). */
+  laser?: LaserVisual;
+  /** Equipped theme's board background colour (visual only). */
+  themeSpace?: string;
   onExit: () => void;
   onSettings: () => void;
   onAdvance: () => void;
@@ -144,6 +156,9 @@ export function Game({
   tier = 'standard',
   keyBindings = DEFAULT_KEYBINDINGS,
   keyboardEnabled = true,
+  shipSkin,
+  laser,
+  themeSpace,
   onExit,
   onSettings,
   onAdvance,
@@ -687,6 +702,9 @@ export function Game({
             activeTargetId={activeTargetId}
             facing={facing}
             bidirectional={level.allowedControls.includes('direction')}
+            shipSkin={shipSkin}
+            laser={laser}
+            themeSpace={themeSpace}
           />
 
           {showWinOverlay && (
@@ -696,6 +714,7 @@ export function Game({
               stars={earnedStars}
               xp={rewards?.xp}
               newBadges={rewards?.newBadges}
+              newCosmetics={rewards?.newCosmetics}
               hasNext={hasNext}
               onAdvance={onAdvance}
               onReplay={handleReset}

@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { Stage, Layer, Rect, Line, Image as KonvaImage } from 'react-konva';
+import Konva from 'konva';
 import type { Facing, LevelConfig, TrajectoryMode, TrajectoryStyle } from '../levels/types';
 import type { Point } from '../logic/lineMath';
 import type { VersusItem } from '../versus/types';
@@ -11,7 +13,7 @@ import { Grid } from './Grid';
 import { Axes } from './Axes';
 import { EquationLine } from './EquationLine';
 import { Asteroid } from './Asteroid';
-import { Ship } from './Ship';
+import { Ship, type ShipSkinVisual } from './Ship';
 import { Wall } from './Wall';
 import { Chain } from './Chain';
 import { Friendly } from './Friendly';
@@ -56,6 +58,63 @@ interface GameBoardProps {
   bidirectional?: boolean;
   /** Optional Versus attack pickups to render on the grid. */
   items?: ReadonlyArray<Pick<VersusItem, 'id' | 'point' | 'kind'>>;
+  /** Equipped ship hull skin (cosmetic only). */
+  shipSkin?: ShipSkinVisual;
+  /** Equipped laser style (cosmetic only). */
+  laser?: LaserVisual;
+  /** Board background colour from the equipped theme (cosmetic only). */
+  themeSpace?: string;
+}
+
+/** Visual laser style for the firing beam + bolt (cosmetic only). */
+export interface LaserVisual {
+  beam: string;
+  beamCore: string;
+  width: number;
+  boltHue: number;
+}
+
+/** The projectile head sprite, optionally hue-tinted by the equipped laser. */
+function BoltHead({
+  image,
+  x,
+  y,
+  size,
+  rotation,
+  hue,
+}: {
+  image: HTMLImageElement;
+  x: number;
+  y: number;
+  size: number;
+  rotation: number;
+  hue: number;
+}) {
+  const ref = useRef<Konva.Image>(null);
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    node.clearCache();
+    if (hue !== 0) node.cache();
+    node.getLayer()?.batchDraw();
+  }, [image, hue, size, x, y, rotation]);
+  return (
+    <KonvaImage
+      ref={ref}
+      image={image}
+      x={x}
+      y={y}
+      width={size}
+      height={size}
+      offsetX={size / 2}
+      offsetY={size / 2}
+      rotation={rotation}
+      filters={hue !== 0 ? [Konva.Filters.HSV] : undefined}
+      hue={hue}
+      imageSmoothingEnabled={false}
+      listening={false}
+    />
+  );
 }
 
 function lerp(a: Point, b: Point, t: number): Point {
@@ -96,7 +155,14 @@ export function GameBoard({
   facing = 'right',
   bidirectional = false,
   items = [],
+  shipSkin,
+  laser,
+  themeSpace,
 }: GameBoardProps) {
+  const beamColor = laser?.beam ?? COLORS.beam;
+  const beamCoreColor = laser?.beamCore ?? COLORS.beamCore;
+  const beamWidth = laser?.width ?? 4;
+  const boltHue = laser?.boltHue ?? 0;
   const vp = createViewport(width, height, level.bounds);
   const starfield = useImage(assets.starfield);
   const bolt = useImage(assets.bolt);
@@ -125,7 +191,7 @@ export function GameBoard({
     <Stage width={width} height={height}>
       <Layer>
         {/* Background */}
-        <Rect x={0} y={0} width={width} height={height} fill={COLORS.space} />
+        <Rect x={0} y={0} width={width} height={height} fill={themeSpace ?? COLORS.space} />
         {starfield && (
           <KonvaImage image={starfield} x={0} y={0} width={width} height={height} opacity={0.7} listening={false} />
         )}
@@ -189,15 +255,15 @@ export function GameBoard({
           <>
             <Line
               points={beam.points}
-              stroke={COLORS.beam}
-              strokeWidth={4}
+              stroke={beamColor}
+              strokeWidth={beamWidth}
               opacity={0.9}
               lineCap="round"
-              shadowColor={COLORS.beam}
+              shadowColor={beamColor}
               shadowBlur={12}
               listening={false}
             />
-            <Line points={beam.points} stroke={COLORS.beamCore} strokeWidth={1.5} listening={false} />
+            <Line points={beam.points} stroke={beamCoreColor} strokeWidth={1.5} listening={false} />
           </>
         )}
 
@@ -205,21 +271,17 @@ export function GameBoard({
           <Explosion key={e.id} vp={vp} point={e.point} onDone={() => onExplosionDone(e.id)} />
         ))}
 
-        <Ship vp={vp} position={launchPoint} facing={facing} />
+        <Ship vp={vp} position={launchPoint} facing={facing} skin={shipSkin} />
 
         {/* Projectile head */}
         {beam && bolt && (
-          <KonvaImage
+          <BoltHead
             image={bolt}
             x={beam.bolt.x}
             y={beam.bolt.y}
-            width={boltPx}
-            height={boltPx}
-            offsetX={boltPx / 2}
-            offsetY={boltPx / 2}
+            size={boltPx}
             rotation={beam.angle}
-            imageSmoothingEnabled={false}
-            listening={false}
+            hue={boltHue}
           />
         )}
       </Layer>

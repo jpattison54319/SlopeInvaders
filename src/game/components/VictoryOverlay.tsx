@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import type { StarCount } from '../campaign/stars';
 import type { XpAward } from '../campaign/xp';
 import type { BadgeDef } from '../campaign/badges';
+import { kindNoun, type CosmeticItem } from '../campaign/cosmetics';
 import { uiCoach, uiResults } from '../../assets/assetMap';
 import { StarRating } from './StarRating';
 import { TacticalButton } from './TacticalButton';
@@ -14,6 +15,8 @@ interface VictoryOverlayProps {
   xp?: XpAward;
   /** Badges first earned by this completion. */
   newBadges?: BadgeDef[];
+  /** Cosmetics (ships/lasers/themes) first unlocked by this completion. */
+  newCosmetics?: CosmeticItem[];
   hasNext: boolean;
   onAdvance: () => void;
   onReplay: () => void;
@@ -25,6 +28,7 @@ export function VictoryOverlay({
   stars,
   xp,
   newBadges,
+  newCosmetics,
   hasNext,
   onAdvance,
   onReplay,
@@ -72,6 +76,18 @@ export function VictoryOverlay({
                 <span className="badge-chip__title">Badge earned!</span>
                 <span className="badge-chip__name">{badge.name}</span>
                 <span className="badge-chip__desc">{badge.description}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {newCosmetics && newCosmetics.length > 0 && (
+          <div className="game-overlay__unlocks" aria-label="Cosmetics unlocked">
+            {newCosmetics.map((item) => (
+              <div key={item.id} className="unlock-chip" data-kind={item.kind}>
+                <span className="unlock-chip__title">{kindNoun(item.kind)} unlocked!</span>
+                <span className="unlock-chip__name">{item.name}</span>
+                <span className="unlock-chip__desc">{item.description}</span>
+                <span className="unlock-chip__hint">Equip it in the Hangar</span>
               </div>
             ))}
           </div>

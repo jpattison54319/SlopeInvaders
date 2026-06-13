@@ -41,7 +41,7 @@ export function ScreenChrome({
       <nav className="menu__topbar" aria-label="Navigation">
         <div className="menu__brand">
           {onBack ? (
-            <TacticalButton asset="back" label={backLabel} size="small" onClick={onBack} />
+            <TacticalButton asset="back" label={backLabel} text={backLabel} size="small" onClick={onBack} />
           ) : (
             <>
               <img src={assets.ship} alt="" draggable={false} />
@@ -51,12 +51,13 @@ export function ScreenChrome({
         </div>
         <div className="menu__actions">
           {onOpenProfile && (
-            <TacticalButton asset="profile" label="Pilot Profile" size="small" onClick={onOpenProfile} />
+            <TacticalButton asset="profile" label="Pilot Profile" text="Profile" size="small" onClick={onOpenProfile} />
           )}
           {onToggleView && toggleViewIcon && (
             <TacticalButton
               asset={toggleViewIcon}
               label={toggleViewLabel ?? 'Change view'}
+              text={toggleViewLabel ?? (toggleViewIcon === 'list' ? 'List' : 'Planets')}
               size="small"
               onClick={onToggleView}
             />
@@ -65,11 +66,12 @@ export function ScreenChrome({
             <TacticalButton
               asset="info"
               label="Keyboard shortcuts (?)"
+              text="Help"
               size="small"
               onClick={onOpenShortcuts}
             />
           )}
-          <TacticalButton asset="settings" label="Settings" size="small" onClick={onOpenSettings} />
+          <TacticalButton asset="settings" label="Settings" text="Settings" size="small" onClick={onOpenSettings} />
         </div>
       </nav>
       {children}

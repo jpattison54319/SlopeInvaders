@@ -10,6 +10,7 @@ import {
 import { starsForLevel, type StarCount } from '../game/campaign/stars';
 import { bankXp, computeRunXp, EMPTY_XP_STORE, type XpStore } from '../game/campaign/xp';
 import { evaluateNewBadges, type EarnedBadges } from '../game/campaign/badges';
+import { evaluateNewUnlocks, type UnlockContext } from '../game/campaign/cosmetics';
 import type { CompletionRewards } from '../game/campaign/rewards';
 import { buildProgressPayload } from '../cloud/progressPayload';
 import {
@@ -29,6 +30,10 @@ const PROFILE_KEY = 'slope-invaders:profile-stats';
 const STARS_KEY = 'slope-invaders:level-stars';
 const XP_KEY = 'slope-invaders:xp';
 const BADGES_KEY = 'slope-invaders:badges';
+const UNLOCKS_KEY = 'slope-invaders:unlocks';
+
+/** Earned cosmetics: item id → epoch ms when first unlocked. */
+export type EarnedCosmetics = Record<string, number>;
 
 function loadCompleted(): string[] {
   try {
@@ -57,12 +62,61 @@ function clearStoredProgress(): void {
     localStorage.removeItem(STARS_KEY);
     localStorage.removeItem(XP_KEY);
     localStorage.removeItem(BADGES_KEY);
+    localStorage.removeItem(UNLOCKS_KEY);
   } catch {
     /* ignore */
   }
   // Improvement #7: also wipe adaptivity traces (and the in-memory ring buffer
   // is reset by virtue of being local to this hook).
   clearAdaptivityTraces();
+}
+
+function loadUnlocks(): EarnedCosmetics {
+  try {
+    const raw = localStorage.getItem(UNLOCKS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    return parsed && typeof parsed === 'object' ? (parsed as EarnedCosmetics) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveUnlocks(unlocks: EarnedCosmetics): void {
+  try {
+    localStorage.setItem(UNLOCKS_KEY, JSON.stringify(unlocks));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Zones whose every level is complete. */
+function clearedZoneIds(completed: ReadonlySet<string>): Set<string> {
+  const cleared = new Set<string>();
+  for (const zone of zones) {
+    if (zone.levels.length > 0 && zone.levels.every((l) => completed.has(l.id))) {
+      cleared.add(zone.id);
+    }
+  }
+  return cleared;
+}
+
+function totalStarsOf(stars: Record<string, StarCount>): number {
+  return Object.values(stars).reduce<number>((sum, s) => sum + s, 0);
+}
+
+function buildUnlockContext(
+  completed: ReadonlySet<string>,
+  stars: Record<string, StarCount>,
+  totalXp: number,
+  badges: EarnedBadges,
+): UnlockContext {
+  return {
+    clearedZoneIds: clearedZoneIds(completed),
+    totalXp,
+    totalStars: totalStarsOf(stars),
+    earnedBadgeIds: new Set(Object.keys(badges)),
+  };
 }
 
 function loadBadges(): EarnedBadges {
@@ -249,6 +303,8 @@ export interface CampaignProgress {
   getTotalXp: () => number;
   /** Earned badges: badge id → epoch ms when first earned. */
   getEarnedBadges: () => EarnedBadges;
+  /** Earned cosmetics: item id → epoch ms when first unlocked. */
+  getEarnedCosmetics: () => EarnedCosmetics;
   /** Best-effort push of the current progress to the cloud (no-op when cloud is
    *  disabled or no class is joined). Used to backfill right after joining. */
   syncNow: () => void;
@@ -271,6 +327,25 @@ export function useCampaignProgress(): CampaignProgress {
   const [profile, setProfile] = useState<ProfileStats>(() => loadProfile());
   const [xp, setXp] = useState<XpStore>(() => loadXp());
   const [badges, setBadges] = useState<EarnedBadges>(() => loadBadges());
+  // Initialise unlocks from storage, then backfill any cosmetics the player has
+  // already earned (cleared zones / banked XP before this feature shipped). The
+  // one-time backfill lives in the initializer so it never re-runs as an effect.
+  const [unlocks, setUnlocks] = useState<EarnedCosmetics>(() => {
+    const stored = loadUnlocks();
+    const ctx = buildUnlockContext(
+      new Set(loadCompleted()),
+      loadStars(),
+      loadXp().totalXp,
+      loadBadges(),
+    );
+    const fresh = evaluateNewUnlocks(ctx, new Set(Object.keys(stored)));
+    if (fresh.length === 0) return stored;
+    const now = Date.now();
+    const next = { ...stored };
+    for (const item of fresh) next[item.id] = now;
+    saveUnlocks(next);
+    return next;
+  });
 
   const markComplete = useCallback(
     (levelId: string, levelStats?: LevelStats): CompletionRewards | undefined => {
@@ -331,17 +406,34 @@ export function useCampaignProgress(): CampaignProgress {
         },
         badges,
       );
+      const nextBadges = { ...badges };
       if (newBadges.length > 0) {
         const earnedAt = Date.now();
-        const nextBadges = { ...badges };
         for (const badge of newBadges) nextBadges[badge.id] = earnedAt;
         setBadges(nextBadges);
         saveBadges(nextBadges);
       }
 
-      return { xp: award, newBadges };
+      // Evaluate cosmetic unlocks against the post-completion state. Cosmetics
+      // are purely visual rewards — earning one never touches scoring or
+      // adaptivity. Like badges, an unlocked item is permanent.
+      const nextStars = {
+        ...stars,
+        [levelId]: Math.max(stars[levelId] ?? 0, priorDerivedStars, earnedStars) as StarCount,
+      };
+      const unlockCtx = buildUnlockContext(nextCompleted, nextStars, nextXp.totalXp, nextBadges);
+      const newCosmetics = evaluateNewUnlocks(unlockCtx, new Set(Object.keys(unlocks)));
+      if (newCosmetics.length > 0) {
+        const unlockedAt = Date.now();
+        const nextUnlocks = { ...unlocks };
+        for (const item of newCosmetics) nextUnlocks[item.id] = unlockedAt;
+        setUnlocks(nextUnlocks);
+        saveUnlocks(nextUnlocks);
+      }
+
+      return { xp: award, newBadges, newCosmetics };
     },
-    [completed, stats, stars, profile, xp, badges],
+    [completed, stats, stars, profile, xp, badges, unlocks],
   );
 
   // --- Cloud sync (additive, best-effort) ---------------------------------
@@ -385,21 +477,35 @@ export function useCampaignProgress(): CampaignProgress {
     setProfile(EMPTY_PROFILE);
     setXp(EMPTY_XP_STORE);
     setBadges({});
+    setUnlocks({});
     pendingTracesRef.current = [];
     recordedTraceKeysRef.current.clear();
     clearStoredProgress();
   }, []);
 
-  const earnArcadeXp = useCallback((amount: number) => {
-    setXp((prev) => {
-      const next = {
-        ...prev,
-        totalXp: prev.totalXp + amount,
-      };
-      saveXp(next);
-      return next;
-    });
-  }, []);
+  const earnArcadeXp = useCallback(
+    (amount: number) => {
+      let nextTotal = xp.totalXp + amount;
+      setXp((prev) => {
+        const next = { ...prev, totalXp: prev.totalXp + amount };
+        nextTotal = next.totalXp;
+        saveXp(next);
+        return next;
+      });
+      // Arcade XP can cross a cosmetic unlock threshold (it bypasses markComplete).
+      setUnlocks((prev) => {
+        const ctx = buildUnlockContext(completed, stars, nextTotal, badges);
+        const fresh = evaluateNewUnlocks(ctx, new Set(Object.keys(prev)));
+        if (fresh.length === 0) return prev;
+        const now = Date.now();
+        const next = { ...prev };
+        for (const item of fresh) next[item.id] = now;
+        saveUnlocks(next);
+        return next;
+      });
+    },
+    [xp.totalXp, completed, stars, badges],
+  );
 
   // Improvement #7: emit an adaptivity trace whenever a non-diagnostic level's
   // tier is consulted. We queue the trace payload in a ref during render, then
@@ -519,9 +625,10 @@ export function useCampaignProgress(): CampaignProgress {
       getProfileStats: () => profile,
       getTotalXp: () => xp.totalXp,
       getEarnedBadges: () => badges,
+      getEarnedCosmetics: () => unlocks,
       syncNow,
       resetProgress,
       earnArcadeXp,
     };
-  }, [completed, stats, stars, profile, xp, badges, markComplete, syncNow, resetProgress, earnArcadeXp]);
+  }, [completed, stats, stars, profile, xp, badges, unlocks, markComplete, syncNow, resetProgress, earnArcadeXp]);
 }
