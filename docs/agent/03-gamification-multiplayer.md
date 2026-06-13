@@ -60,6 +60,10 @@ Badges should reward specific concepts and self-regulated behaviors. The
 registry lives in `src/game/campaign/badges.ts`; earned badges persist in
 `slope-invaders:badges` (badge id → epoch ms) and are never revoked. Badges are
 evaluated on each level completion and announced in the victory overlay.
+Every badge must also have a unique emblem: concept badges use their zone's
+unique planet, while performance and growth badges use distinct pixelized
+`Sci-Fi-Skill-Icons` derivatives from `src/assets/achievements/`. Do not fall
+back to one shared category icon.
 
 ### Concept badges (implemented — one per zone cleared)
 

@@ -49,6 +49,12 @@ Purpose: teach controls.
 - Full preview on
 - Hearts: unlimited or 5
 - Feedback explains that slope changes the laser angle
+- First-run onboarding: the guided spotlight tour walks every on-screen element —
+  the grid, the mission/objective, the command controls, the keyboard shortcuts,
+  the calculator, hearts, score/progress, and the feedback panel — so nothing is
+  left to chance. Other levels instead show a one-time Mission Briefing that the
+  player dismisses before playing; the Tutorial relies on the tour and skips the
+  briefing to avoid stacking two intros.
 
 Micro-reflection:
 

@@ -56,6 +56,19 @@ import planetSpaceGardenUrl from './planets/spacegarden-planet.png';
 import planetCrystalUrl from './planets/crystal-planet.png';
 import planetVolcanoUrl from './planets/volcano-planet.png';
 import planetCelestialUrl from './planets/celestial-planet.png';
+import planetStormUrl from './planets/storm-planet.png';
+import planetLavaCastleUrl from './planets/lavacastle-planet.png';
+import planetClockworkUrl from './planets/clockwork-planet.png';
+import planetCyberpunkUrl from './planets/cyberpunk-planet.png';
+import planetRobotFactoryUrl from './planets/robotfactory-planet.png';
+import planetUnderworldUrl from './planets/underworld-planet.png';
+
+// Pixelized achievement emblems curated from the Sci-Fi Skill Icons pack.
+import achievementPerfectTrajectoryUrl from './achievements/perfect-trajectory.png';
+import achievementComboPilotUrl from './achievements/combo-pilot.png';
+import achievementNoPreviewPilotUrl from './achievements/no-preview-pilot.png';
+import achievementComebackCadetUrl from './achievements/comeback-cadet.png';
+import achievementGrowthStreakUrl from './achievements/growth-streak.png';
 
 // Faction banners used as campaign mission markers on planet surfaces.
 import bannerBlackUrl from './faction-banners/black-faction.png';
@@ -168,6 +181,21 @@ export const planets = {
   crystal: planetCrystalUrl,
   volcano: planetVolcanoUrl,
   celestial: planetCelestialUrl,
+  storm: planetStormUrl,
+  lavacastle: planetLavaCastleUrl,
+  clockwork: planetClockworkUrl,
+  cyberpunk: planetCyberpunkUrl,
+  robotfactory: planetRobotFactoryUrl,
+  underworld: planetUnderworldUrl,
+} as const;
+
+/** Unique pixel-art emblems for non-zone achievements. */
+export const achievementIcons = {
+  perfectTrajectory: achievementPerfectTrajectoryUrl,
+  comboPilot: achievementComboPilotUrl,
+  noPreviewPilot: achievementNoPreviewPilotUrl,
+  comebackCadet: achievementComebackCadetUrl,
+  growthStreak: achievementGrowthStreakUrl,
 } as const;
 
 /** Faction banner sprites for level markers on the active planet. */
@@ -263,6 +291,7 @@ export type IconKey = keyof typeof icons;
 export type SpriteKey = keyof typeof sprites;
 export type SfxKey = keyof typeof sfx;
 export type PlanetKey = keyof typeof planets;
+export type AchievementIconKey = keyof typeof achievementIcons;
 export type FactionBannerKey = keyof typeof factionBanners;
 export type UiButtonKey = keyof typeof uiButtons;
 export type UiPanelKey = keyof typeof uiPanels;

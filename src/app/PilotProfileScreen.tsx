@@ -5,7 +5,8 @@ import { BADGES, type BadgeCategory, type BadgeDef } from '../game/campaign/badg
 import { COSMETICS } from '../game/campaign/cosmetics';
 import { rankForXp } from '../game/campaign/xp';
 import { TacticalButton } from '../game/components/TacticalButton';
-import { assets, icons, sprites } from '../assets/assetMap';
+import { AnimatedDisclosure } from '../game/components/AnimatedDisclosure';
+import { achievementIcons, icons } from '../assets/assetMap';
 import type { CampaignProgress } from './useCampaignProgress';
 import { TacticalPanel, TacticalProgress } from '../game/components/TacticalPanel';
 import type { ArcadeRecords } from '../game/arcade/types';
@@ -25,10 +26,11 @@ const BADGE_GROUPS: ReadonlyArray<{ category: BadgeCategory; title: string; blur
   { category: 'growth', title: 'Growth', blurb: 'Bouncing back and beating your own record.' },
 ];
 
-/** Emblem art for a badge: its zone's planet, or a category sprite. */
+/** Emblem art for a badge: its unique zone planet or skill icon. */
 function badgeEmblem(badge: BadgeDef): string {
   if (badge.zoneId) return planetSrcForZone(badge.zoneId);
-  return badge.category === 'growth' ? sprites.heartFull : assets.bolt;
+  if (badge.iconKey) return achievementIcons[badge.iconKey];
+  throw new Error(`Badge "${badge.id}" has no emblem configured`);
 }
 
 function formatPlaytime(ms: number): string {
@@ -112,10 +114,21 @@ export function PilotProfileScreen({
                 : `${totalXp} / ${rank.nextMin} XP to next rank`}
             </span>
           </div>
+          {onOpenHangar && (
+            <div className="pilot-card__cta">
+              <TacticalButton
+                asset="hangar"
+                label="Open Hangar"
+                text="Hangar"
+                size="small"
+                onClick={onOpenHangar}
+              />
+            </div>
+          )}
           <ul className="pilot-card__chips">
             <li>
               <strong>{earnedStarsTotal}</strong>
-              <span>of {totalStars} ★</span>
+              <span>of {totalStars} stars</span>
             </li>
             <li>
               <strong>{earnedBadgeCount}</strong>
@@ -130,60 +143,62 @@ export function PilotProfileScreen({
               <span>accuracy</span>
             </li>
           </ul>
-          {onOpenHangar && (
-            <div className="pilot-card__cta">
-              <TacticalButton
-                asset="trophy"
-                label="Open Hangar"
-                text="Open Hangar"
-                size="small"
-                onClick={onOpenHangar}
-              />
-            </div>
-          )}
         </TacticalPanel>
 
-        {/* --- Badge collection, grouped by what each rewards --- */}
-        {BADGE_GROUPS.map((group) => {
-          const groupBadges = BADGES.filter((b) => b.category === group.category);
-          if (groupBadges.length === 0) return null;
-          const earnedInGroup = groupBadges.filter((b) => b.id in earnedBadges).length;
-          return (
-            <section key={group.category} className="profile__section" aria-label={group.title}>
-              <header className="profile__section-head">
-                <h3>{group.title}</h3>
-                <span className="profile__section-meta">
-                  {earnedInGroup} / {groupBadges.length} · {group.blurb}
-                </span>
-              </header>
-              <ul className="badge-grid">
-                {groupBadges.map((badge) => {
-                  const earnedAt = earnedBadges[badge.id];
-                  const earned = earnedAt !== undefined;
-                  return (
-                    <li
-                      key={badge.id}
-                      className={`badge-card ${earned ? 'badge-card--earned' : 'badge-card--locked'}`}
-                    >
-                      <span className="badge-card__emblem" aria-hidden>
-                        <img src={badgeEmblem(badge)} alt="" draggable={false} />
-                      </span>
-                      <span className="badge-card__text">
-                        <span className="badge-card__name">{badge.name}</span>
-                        <span className="badge-card__desc">
-                          {earned ? badge.description : `Next mission: ${badge.description}`}
+        {/* --- Achievements --- */}
+        <section className="profile__achievements" aria-labelledby="achievements-title">
+          <h2 id="achievements-title" className="profile__achievements-heading">
+            Achievements
+          </h2>
+          <span className="profile__achievements-meta">
+            {earnedBadgeCount} / {BADGES.length} earned
+          </span>
+          {BADGE_GROUPS.map((group) => {
+            const groupBadges = BADGES.filter((b) => b.category === group.category);
+            if (groupBadges.length === 0) return null;
+            const earnedInGroup = groupBadges.filter((b) => b.id in earnedBadges).length;
+            return (
+              <AnimatedDisclosure
+                key={group.category}
+                defaultOpen
+                summary={
+                  <>
+                    <h3>{group.title}</h3>
+                    <span className="profile__section-meta">
+                      {earnedInGroup} / {groupBadges.length} · {group.blurb}
+                    </span>
+                  </>
+                }
+              >
+                <ul className="badge-grid">
+                  {groupBadges.map((badge) => {
+                    const earnedAt = earnedBadges[badge.id];
+                    const earned = earnedAt !== undefined;
+                    return (
+                      <li
+                        key={badge.id}
+                        className={`badge-card ${earned ? 'badge-card--earned' : 'badge-card--locked'}`}
+                      >
+                        <span className="badge-card__emblem" aria-hidden>
+                          <img src={badgeEmblem(badge)} alt="" draggable={false} />
                         </span>
-                        {earned && (
-                          <span className="badge-card__date">Earned {formatDate(earnedAt)}</span>
-                        )}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
-          );
-        })}
+                        <span className="badge-card__text">
+                          <span className="badge-card__name">{badge.name}</span>
+                          <span className="badge-card__desc">
+                            {earned ? badge.description : `Next mission: ${badge.description}`}
+                          </span>
+                          {earned && (
+                            <span className="badge-card__date">Earned {formatDate(earnedAt)}</span>
+                          )}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </AnimatedDisclosure>
+            );
+          })}
+        </section>
 
         {/* --- Per-planet mastery --- */}
         <section className="profile__section" aria-label="Planet mastery">

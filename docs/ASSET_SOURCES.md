@@ -15,6 +15,11 @@ approximately 1.18 GB and include editable PSD/AI source files, store artwork,
 and unused variants. Only production-ready derivatives used by the app are
 committed under `src/assets/ui/`.
 
+Campaign planet art comes from the separately supplied Pixel Art Planets pack,
+and the five performance/growth achievement emblems come from the separately
+supplied `Sci-Fi-Skill-Icons` pack. Only the campaign's selected planet PNGs and
+96x96 pixelized achievement derivatives are committed.
+
 ## Curated Production Assets
 
 - `backgrounds/`: optimized WebP space and cockpit backdrops from the shooter kit.
@@ -30,6 +35,10 @@ committed under `src/assets/ui/`.
   these derivatives are committed; the source ships stay in the uncommitted kit.
 - `coach/`: optimized WebP robot portraits from the robot GUI kit.
 - `results/`: transparent victory, defeat, and mastery framing.
+- `src/assets/planets/`: one unique 128x128 planet for each current campaign
+  world, sequenced from the Tutorial moon colony to the Zone 9 underworld.
+- `src/assets/achievements/`: five unique 96x96 pixelized skill-icon derivatives
+  for the performance and growth badges.
 
 The committed tactical bundle should stay below 5 MB. Keep source-pack folders
 outside the repository and add only assets that appear in the shipped UI.

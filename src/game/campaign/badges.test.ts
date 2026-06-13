@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { LevelStats } from './difficulty';
 import type { ProfileStats } from './profileStats';
 import { BADGES, evaluateNewBadges, type BadgeContext, type EarnedBadges } from './badges';
+import { achievementIcons } from '../../assets/assetMap';
+import { planetKeyForZone } from './planets';
 import { zones } from './zones';
 
 function stats(overrides: Partial<LevelStats> = {}): LevelStats {
@@ -77,6 +79,17 @@ describe('badge registry', () => {
     for (const badge of BADGES) {
       expect(badge.name).not.toMatch(/easy|needs|help|slow|fail/i);
     }
+  });
+
+  it('gives every achievement a unique configured emblem', () => {
+    const emblems = BADGES.map((badge) => {
+      if (badge.zoneId) return `planet:${planetKeyForZone(badge.zoneId)}`;
+      expect(badge.iconKey, badge.id).toBeTruthy();
+      expect(achievementIcons[badge.iconKey!], badge.id).toBeTruthy();
+      return `achievement:${badge.iconKey}`;
+    });
+
+    expect(new Set(emblems).size).toBe(BADGES.length);
   });
 });
 

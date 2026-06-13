@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { factionBanners } from '../../assets/assetMap';
-import { missionPathLayout } from './planets';
+import { factionBanners, planets } from '../../assets/assetMap';
+import { missionPathLayout, planetKeyForZone } from './planets';
+import { zones } from './zones';
 
 describe('campaign planet mission path layout', () => {
   it('positions the single tutorial mission inside the bottom-left bordered region', () => {
@@ -43,6 +44,15 @@ describe('campaign planet mission path layout', () => {
     expect(new Set(used).size).toBe(used.length);
     for (const key of used) {
       expect(factionBanners[key]).toBeTruthy();
+    }
+  });
+
+  it('assigns a unique planet to every current campaign world', () => {
+    const keys = zones.map((zone) => planetKeyForZone(zone.id));
+
+    expect(new Set(keys).size).toBe(zones.length);
+    for (const key of keys) {
+      expect(planets[key]).toBeTruthy();
     }
   });
 });

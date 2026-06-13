@@ -29,6 +29,7 @@ import { Hud } from './components/Hud';
 import { EquationControls } from './components/EquationControls';
 import { Calculator } from './components/Calculator';
 import { GuidedTour, type TourStep } from './components/GuidedTour';
+import { MissionBriefing } from './components/MissionBriefing';
 import { CalculatorIcon } from './components/CalculatorIcon';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { CoachPanel } from './components/CoachPanel';
@@ -43,6 +44,7 @@ const BOARD_SIZE = 560;
 const SHOT_DURATION_MS = 700;
 
 const TOUR_SEEN_KEY = 'slope-invaders:tour-seen';
+const BRIEFING_SEEN_KEY = 'slope-invaders:briefing-seen';
 
 /** The guided-tour walkthrough shown the first time the Tutorial is opened. */
 const TOUR_STEPS: TourStep[] = [
@@ -54,7 +56,22 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="mission"]',
     title: 'Your Mission',
-    body: 'Every level shows its objective here. It tells you exactly what to aim for and which controls you have.',
+    body: 'Every level shows its objective here. It tells you exactly what to aim for and which controls you have — read it before each level.',
+  },
+  {
+    selector: '[data-tour="command"]',
+    title: 'Command Center',
+    body: 'Change the equation here to aim the dashed line, press Fire to shoot, and use Reset Level to start the level over any time.',
+  },
+  {
+    selector: '[data-tour="command"]',
+    title: 'Keyboard Controls',
+    body: 'You can play with the keyboard too — each button shows its key (Space fires, R/F change the slope). Press ? any time for the full list, or remap them in Settings.',
+  },
+  {
+    selector: '[data-tour="calc"]',
+    title: 'Calculator',
+    body: 'Stuck on the slope math? This calculator is a free helper — open or close it any time. Using it never costs you score or stars.',
   },
   {
     selector: '[data-tour="hearts"]',
@@ -64,17 +81,12 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="stats"]',
     title: 'Score & Progress',
-    body: 'Track your Score, how many Asteroids are left to clear, and the number of Shots you have fired so far.',
+    body: 'Track your Score, how many Targets are left to clear, and the number of Shots you have fired so far.',
   },
   {
     selector: '[data-tour="hint"]',
     title: 'Hints & Feedback',
     body: 'After each shot this panel tells you whether you hit and nudges you toward the fix — read it to learn from every attempt.',
-  },
-  {
-    selector: '[data-tour="command"]',
-    title: 'Command Center',
-    body: 'Change the equation here to aim the dashed line, press Fire to shoot, and use Reset Level to start the level over any time.',
   },
   {
     selector: null,
@@ -83,20 +95,36 @@ const TOUR_STEPS: TourStep[] = [
   },
 ];
 
-function tourSeen(levelId: string): boolean {
+function seen(key: string, levelId: string): boolean {
   try {
-    return localStorage.getItem(`${TOUR_SEEN_KEY}:${levelId}`) === '1';
+    return localStorage.getItem(`${key}:${levelId}`) === '1';
   } catch {
     return false;
   }
 }
 
-function markTourSeen(levelId: string): void {
+function markSeen(key: string, levelId: string): void {
   try {
-    localStorage.setItem(`${TOUR_SEEN_KEY}:${levelId}`, '1');
+    localStorage.setItem(`${key}:${levelId}`, '1');
   } catch {
     /* ignore storage failures */
   }
+}
+
+function tourSeen(levelId: string): boolean {
+  return seen(TOUR_SEEN_KEY, levelId);
+}
+
+function markTourSeen(levelId: string): void {
+  markSeen(TOUR_SEEN_KEY, levelId);
+}
+
+function briefingSeen(levelId: string): boolean {
+  return seen(BRIEFING_SEEN_KEY, levelId);
+}
+
+function markBriefingSeen(levelId: string): void {
+  markSeen(BRIEFING_SEEN_KEY, levelId);
 }
 
 /** Context for the shot currently animating, kept in a ref to avoid stale closures. */
@@ -193,10 +221,20 @@ export function Game({
   const [showTour, setShowTour] = useState(
     () => Boolean(level.guidedTour) && !tourSeen(level.id),
   );
+  // Force-read the objective once per level via a briefing card. Guided-tour
+  // levels never show it — their tour already covers the objective.
+  const [showBriefing, setShowBriefing] = useState(
+    () => !level.guidedTour && !briefingSeen(level.id),
+  );
 
   const closeTour = useCallback(() => {
     setShowTour(false);
     markTourSeen(level.id);
+  }, [level.id]);
+
+  const beginFromBriefing = useCallback(() => {
+    setShowBriefing(false);
+    markBriefingSeen(level.id);
   }, [level.id]);
 
   const shotCtx = useRef<ShotContext | null>(null);
@@ -582,6 +620,8 @@ export function Game({
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
+      // Pause gameplay keys while a modal walkthrough/briefing owns the screen.
+      if (showTour || showBriefing) return;
       if (firing || outcome !== 'playing') return;
       const action = findActionForKey(keyBindings, normalizeKey(e));
       if (!action) return;
@@ -622,6 +662,8 @@ export function Game({
   }, [
     keyboardEnabled,
     keyBindings,
+    showTour,
+    showBriefing,
     firing,
     outcome,
     m,
@@ -661,6 +703,7 @@ export function Game({
           <button
             type="button"
             className="bar-btn chrome-icon-btn calc-btn"
+            data-tour="calc"
             aria-label="Calculator"
             aria-pressed={calcOpen}
             title="Calculator"
@@ -673,6 +716,7 @@ export function Game({
       </header>
 
       <div className="mission-banner" data-tour="mission" role="note">
+        <span className="mission-banner__eyebrow">◎ Objective</span>
         <CoachPanel title="Mission Directive" compact>
           <p>{level.learningGoal}</p>
         </CoachPanel>
@@ -768,6 +812,7 @@ export function Game({
             controls={level.allowedControls}
             equationForm={level.equationForm}
             entryMode={level.equationEntry ?? 'stepper'}
+            keyBindings={keyBindings}
           />
         </aside>
       </main>
@@ -777,6 +822,14 @@ export function Game({
       </footer>
 
       {showTour && <GuidedTour steps={TOUR_STEPS} onClose={closeTour} />}
+      {showBriefing && (
+        <MissionBriefing
+          objective={level.learningGoal}
+          levelNumberLabel={levelNumberLabel}
+          title={title}
+          onBegin={beginFromBriefing}
+        />
+      )}
     </div>
   );
 }

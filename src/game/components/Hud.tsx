@@ -54,15 +54,17 @@ export function Hud({
         </div>
       )}
 
-      <TacticalStatusRail
-        className="hud__stats"
-        label="Mission statistics"
-        items={[
-          { label: 'Score', value: score },
-          { label: 'Targets', value: `${destroyedCount}/${total}` },
-          { label: 'Shots', value: shotsFired },
-        ]}
-      />
+      <div data-tour="stats">
+        <TacticalStatusRail
+          className="hud__stats"
+          label="Mission statistics"
+          items={[
+            { label: 'Score', value: score },
+            { label: 'Targets', value: `${destroyedCount}/${total}` },
+            { label: 'Shots', value: shotsFired },
+          ]}
+        />
+      </div>
 
       {won ? (
         <div className="feedback feedback--win" data-tour="hint" role="status">
