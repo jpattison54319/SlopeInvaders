@@ -63,6 +63,7 @@ function fakeProgress(overrides: Partial<CampaignProgress> = {}): CampaignProgre
     getProfileStats: () => profile,
     getTotalXp: () => 700,
     getEarnedBadges: () => ({ 'slope-starter': Date.UTC(2026, 1, 2, 12) }),
+    getEarnedCosmetics: () => ({}),
     syncNow: () => undefined,
     resetProgress: () => undefined,
     earnArcadeXp: () => undefined,

@@ -2,7 +2,9 @@ import { ScreenChrome } from './ScreenChrome';
 import { zones } from '../game/campaign/zones';
 import { planetSrcForZone } from '../game/campaign/planets';
 import { BADGES, type BadgeCategory, type BadgeDef } from '../game/campaign/badges';
+import { COSMETICS } from '../game/campaign/cosmetics';
 import { rankForXp } from '../game/campaign/xp';
+import { TacticalButton } from '../game/components/TacticalButton';
 import { assets, icons, sprites } from '../assets/assetMap';
 import type { CampaignProgress } from './useCampaignProgress';
 import { TacticalPanel, TacticalProgress } from '../game/components/TacticalPanel';
@@ -13,6 +15,7 @@ interface PilotProfileScreenProps {
   backLabel?: string;
   onBack: () => void;
   onOpenSettings: () => void;
+  onOpenHangar?: () => void;
   arcadeRecords?: ArcadeRecords;
 }
 
@@ -56,6 +59,7 @@ export function PilotProfileScreen({
   backLabel = 'Back',
   onBack,
   onOpenSettings,
+  onOpenHangar,
   arcadeRecords,
 }: PilotProfileScreenProps) {
   const profile = progress.getProfileStats();
@@ -74,6 +78,10 @@ export function PilotProfileScreen({
   );
   const totalStars = playableZones.reduce((sum, zone) => sum + zone.levels.length * 3, 0);
   const earnedBadgeCount = BADGES.filter((b) => b.id in earnedBadges).length;
+  const earnedCosmetics = progress.getEarnedCosmetics();
+  const cosmeticCount = COSMETICS.filter(
+    (c) => c.id in earnedCosmetics || c.unlock.type === 'default',
+  ).length;
 
   return (
     <ScreenChrome onBack={onBack} backLabel={backLabel} onOpenSettings={onOpenSettings}>
@@ -114,10 +122,25 @@ export function PilotProfileScreen({
               <span>of {BADGES.length} badges</span>
             </li>
             <li>
+              <strong>{cosmeticCount}</strong>
+              <span>of {COSMETICS.length} unlocks</span>
+            </li>
+            <li>
               <strong>{accuracy}%</strong>
               <span>accuracy</span>
             </li>
           </ul>
+          {onOpenHangar && (
+            <div className="pilot-card__cta">
+              <TacticalButton
+                asset="trophy"
+                label="Open Hangar"
+                text="Open Hangar"
+                size="small"
+                onClick={onOpenHangar}
+              />
+            </div>
+          )}
         </TacticalPanel>
 
         {/* --- Badge collection, grouped by what each rewards --- */}

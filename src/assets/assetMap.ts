@@ -17,6 +17,13 @@
 import shipUrl from './ship.png';
 import shipArrowUrl from './ship-arrow.png';
 import boltUrl from './bolt.png';
+
+// Cosmetic ship hulls (pixelized from the space-shooter kit; see
+// scripts/import_ship_sprites.py and docs/ASSET_SOURCES.md).
+import shipCrimsonUrl from './ships/crimson.png';
+import shipAzureUrl from './ships/azure.png';
+import shipNebulaUrl from './ships/nebula.png';
+import shipPhantomUrl from './ships/phantom.png';
 import starfieldUrl from './starfield.png';
 
 // UI icon tiles (from the asset pack's UI sheet).
@@ -234,6 +241,22 @@ export const uiResults = {
 export const uiShips = {
   hero: uiHeroShipUrl,
 } as const;
+
+/**
+ * Cosmetic ship-hull sprites, keyed by the id the cosmetics catalog references.
+ * Each is a 128×128 transparent pixel-art sprite facing "up" (top-down), so the
+ * board's square Ship sprite keeps its aspect ratio.
+ */
+export const shipSprites = {
+  scout: shipUrl,
+  falcon: shipArrowUrl,
+  crimson: shipCrimsonUrl,
+  azure: shipAzureUrl,
+  nebula: shipNebulaUrl,
+  phantom: shipPhantomUrl,
+} as const;
+
+export type ShipSpriteKey = keyof typeof shipSprites;
 
 export type AssetKey = keyof typeof assets;
 export type IconKey = keyof typeof icons;

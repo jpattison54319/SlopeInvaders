@@ -338,12 +338,13 @@ describe('App shell', () => {
       '.tactical-button__image--default',
     );
     expect(settingsButton).toBeTruthy();
-    expect(profileButton?.textContent?.trim()).toBe('');
+    // Nav buttons now carry a short visible caption (with the icon + aria-label).
+    expect(profileButton?.textContent?.trim()).toBe('Profile');
     expect(profileButton?.className).toBe(settingsButton?.className);
     expect(profileIcon?.className).toBe(settingsIcon?.className);
     expect(profileIcon?.getAttribute('src')).toBe(uiButtons.profile.default);
     expect(settingsIcon?.getAttribute('src')).toBe(uiButtons.settings.default);
-    expect(buttonLabels.some((l) => l === 'Settings')).toBe(false);
+    expect(buttonLabels.some((l) => l === 'Settings')).toBe(true);
     expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
   });
@@ -505,7 +506,7 @@ describe('App shell', () => {
     expect(host.querySelector('#profile-title')).toBeFalsy();
   });
 
-  test('campaign chrome keeps back and settings controls icon-only but accessible', async () => {
+  test('campaign chrome shows captioned, accessible back and settings controls', async () => {
     await renderApp();
     await click('Campaign');
 
@@ -517,10 +518,13 @@ describe('App shell', () => {
 
     expect(modes).toBeTruthy();
     expect(settings).toBeTruthy();
-    expect(modes!.textContent?.trim()).toBe('');
-    expect(settings!.textContent?.trim()).toBe('');
+    // Captions are now shown for at-a-glance clarity, alongside the icon...
+    expect(modes!.textContent?.trim()).toBe('Modes');
+    expect(settings!.textContent?.trim()).toBe('Settings');
+    // ...while staying accessible: the aria-label/title and icon art remain.
     expect(modes!.title).toBe('Modes');
     expect(settings!.title).toBe('Settings');
+    expect(settings!.querySelector('.tactical-button__image--default')).toBeTruthy();
   });
 
   test('navigates mode → galaxy → mission → game, swaps to game music, and back', async () => {

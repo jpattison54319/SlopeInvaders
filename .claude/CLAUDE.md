@@ -31,6 +31,7 @@ Important docs:
 - `docs/agent/07-zone-3-negative-slopes.md`: Zone 3 (negative slopes, Quadrant IV) learning focus, scaffold, and design decisions (slope-only to force negative reasoning, default `m = 0`, any-quadrant rendering).
 - `docs/agent/08-zone-4-full-grid.md`: Zone 4 (full grid, all quadrants, facing-direction control) learning focus, scaffold, and design decisions (infinite line vs one-way shot, two-tone preview, ≥1 asteroid per quadrant, True/False reflection).
 - `docs/agent/09-zone-5-walls.md`: Zone 5 (shields/walls) learning focus, the wall-blocking model (segment intersection, beam truncation, gaps), star adherence (0-miss-solvable), and SRL intent.
+- `docs/agent/13-cosmetic-rewards.md`: the cosmetic reward layer (ship hulls, laser styles, themes), how items unlock (zone clears, XP, stars, badges), the Hangar, and the rule that cosmetics stay purely visual.
 - `docs/agent/sources.md`: source notes and bibliography-style references.
 
 Before adding or changing gameplay mechanics, level sequencing, scaffolds, feedback, adaptivity, stats, UI, audio, gamification, or multiplayer behavior, consult the relevant doc and keep the implementation aligned with that source-backed theory.
@@ -159,7 +160,8 @@ npm run build
 - `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`), `interceptLevel` (`y = mx + b`), `negativeSlopeLevel` (Quadrant IV, `y = mx`), and `fullGridLevel` (all quadrants, `y = mx + b` + direction) level-config factories.
 - `src/game/campaign/xp.ts` computes per-run XP bonuses (`computeRunXp`), banks them against the level's best run (`bankXp`), and maps lifetime XP to pilot ranks (`rankForXp`); pure and unit-tested.
 - `src/game/campaign/badges.ts` is the declarative badge registry (`BADGES`, concept/performance/growth) and `evaluateNewBadges`; pure and unit-tested. Concept badges carry a `zoneId` so the profile can use planet art as the emblem.
-- `src/game/campaign/rewards.ts` defines `CompletionRewards` (XP award + new badges), returned by `useCampaignProgress.markComplete` and rendered by `VictoryOverlay`.
+- `src/game/campaign/rewards.ts` defines `CompletionRewards` (XP award + new badges + new cosmetics), returned by `useCampaignProgress.markComplete` and rendered by `VictoryOverlay`.
+- `src/game/campaign/cosmetics.ts` is the declarative cosmetic catalog (ship hulls, laser styles, themes) plus pure unlock helpers (`isUnlocked`, `evaluateNewUnlocks`, `describeUnlock`); unit-tested, framework-free, purely visual. `src/app/useLoadout.ts` owns the equipped selection; `src/app/HangarScreen.tsx` is the equip/browse UI. The board reads the equipped skin/laser/theme through `Game.tsx` → `GameBoard.tsx`/`Ship.tsx` (Konva HSV hue tinting); the theme also drives app-wide CSS variables from `App.tsx`.
 - `src/game/campaign/profileStats.ts` holds the `ProfileStats` shape (game-layer so badges can read it; re-exported from `useCampaignProgress`).
 - `src/app/PilotProfileScreen.tsx` renders the Pilot Profile (rank card, badge grid, planet mastery, flight log).
 - `src/app/ClassroomScreen.tsx` (student class-join + cadet name) and `src/app/TeacherDashboardScreen.tsx` (teacher create + roster dashboard) are the cloud-gated classroom screens; both show an offline notice when `isCloudEnabled()` is false.
@@ -211,7 +213,8 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:profile-stats` accumulates lifetime totals per completion, including replays.
 - `slope-invaders:xp` stores `{ totalXp, levelBestXp }` — the lifetime XP total and each level's best single-run XP (the best-run-banking baseline). Never subtract from it.
 - `slope-invaders:badges` stores earned badges (badge id → epoch ms). Badges are never revoked.
-- XP and badges must never be keyed on calculator opens, tweak counts, or speed.
+- `slope-invaders:unlocks` stores earned cosmetics (item id → epoch ms); never revoked. The set is evaluated post-completion in `markComplete` (and backfilled in the `useCampaignProgress` initializer + on Arcade XP gains) against the `cosmetics.ts` unlock rules. `slope-invaders:loadout` stores the equipped ship/laser/theme ids (`useLoadout`, validated against the catalog with defaults as fallback).
+- XP, badges, and cosmetics must never be keyed on calculator opens, tweak counts, or speed.
 - `slope-invaders:student-id` is the account-free per-device UUID (the cloud `students` row key); `slope-invaders:cadet-name` is the chosen display name; `slope-invaders:classroom` is the joined class record; `slope-invaders:teacher-keys` remembers classes this device created (with their secret teacher keys). These power the optional classroom cloud and stay empty/unused when cloud is off.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).

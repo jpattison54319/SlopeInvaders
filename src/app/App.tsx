@@ -23,6 +23,7 @@ import { usePersistentState } from './usePersistentState';
 import { DEFAULT_KEYBINDINGS, KEYBINDINGS_KEY, withDefaults } from '../game/controls/keybindings';
 import { usePrefersReducedMotion } from './usePrefersReducedMotion';
 import { useCampaignProgress } from './useCampaignProgress';
+import { useLoadout } from './useLoadout';
 import { useArcadeRecords } from '../game/arcade/useArcadeRecords';
 import { computeArcadeXp } from '../game/arcade/scoring';
 import { SkipLink } from './SkipLink';
@@ -53,6 +54,9 @@ const CampaignCompleteScreen = lazy(() =>
 const PilotProfileScreen = lazy(() =>
   import('./PilotProfileScreen').then((m) => ({ default: m.PilotProfileScreen })),
 );
+const HangarScreen = lazy(() =>
+  import('./HangarScreen').then((m) => ({ default: m.HangarScreen })),
+);
 const ClassroomScreen = lazy(() =>
   import('./ClassroomScreen').then((m) => ({ default: m.ClassroomScreen })),
 );
@@ -80,6 +84,7 @@ type Screen =
   | { name: 'debrief'; zoneId: string }
   | { name: 'campaign-complete' }
   | { name: 'pilot-profile'; from: 'mode-select' | 'galaxy' | 'campaign-map' }
+  | { name: 'hangar'; back: Screen }
   | { name: 'classroom'; joinCode?: string }
   | { name: 'teacher-dashboard'; teacherKey?: string }
   | { name: 'versus' }
@@ -132,8 +137,20 @@ export default function App() {
   const keyBindings = withDefaults(storedKeyBindings);
 
   const progress = useCampaignProgress();
+  const loadout = useLoadout();
   const arcade = useArcadeRecords();
   const reducedMotion = usePrefersReducedMotion();
+
+  // Apply the equipped theme's palette to the whole app by overriding the CSS
+  // accent/background custom properties on :root. Purely cosmetic.
+  const theme = loadout.equipped.theme;
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--cyan', theme.accent);
+    root.style.setProperty('--amber', theme.amber);
+    root.style.setProperty('--space-0', theme.gradient[0]);
+    root.style.setProperty('--space-1', theme.gradient[1]);
+  }, [theme]);
   const campaignComplete = zones
     .filter((zone) => zone.status === 'available')
     .every((zone) => progress.isZoneComplete(zone.id));
@@ -223,6 +240,7 @@ export default function App() {
             onOpenSettings={openSettings}
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'mode-select' })}
             onOpenClassroom={() => setScreen({ name: 'classroom' })}
+            onOpenHangar={() => setScreen({ name: 'hangar', back: { name: 'mode-select' } })}
           />
         );
 
@@ -327,9 +345,21 @@ export default function App() {
             backLabel={from === 'mode-select' ? 'Menu' : from === 'galaxy' ? 'Galaxy' : 'Zones'}
             onBack={returnToProfileSource}
             onOpenSettings={openSettings}
+            onOpenHangar={() => setScreen({ name: 'hangar', back: screen })}
           />
         );
       }
+
+      case 'hangar':
+        return (
+          <HangarScreen
+            progress={progress}
+            loadout={loadout}
+            backLabel="Back"
+            onBack={() => setScreen(screen.back)}
+            onOpenSettings={openSettings}
+          />
+        );
 
       case 'classroom':
         return (
@@ -438,6 +468,14 @@ export default function App() {
             hasNext={!!nextLevelInZone(level.id)}
             keyBindings={keyBindings}
             keyboardEnabled={!settingsOpen}
+            shipSkin={{ sprite: loadout.equipped.ship.sprite, hue: loadout.equipped.ship.hue }}
+            laser={{
+              beam: loadout.equipped.laser.beam,
+              beamCore: loadout.equipped.laser.beamCore,
+              width: loadout.equipped.laser.width,
+              boltHue: loadout.equipped.laser.boltHue,
+            }}
+            themeSpace={loadout.equipped.theme.space}
             onExit={() => exitToZone(level.id)}
             onSettings={openSettings}
             onAdvance={() => advance(level.id)}
