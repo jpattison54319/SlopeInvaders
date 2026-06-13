@@ -17,14 +17,13 @@ const ZONE_PLANETS: Record<string, PlanetKey> = {
   tutorial: 'mooncolony',
   'zone-1': 'spacegarden',
   'zone-2': 'crystal',
-  'zone-3': 'volcano',
+  'zone-3': 'storm',
   'zone-4': 'celestial',
-  // Placeholders: reuse existing sprites until dedicated art ships for Zones 5–8.
-  'zone-5': 'mooncolony',
-  'zone-6': 'volcano',
-  'zone-7': 'crystal',
-  'zone-8': 'celestial',
-  'zone-9': 'spacegarden',
+  'zone-5': 'lavacastle',
+  'zone-6': 'clockwork',
+  'zone-7': 'cyberpunk',
+  'zone-8': 'robotfactory',
+  'zone-9': 'underworld',
 };
 
 const PLANET_KEYS = Object.keys(planets) as PlanetKey[];

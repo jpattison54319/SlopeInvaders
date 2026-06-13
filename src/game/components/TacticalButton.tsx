@@ -7,6 +7,8 @@ interface TacticalButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   text?: string;
   selected?: boolean;
   size?: 'small' | 'medium' | 'large';
+  /** Optional keyboard-shortcut chip shown on the button (mouse devices only). */
+  keyHint?: string;
 }
 
 /** Asset-backed command button with paired normal and active artwork. */
@@ -16,6 +18,7 @@ export function TacticalButton({
   text,
   selected = false,
   size = 'medium',
+  keyHint,
   className,
   ...rest
 }: TacticalButtonProps) {
@@ -37,6 +40,7 @@ export function TacticalButton({
         <img className="tactical-button__image tactical-button__image--active" src={art.active} alt="" draggable={false} />
       </span>
       {text && <span className="tactical-button__label">{text}</span>}
+      {keyHint && <kbd className="key-hint key-hint--button">{keyHint}</kbd>}
     </button>
   );
 }

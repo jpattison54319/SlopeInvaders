@@ -143,7 +143,8 @@ npm run build
   collision, score/record rules, board, and runtime controller.
 - `src/app/ArcadeBriefingScreen.tsx` explains Arcade rules and shows personal
   records before a run.
-- `src/game/components/GuidedTour.tsx` renders the first-visit spotlight walkthrough used by levels that opt in.
+- `src/game/components/GuidedTour.tsx` renders the first-visit spotlight walkthrough used by levels that opt in; its steps walk every HUD element including the calculator and keyboard controls.
+- `src/game/components/MissionBriefing.tsx` renders the one-time-per-level objective modal the player dismisses before playing.
 - `src/game/audio/useMusic.ts` plays one looping background track and handles autoplay unlock.
 - `src/game/audio/sfx.tsx` and `src/game/audio/sfxContext.ts` provide SFX playback.
 - `src/game/audio/buttonClick.ts` provides delegated global button-click SFX and respects `data-button-sfx="none"` for buttons with their own sound.
@@ -159,7 +160,7 @@ npm run build
 - `src/game/campaign/levels/zone6.ts`, `zone7.ts`, and `zone8.ts` define Zone 6 (linked asteroids), Zone 7 (friendly ships), and Zone 8 (moving cannon).
 - `src/game/campaign/levels/helpers.ts` provides the `slopeLevel` (`y = mx`), `interceptLevel` (`y = mx + b`), `negativeSlopeLevel` (Quadrant IV, `y = mx`), and `fullGridLevel` (all quadrants, `y = mx + b` + direction) level-config factories.
 - `src/game/campaign/xp.ts` computes per-run XP bonuses (`computeRunXp`), banks them against the level's best run (`bankXp`), and maps lifetime XP to pilot ranks (`rankForXp`); pure and unit-tested.
-- `src/game/campaign/badges.ts` is the declarative badge registry (`BADGES`, concept/performance/growth) and `evaluateNewBadges`; pure and unit-tested. Concept badges carry a `zoneId` so the profile can use planet art as the emblem.
+- `src/game/campaign/badges.ts` is the declarative badge registry (`BADGES`, concept/performance/growth) and `evaluateNewBadges`; pure and unit-tested. Concept badges carry a `zoneId` so the profile can use their unique planet art, while performance/growth badges carry a unique typed `iconKey` from `src/assets/achievements/`.
 - `src/game/campaign/rewards.ts` defines `CompletionRewards` (XP award + new badges + new cosmetics), returned by `useCampaignProgress.markComplete` and rendered by `VictoryOverlay`.
 - `src/game/campaign/cosmetics.ts` is the declarative cosmetic catalog (ship hulls, laser styles, themes) plus pure unlock helpers (`isUnlocked`, `evaluateNewUnlocks`, `describeUnlock`); unit-tested, framework-free, purely visual. `src/app/useLoadout.ts` owns the equipped selection; `src/app/HangarScreen.tsx` is the equip/browse UI. The board reads the equipped skin/laser/theme through `Game.tsx` → `GameBoard.tsx`/`Ship.tsx` (Konva HSV hue tinting); the theme also drives app-wide CSS variables from `App.tsx`.
 - `src/game/campaign/profileStats.ts` holds the `ProfileStats` shape (game-layer so badges can read it; re-exported from `useCampaignProgress`).
@@ -201,6 +202,10 @@ Keep rendering, game state, level data, progress, and pure math separate.
 
 The campaign model is intentionally future-ready. Add zones/levels through `src/game/campaign/zones.ts` and `src/game/campaign/levels/*`, and keep the teaching progression aligned with `docs/agent/01-learning-design.md` and `docs/agent/05-prototype-scope-zone-1.md`.
 
+Tutorial and every current zone must keep a unique planet assignment in
+`campaign/planets.ts`, ordered to become more visually dramatic as the campaign
+advances. Badge emblems must also remain unique.
+
 ## Adaptive Difficulty and Stats
 
 - Each zone's first level is a fixed `standard` diagnostic; later levels in that zone set `adaptive: true`.
@@ -218,6 +223,7 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 - `slope-invaders:student-id` is the account-free per-device UUID (the cloud `students` row key); `slope-invaders:cadet-name` is the chosen display name; `slope-invaders:classroom` is the joined class record; `slope-invaders:teacher-keys` remembers classes this device created (with their secret teacher keys). These power the optional classroom cloud and stay empty/unused when cloud is off.
 - `slope-invaders:calculator-position` stores the calculator's last dropped viewport position; restore it clamped to the current viewport so it cannot reopen off-screen.
 - `slope-invaders:keybindings` stores the gameplay key map (merge over `DEFAULT_KEYBINDINGS` on read so a stored map that predates a new action stays valid).
+- `slope-invaders:tour-seen:{levelId}` and `slope-invaders:briefing-seen:{levelId}` record whether a level's first-open guided tour / Mission Briefing has been shown, so each appears only once per level.
 - `slope-invaders:arcade-records-v1` stores private Arcade personal bests and
   lifetime Arcade totals. Do not mix it into Campaign or classroom progress.
 - `slope-invaders:adaptivity-trace` stores the local ring buffer of tier-decision traces (teacher/support observability only; never student-facing).
@@ -225,8 +231,10 @@ The campaign model is intentionally future-ready. Add zones/levels through `src/
 
 ## Guided Tour and Mission Banner
 
-- The learning goal renders in a full-width mission banner above the board; the old per-level teaching "callout" banner has been removed.
-- A level can opt into a one-time spotlight walkthrough that runs on first open (the Tutorial uses it). See `GuidedTour` and `Game.tsx` for how steps and targets are wired.
+- The learning goal renders in a full-width mission banner (with an "Objective" eyebrow and a brief one-time entrance highlight) above the board; the old per-level teaching "callout" banner has been removed.
+- On a level's first open the objective is also surfaced in a one-time **Mission Briefing** modal (`MissionBriefing`) the player must dismiss with "Begin Mission" before playing, so the instructions are read rather than ignored. It is suppressed on guided-tour levels (e.g. the Tutorial), whose tour already covers the objective, and its seen-state persists per level alongside the tour.
+- A level can opt into a one-time spotlight walkthrough that runs on first open (the Tutorial uses it). The walkthrough explicitly covers the calculator and keyboard controls in addition to the grid, mission, hearts, stats, and feedback. See `GuidedTour` and `Game.tsx` for how steps and targets are wired.
+- Gameplay control buttons print their keyboard shortcut as a small `<kbd>` chip (driven by the current key map, so remaps are reflected). The chips are shown only on fine-pointer/hover devices so touch users do not see meaningless key hints; they never appear in the typed-equation entry mode (Zone 9 has no steppers).
 
 ## UI and Design Guidance
 

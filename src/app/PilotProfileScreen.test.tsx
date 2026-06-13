@@ -87,6 +87,11 @@ describe('PilotProfileScreen', () => {
     // Every badge renders, grouped, with an emblem; one is earned, the rest locked.
     expect(host.querySelectorAll('.badge-card')).toHaveLength(BADGES.length);
     expect(host.querySelectorAll('.badge-card__emblem img')).toHaveLength(BADGES.length);
+    const emblemSources = Array.from(
+      host.querySelectorAll<HTMLImageElement>('.badge-card__emblem img'),
+      (image) => image.src,
+    );
+    expect(new Set(emblemSources).size).toBe(BADGES.length);
     expect(host.querySelectorAll('.badge-card--earned')).toHaveLength(1);
     expect(host.querySelectorAll('.badge-card--locked')).toHaveLength(BADGES.length - 1);
     expect(host.textContent).toContain('Zone Mastery');

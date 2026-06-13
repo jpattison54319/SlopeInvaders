@@ -11,6 +11,7 @@ import type { LevelStats } from './difficulty';
 import type { ProfileStats } from './profileStats';
 import { starsForCompletedStats, type StarCount } from './stars';
 import { zones } from './zones';
+import type { AchievementIconKey } from '../../assets/assetMap';
 
 export type BadgeCategory = 'concept' | 'performance' | 'growth';
 
@@ -35,6 +36,8 @@ export interface BadgeDef {
   category: BadgeCategory;
   /** For concept badges: the zone whose planet art is the badge emblem. */
   zoneId?: string;
+  /** For performance/growth badges: a unique emblem from the skill-icon pack. */
+  iconKey?: AchievementIconKey;
   earned: (ctx: BadgeContext) => boolean;
 }
 
@@ -78,6 +81,7 @@ export const BADGES: readonly BadgeDef[] = [
     name: 'Perfect Trajectory',
     description: 'Clear a level without a single missed shot.',
     category: 'performance',
+    iconKey: 'perfectTrajectory',
     earned: (ctx) => ctx.stats.misses === 0,
   },
   {
@@ -85,6 +89,7 @@ export const BADGES: readonly BadgeDef[] = [
     name: 'Combo Pilot',
     description: 'Take out two or more asteroids with one line.',
     category: 'performance',
+    iconKey: 'comboPilot',
     earned: (ctx) => ctx.stats.multiHits >= 1,
   },
   {
@@ -92,6 +97,7 @@ export const BADGES: readonly BadgeDef[] = [
     name: 'No Preview Pilot',
     description: 'Clear a level aiming from the equation alone — no trajectory preview.',
     category: 'performance',
+    iconKey: 'noPreviewPilot',
     earned: (ctx) => ctx.stats.trajectoryPreview === 'off',
   },
 
@@ -101,6 +107,7 @@ export const BADGES: readonly BadgeDef[] = [
     name: 'Comeback Cadet',
     description: 'Run out of hearts, regroup, and finish the mission anyway.',
     category: 'growth',
+    iconKey: 'comebackCadet',
     earned: (ctx) => ctx.stats.losses >= 1,
   },
   {
@@ -108,6 +115,7 @@ export const BADGES: readonly BadgeDef[] = [
     name: 'Growth Streak',
     description: 'Replay a level and fly it better than before.',
     category: 'growth',
+    iconKey: 'growthStreak',
     earned: (ctx) =>
       !!ctx.priorStats &&
       (ctx.stats.score > ctx.priorStats.score ||

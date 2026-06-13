@@ -1823,8 +1823,9 @@ input:focus-visible {
 .pilot-card {
   display: grid;
   grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 18px;
+  gap: 14px 18px;
   padding: 18px 20px;
   border: 2px solid var(--panel-border);
   border-radius: 14px;
@@ -1832,6 +1833,8 @@ input:focus-visible {
   box-shadow: inset 0 0 40px rgba(94, 241, 255, 0.06), 0 14px 40px rgba(0, 0, 0, 0.4);
 }
 .pilot-card__avatar {
+  grid-row: 1;
+  grid-column: 1;
   display: grid;
   place-items: center;
   width: 84px;
@@ -1851,6 +1854,8 @@ input:focus-visible {
   filter: drop-shadow(0 0 8px rgba(124, 255, 178, 0.5));
 }
 .pilot-card__id {
+  grid-row: 1;
+  grid-column: 2;
   min-width: 0;
 }
 .pilot-card__rank {
@@ -1886,11 +1891,14 @@ input:focus-visible {
   text-transform: uppercase;
 }
 .pilot-card__chips {
+  grid-row: 2;
+  grid-column: 1 / -1;
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 .pilot-card__chips li {
   display: flex;
@@ -1915,6 +1923,27 @@ input:focus-visible {
   text-transform: uppercase;
 }
 
+/* Achievements wrapper. */
+.profile__achievements {
+  margin-top: 26px;
+}
+.profile__achievements-heading {
+  margin: 0 0 2px;
+  font-family: var(--pixel-font);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--amber);
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(255, 209, 102, 0.35);
+}
+.profile__achievements-meta {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 /* Section frames: pixel header + meta line. */
 .profile__section {
   margin-top: 26px;
@@ -1932,16 +1961,123 @@ input:focus-visible {
 .profile__section-head h3 {
   margin: 0;
   font-family: var(--pixel-font);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--amber);
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(255, 209, 102, 0.35);
+}
+
+/* Disclosure sections (badge categories only). */
+.profile__disclosure {
+  margin-top: 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.profile__disclosure + .profile__disclosure {
+  margin-top: 14px;
+}
+.profile__disclosure-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.profile__disclosure-head h3 {
+  margin: 0;
+  font-family: var(--pixel-font);
   font-size: 12px;
   letter-spacing: 1px;
   color: var(--cyan);
   text-transform: uppercase;
   text-shadow: 0 0 12px rgba(94, 241, 255, 0.3);
 }
+.profile__disclosure-head h3::before {
+  content: '▸';
+  margin-right: 8px;
+  font-size: 16px;
+  color: var(--cyan);
+  text-shadow: 0 0 6px rgba(94, 241, 255, 0.4);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: inline-block;
+}
+.profile__disclosure--open .profile__disclosure-head h3::before {
+  transform: rotate(90deg);
+}
 .profile__section-meta {
+  margin-left: auto;
   color: var(--text-dim);
   font-size: 11px;
   line-height: 1.4;
+}
+
+/* Liquid-droplet disclosure body animation.
+   Height grows via grid-template-rows while border-radius morphs
+   from a rounded droplet shape (50 %) down to a nearly flat panel
+   (2 %). Combined with a scaleY keyframe wobble this gives a
+   liquid-appearing expand / contract. */
+.profile__disclosure-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  border-radius: 0 0 50% 50%;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.profile__disclosure--open .profile__disclosure-body {
+  grid-template-rows: 1fr;
+  border-radius: 0 0 2% 2%;
+  transition:
+    grid-template-rows 0.4s cubic-bezier(0.22, 0.61, 0.36, 1),
+    border-radius 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+.profile__disclosure-content {
+  overflow: hidden;
+  transform-origin: top center;
+}
+.profile__disclosure-content .badge-grid {
+  padding: 4px 16px 14px;
+}
+
+/* Keyframe wobble — only after the user has toggled (avoids
+   playing on initial render for default-open items). */
+@keyframes droplet-emerge {
+  0% { transform: scaleY(0.7); opacity: 0.3; }
+  35% { transform: scaleY(1.08); opacity: 1; }
+  55% { transform: scaleY(0.95); }
+  75% { transform: scaleY(1.02); }
+  100% { transform: scaleY(1); }
+}
+@keyframes droplet-retract {
+  0% { transform: scaleY(1); }
+  40% { transform: scaleY(0.96); }
+  100% { transform: scaleY(0.7); opacity: 0.3; }
+}
+.profile__disclosure--animated.profile__disclosure--open .profile__disclosure-content {
+  animation: droplet-emerge 0.4s ease-out both;
+}
+.profile__disclosure--animated:not(.profile__disclosure--open) .profile__disclosure-content {
+  animation: droplet-retract 0.25s ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile__disclosure-body {
+    transition-duration: 0.01ms;
+  }
+  .profile__disclosure--animated .profile__disclosure-content {
+    animation: none;
+  }
 }
 
 /* Badge collection. */
@@ -2027,7 +2163,8 @@ input:focus-visible {
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px;
 }
 .profile__zone-row {
   display: flex;
@@ -3310,7 +3447,7 @@ body {
 .tactical-button--labeled {
   min-height: 54px;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 12px;
   padding: 5px 18px 5px 6px;
   overflow: hidden;
   border: 1px solid rgba(143, 248, 255, 0.6);
@@ -3352,7 +3489,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 3px;
+  gap: 8px;
   min-height: 0;
   padding: 2px 4px;
   border: 0;
@@ -5241,10 +5378,43 @@ select:focus-visible {
 }
 
 .pilot-card__cta {
-  grid-column: 1 / -1;
+  grid-row: 1;
+  grid-column: 3;
   display: flex;
-  justify-content: center;
-  margin-top: 12px;
+  justify-content: flex-end;
+  align-self: start;
+}
+.pilot-card__cta .tactical-button--labeled {
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 0;
+  padding: 3px 6px;
+  border: 1px solid rgba(143, 248, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(20, 36, 80, 0.65);
+  box-shadow: 0 2px 0 #030818, 0 0 8px rgba(75, 188, 255, 0.1);
+}
+.pilot-card__cta .tactical-button--labeled:hover:not(:disabled) {
+  border-color: var(--tactical-gold);
+  background: rgba(28, 50, 100, 0.8);
+}
+.pilot-card__cta .tactical-button--labeled:active:not(:disabled) {
+  box-shadow: inset 0 0 0 1px rgba(6, 14, 36, 0.5), 0 0 0 #030818;
+}
+.pilot-card__cta .tactical-button--small .tactical-button__art {
+  width: 30px;
+}
+.pilot-card__cta .tactical-button--labeled .tactical-button__label {
+  font-size: 7px;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.pilot-card__cta .tactical-button--labeled:hover:not(:disabled) .tactical-button__label {
+  color: var(--text);
 }
 
 @media (max-width: 540px) {
@@ -5254,5 +5424,136 @@ select:focus-visible {
   }
   .cosmetic-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- UX onboarding: objective eyebrow, briefing card, key hints ---------- */
+
+/* "Objective" eyebrow + one-time entrance highlight make the ignored mission
+   banner read as something to read. The tactical banner is transparent, so the
+   glow is applied to the coach panel it wraps. */
+.mission-banner__eyebrow {
+  display: inline-block;
+  margin: 0 0 6px 2px;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.mission-banner .coach-panel {
+  border-radius: 10px;
+  animation: mission-banner-flash 1.6s ease-out 1;
+}
+@keyframes mission-banner-flash {
+  0% {
+    box-shadow: 0 0 0 2px rgba(255, 209, 102, 0.85), 0 0 22px rgba(255, 209, 102, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 209, 102, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mission-banner .coach-panel {
+    animation: none;
+  }
+}
+
+/* Level briefing — a one-time-per-level modal that forces a read of the goal.
+   (Distinct from the menu's `.mission-briefing` briefing panel.) */
+.level-briefing {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(16px, 4vw, 40px);
+  background: rgba(3, 6, 18, 0.82);
+  backdrop-filter: blur(4px);
+}
+.level-briefing__panel {
+  width: min(460px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 26px 24px 24px;
+  background: rgba(11, 16, 42, 0.97);
+  border: 2px solid rgba(255, 209, 102, 0.5);
+  border-radius: 14px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.6), inset 0 0 30px rgba(255, 209, 102, 0.07);
+}
+.level-briefing__coach {
+  width: 64px;
+  height: 64px;
+  image-rendering: pixelated;
+  margin-bottom: 8px;
+}
+.level-briefing__level {
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.level-briefing__eyebrow {
+  margin-top: 10px;
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.level-briefing__objective {
+  margin: 12px 0 22px;
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* Keyboard-shortcut chips printed on the control buttons. Shown only on devices
+   with a fine pointer (a mouse, so a keyboard is likely) to avoid touch clutter. */
+.key-hint {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .key-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 3px;
+    font-family: var(--pixel-font);
+    font-size: 8px;
+    line-height: 1;
+    color: var(--text-dim);
+    background: rgba(3, 8, 24, 0.85);
+    border: 1px solid var(--panel-border);
+    border-radius: 4px;
+  }
+  /* +/− steppers and direction buttons: pin the chip to the top-right corner so
+     the existing button glyph/label keeps its place (stable dimensions). */
+  .stepper__btn,
+  .direction-btn {
+    position: relative;
+  }
+  .stepper__btn .key-hint,
+  .direction-btn .key-hint {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+  }
+  /* Let the corner chip poke outside the button without being clipped. */
+  .stepper__row,
+  .direction-toggle__buttons {
+    overflow: visible;
+  }
+  /* Fire button chip sits inline after the label. */
+  .key-hint--button {
+    margin-left: 6px;
   }
 }

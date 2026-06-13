@@ -4,6 +4,13 @@ import type { UiButtonKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
 import { EquationSlots } from './EquationSlots';
 import { equationString } from '../logic/lineMath';
+import { DEFAULT_KEYBINDINGS, keyLabel, type KeyBindings } from '../controls/keybindings';
+
+/** Display label for an action's bound key, or undefined when unassigned. */
+function hint(bindings: KeyBindings, action: keyof KeyBindings): string | undefined {
+  const label = keyLabel(bindings[action]);
+  return label === '—' ? undefined : label;
+}
 
 interface EquationControlsProps {
   m: number;
@@ -26,6 +33,8 @@ interface EquationControlsProps {
   secondaryAsset?: UiButtonKey;
   secondaryClassName?: string;
   entryMode?: 'stepper' | 'typed';
+  /** Current key map, used to print each control's shortcut on its button. */
+  keyBindings?: KeyBindings;
 }
 
 function fmt(n: number): string {
@@ -41,6 +50,9 @@ interface StepperProps {
   step: number;
   disabled: boolean;
   onChange: (v: number) => void;
+  /** Keyboard-shortcut labels for the −/+ buttons (mouse devices only). */
+  decKey?: string;
+  incKey?: string;
 }
 
 /**
@@ -49,7 +61,7 @@ interface StepperProps {
  * -1 included). Typing is backed by local text state so intermediate entries
  * ("", "-", "0.") don't get clobbered mid-edit.
  */
-function Stepper({ label, symbol, value, step, disabled, onChange }: StepperProps) {
+function Stepper({ label, symbol, value, step, disabled, onChange, decKey, incKey }: StepperProps) {
   const [draft, setDraft] = useState(() => ({ text: fmt(value), numericValue: value }));
   const round = (v: number) => Math.round(v * 100) / 100;
   const text = draft.numericValue === value ? draft.text : fmt(value);
@@ -94,6 +106,7 @@ function Stepper({ label, symbol, value, step, disabled, onChange }: StepperProp
           onClick={() => bump(-step)}
         >
           −
+          {decKey && <kbd className="key-hint">{decKey}</kbd>}
         </button>
         <input
           className="stepper__input"
@@ -113,6 +126,7 @@ function Stepper({ label, symbol, value, step, disabled, onChange }: StepperProp
           onClick={() => bump(step)}
         >
           +
+          {incKey && <kbd className="key-hint">{incKey}</kbd>}
         </button>
       </div>
     </div>
@@ -140,6 +154,7 @@ export function EquationControls({
   secondaryAsset = 'replay',
   secondaryClassName = 'btn--reset',
   entryMode = 'stepper',
+  keyBindings = DEFAULT_KEYBINDINGS,
 }: EquationControlsProps) {
   const [slotsValid, setSlotsValid] = useState(false);
 
@@ -174,6 +189,8 @@ export function EquationControls({
                 step={0.5}
                 disabled={disabled}
                 onChange={onChangeM}
+                decKey={hint(keyBindings, 'slopeDown')}
+                incKey={hint(keyBindings, 'slopeUp')}
               />
             )}
             {controls.includes('yIntercept') && equationForm !== 'y=mx' && (
@@ -184,6 +201,8 @@ export function EquationControls({
                 step={0.5}
                 disabled={disabled}
                 onChange={onChangeB}
+                decKey={hint(keyBindings, 'yInterceptDown')}
+                incKey={hint(keyBindings, 'yInterceptUp')}
               />
             )}
             {/* Movable cannon — unlocked in later levels (not Level 1). */}
@@ -195,6 +214,8 @@ export function EquationControls({
                 step={1}
                 disabled={disabled}
                 onChange={onChangeXOffset}
+                decKey={hint(keyBindings, 'xOffsetDown')}
+                incKey={hint(keyBindings, 'xOffsetUp')}
               />
             )}
           </div>
@@ -215,6 +236,9 @@ export function EquationControls({
               onClick={() => onChangeFacing('left')}
             >
               ◀ Left
+              {hint(keyBindings, 'faceLeft') && (
+                <kbd className="key-hint">{hint(keyBindings, 'faceLeft')}</kbd>
+              )}
             </button>
             <button
               type="button"
@@ -225,6 +249,9 @@ export function EquationControls({
               onClick={() => onChangeFacing('right')}
             >
               Right ▶
+              {hint(keyBindings, 'faceRight') && (
+                <kbd className="key-hint">{hint(keyBindings, 'faceRight')}</kbd>
+              )}
             </button>
           </div>
         </div>
@@ -238,6 +265,7 @@ export function EquationControls({
           size="large"
           className="btn btn--fire btn--split"
           data-button-sfx="none"
+          keyHint={hint(keyBindings, 'fire')}
           onClick={onFire}
           disabled={disabled || won || (entryMode === 'typed' && !slotsValid)}
         />

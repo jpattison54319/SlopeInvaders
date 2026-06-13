@@ -38,9 +38,32 @@ one target in early waves, at most two in Revision 1, and a minimum `2.75s`
 vertex hold. Coordinates remain visible while moving so urgency does not remove
 the mathematical information needed to act.
 
+## Make key affordances discoverable, not hidden
+
+User testing showed players miss tools that are present but quiet: the
+calculator went unnoticed, the small mission instructions were skipped, and
+keyboard controls were undiscovered. Prefer surfacing an affordance in context
+over hoping the player explores:
+
+- State the objective forcefully once. A one-time, per-level briefing the player
+  must dismiss reads as "read this" in a way a quiet banner does not; keep a
+  persistent banner afterwards for reference, and never repeat the blocking step
+  on every replay.
+- Teach every on-screen tool in the first-run walkthrough — including helpers
+  like the calculator and alternate input methods like the keyboard — not just
+  the core controls.
+- Reveal shortcuts where they are used (e.g. a key chip on the button itself),
+  reflecting any remap, and hide them where they are meaningless (touch devices).
+- Keep these additions from competing with the graph: small chips, brief
+  highlights, reduced-motion respected, and stable button dimensions.
+
 ## Multimedia design rules
 
 Use words and visuals together when they support the same concept.
+
+Campaign worlds use one distinct planet sprite per Tutorial/Zone, ordered to
+grow more visually dramatic as the learner advances. Achievement emblems are
+also unique per badge so recognition does not depend on reading the label.
 
 Good:
 
