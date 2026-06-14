@@ -81,7 +81,10 @@ Current product flow:
   2-player cap + same class), then race on live side-by-side boards over a
   Supabase Realtime broadcast channel. A shared `level_seed` derives the field
   deterministically (`src/game/versus/field.ts`); `+2`/freeze attack pickups send
-  effects to the opponent. Both Versus boards hide the trajectory preview;
+  effects to the opponent. Versus supports slope, y-intercept, x-offset, and
+  facing controls; the persisted gameplay keybindings (A/D by default) move the
+  cannon horizontally, and snapshots mirror the moved cannon and its
+  facing-adjusted line. Both Versus boards hide the trajectory preview;
   only the fired laser supplies outcome feedback. Code: `src/cloud/versus.ts`, `src/game/versus/*`,
   `src/app/Versus{Lobby,Match}Screen.tsx`. See `docs/agent/10-classroom-cloud.md`
   and `DEPLOYMENT.md`.

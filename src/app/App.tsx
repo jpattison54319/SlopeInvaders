@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { music } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
 import { SfxProvider } from '../game/audio/sfx';
@@ -127,6 +127,10 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>(initialScreen);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [menuEntrancePlayed, setMenuEntrancePlayed] = useState(false);
+  const markMenuEntrancePlayed = useCallback(() => {
+    setMenuEntrancePlayed(true);
+  }, []);
 
   const [musicVolume, setMusicVolume] = usePersistentState('slope-invaders:music-volume', DEFAULT_MUSIC_VOLUME);
   const [musicMuted, setMusicMuted] = usePersistentState('slope-invaders:music-muted', false);
@@ -236,6 +240,8 @@ export default function App() {
           <MenuScreen
             modes={modes}
             arcadeUnlocked={campaignComplete}
+            animateEntrance={!menuEntrancePlayed}
+            onEntrancePlayed={markMenuEntrancePlayed}
             onSelectMode={selectMode}
             onOpenSettings={openSettings}
             onOpenProfile={() => setScreen({ name: 'pilot-profile', from: 'mode-select' })}
@@ -432,6 +438,8 @@ export default function App() {
             role={screen.role}
             opponentStudentId={screen.opponentStudentId}
             myName={getCadetName()}
+            keyBindings={keyBindings}
+            keyboardEnabled={!settingsOpen}
             onExit={() => setScreen({ name: 'versus' })}
           />
         );

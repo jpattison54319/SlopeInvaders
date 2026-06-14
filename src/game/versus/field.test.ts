@@ -5,6 +5,7 @@ import {
   makeAddedAsteroids,
   mulberry32,
   spawnItem,
+  versusShotGeometry,
   VERSUS_HEARTS,
   VERSUS_START_ASTEROIDS,
 } from './field';
@@ -42,10 +43,26 @@ describe('buildVersusLevel', () => {
   it('is an all-quadrants duel with slope/intercept/facing and hearts', () => {
     const level = buildVersusLevel(7);
     expect(level.quadrantMode).toBe('all-quadrants');
-    expect(level.allowedControls).toEqual(['slope', 'yIntercept', 'direction']);
+    expect(level.allowedControls).toEqual(['slope', 'yIntercept', 'xOffset', 'direction']);
+    expect(level.defaults.xOffset).toBe(0);
     expect(level.hearts).toBe(VERSUS_HEARTS);
     expect(level.ship.position).toEqual({ x: 0, y: 0 });
     expect(level.trajectoryPreview).toBe('off');
+  });
+});
+
+describe('versusShotGeometry', () => {
+  it('matches campaign moving-cannon geometry in both facing directions', () => {
+    expect(versusShotGeometry(2, 3, 4, 'right')).toEqual({
+      shipX: 4,
+      fireM: 2,
+      fireB: -5,
+    });
+    expect(versusShotGeometry(2, 3, 4, 'left')).toEqual({
+      shipX: 4,
+      fireM: -2,
+      fireB: 11,
+    });
   });
 });
 
@@ -58,10 +75,19 @@ describe('attack helpers', () => {
     for (const a of added) expect(`${a.weakPoint.x},${a.weakPoint.y}`).not.toBe('1,1');
   });
 
-  it('spawnItem yields a valid kind on an open cell', () => {
-    const item = spawnItem(mulberry32(3), new Set(), 1000);
-    expect(item).not.toBeNull();
-    expect(['add', 'freeze']).toContain(item!.kind);
-    expect(item!.expiresAt).toBeGreaterThan(1000);
+  it.each([
+    { roll: 0, kind: 'add' },
+    { roll: 0.499999, kind: 'add' },
+    { roll: 0.5, kind: 'freeze' },
+    { roll: 0.999999, kind: 'freeze' },
+  ] as const)('uses an exact 50/50 item split for roll $roll', ({ roll, kind }) => {
+    const values = [0.6, 0.6, roll];
+    const item = spawnItem(() => values.shift() ?? 0, new Set(), 1000);
+
+    expect(item).toMatchObject({
+      point: { x: 2, y: 2 },
+      kind,
+      expiresAt: 1000 + 6000,
+    });
   });
 });

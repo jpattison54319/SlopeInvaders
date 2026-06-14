@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { assets, uiBackgrounds, uiShips } from '../assets/assetMap';
 import { CoachPanel } from '../game/components/CoachPanel';
 import { Modal } from '../game/components/Modal';
@@ -8,6 +8,8 @@ import type { GameModeId, ModeDescriptor } from '../game/modes';
 interface MenuScreenProps {
   modes: ModeDescriptor[];
   arcadeUnlocked: boolean;
+  animateEntrance?: boolean;
+  onEntrancePlayed?: () => void;
   onSelectMode: (id: GameModeId) => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
@@ -19,6 +21,8 @@ interface MenuScreenProps {
 export function MenuScreen({
   modes,
   arcadeUnlocked,
+  animateEntrance = true,
+  onEntrancePlayed,
   onSelectMode,
   onOpenSettings,
   onOpenProfile,
@@ -26,13 +30,24 @@ export function MenuScreen({
   onOpenHangar,
 }: MenuScreenProps) {
   const [briefingOpen, setBriefingOpen] = useState(false);
+  const [shouldAnimate] = useState(animateEntrance);
+  const [loaded, setLoaded] = useState(!shouldAnimate);
   const availableCount = modes.filter(
     (mode) => mode.status === 'available' && (mode.id !== 'arcade' || arcadeUnlocked),
   ).length;
 
+  useEffect(() => {
+    if (!shouldAnimate) return;
+    onEntrancePlayed?.();
+    const id = requestAnimationFrame(() => setLoaded(true));
+    return () => cancelAnimationFrame(id);
+  }, [shouldAnimate, onEntrancePlayed]);
+
   return (
     <main
-      className="menu menu--tactical"
+      className={`menu menu--tactical${shouldAnimate ? ' menu--animate' : ''}${
+        loaded ? ' menu--loaded' : ''
+      }`}
       style={{
         backgroundImage: `linear-gradient(90deg, rgba(4, 8, 24, 0.34), rgba(4, 8, 24, 0.84)), url(${uiBackgrounds.menu})`,
       }}
@@ -53,8 +68,30 @@ export function MenuScreen({
       <section className="menu__hero" aria-labelledby="menu-title">
         <div className="menu__copy">
           <span className="menu__kicker">Equation Defense Command</span>
-          <h1 id="menu-title">
-            Slope <span>Invaders</span>
+          <h1 id="menu-title" className="menu__title" aria-label="Slope Invaders">
+            <span className="visually-hidden">Slope Invaders</span>
+            <span className="menu__title-word" aria-hidden>
+              {'Slope'.split('').map((char, i) => (
+                <span
+                  key={i}
+                  className="menu__title-letter"
+                  style={{ animationDelay: `${1800 + i * 100}ms` }}
+                >
+                  {char}
+                </span>
+              ))}
+            </span>{' '}
+            <span className="menu__title-word menu__title-word--amber" aria-hidden>
+              {'Invaders'.split('').map((char, i) => (
+                <span
+                  key={i}
+                  className="menu__title-letter"
+                  style={{ animationDelay: `${1800 + (6 + i) * 100}ms` }}
+                >
+                  {char}
+                </span>
+              ))}
+            </span>
           </h1>
           <p>Graph the line. Blast the asteroids. Master y = mx + b.</p>
         </div>
@@ -80,7 +117,7 @@ export function MenuScreen({
         </div>
 
         <div className="level-grid">
-          {modes.map((mode) => {
+          {modes.map((mode, i) => {
             const requiresCampaign = mode.id === 'arcade' && !arcadeUnlocked;
             const playable = mode.status === 'available' && !requiresCampaign;
             const status = playable
@@ -95,6 +132,7 @@ export function MenuScreen({
                 className={`level-card ${playable ? 'level-card--selected' : ''}`}
                 disabled={!playable}
                 onClick={() => onSelectMode(mode.id)}
+                style={{ animationDelay: `${460 + i * 100}ms` }}
               >
                 <span className="level-card__number" aria-hidden>
                   {playable ? '01' : '—'}

@@ -115,7 +115,10 @@ coordinate math, and `GameBoard` rather than forking gameplay.
 - **Shared field:** both clients derive the identical starting field from the
   match's `level_seed` via the pure, seeded `buildVersusLevel(seed)`
   (`src/game/versus/field.ts`, mulberry32) — all quadrants, slope + intercept +
-  facing, 5 hearts, ship at the origin. Trajectory preview is always off on both
+  x-offset + facing, 5 hearts, ship starting at the origin. Persisted gameplay
+  keybindings (A/D by default) move the cannon, and `BoardSnapshot.xOffset`
+  keeps the opponent mirror aligned; older snapshots
+  without it default to the origin. Trajectory preview is always off on both
   the interactive board and read-only mirror so the duel assesses equation
   reasoning rather than visual line matching. The fired laser remains visible
   as outcome feedback. No level data crosses the wire.

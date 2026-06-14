@@ -45,7 +45,10 @@ Quick orientation:
   live side-by-side boards (`VersusMatchScreen`) over a Supabase Realtime broadcast
   channel. The field is derived deterministically from a shared `level_seed`
   (`src/game/versus/field.ts`); `useVersusMatch` drives the board, items, and
-  win/lose; `+2`/freeze attack pickups send effects to the opponent. Trajectory
+  win/lose; `+2`/freeze attack pickups send effects to the opponent. Players
+  control slope, y-intercept, x-offset, and facing; persisted gameplay
+  keybindings (A/D by default) move the cannon, and opponent snapshots preserve
+  its moved position and shot geometry. Trajectory
   preview is off on both boards, while fired-shot feedback remains visible. Cloud-off and
   not-joined users see a notice. See `docs/agent/10-classroom-cloud.md` and
   `DEPLOYMENT.md`.
