@@ -6,7 +6,7 @@
  * and incoming "garbage" asteroids are generated locally and mirrored via the
  * realtime snapshot.
  */
-import type { AsteroidSpec, LevelConfig } from '../levels/types';
+import type { AsteroidSpec, Facing, LevelConfig } from '../levels/types';
 import type { Point } from '../logic/lineMath';
 import type { Bounds } from '../logic/coordinateTransform';
 import type { ItemKind, VersusItem } from './types';
@@ -16,6 +16,20 @@ export const VERSUS_HEARTS = 5;
 export const VERSUS_START_ASTEROIDS = 6;
 /** How long an item stays on the grid before vanishing. */
 export const ITEM_LIFETIME_MS = 6000;
+
+/** Campaign-identical moving-cannon geometry for one dialed Versus equation. */
+export function versusShotGeometry(
+  m: number,
+  b: number,
+  xOffset: number,
+  facing: Facing,
+): { shipX: number; fireM: number; fireB: number } {
+  const shipX = xOffset;
+  const bEff = b - m * xOffset;
+  const fireM = facing === 'right' ? m : -m;
+  const fireB = bEff + shipX * (m - fireM);
+  return { shipX, fireM, fireB };
+}
 
 /** Mulberry32 — a tiny deterministic PRNG seeded from the match seed. */
 export function mulberry32(seed: number): () => number {
@@ -53,7 +67,7 @@ export function buildVersusAsteroids(seed: number): AsteroidSpec[] {
   }));
 }
 
-/** The shared Versus level: all quadrants, slope + intercept + facing, 5 hearts. */
+/** The shared Versus level: all quadrants, slope + intercept + x-offset + facing. */
 export function buildVersusLevel(seed: number): LevelConfig {
   return {
     id: `versus-${seed}`,
@@ -61,8 +75,8 @@ export function buildVersusLevel(seed: number): LevelConfig {
     learningGoal: 'Clear your asteroids before your rival clears theirs.',
     quadrantMode: 'all-quadrants',
     equationForm: 'y=mx+b',
-    allowedControls: ['slope', 'yIntercept', 'direction'],
-    defaults: { m: 1, b: 0, facing: 'right' },
+    allowedControls: ['slope', 'yIntercept', 'xOffset', 'direction'],
+    defaults: { m: 1, b: 0, xOffset: 0, facing: 'right' },
     bounds: VERSUS_BOUNDS,
     ship: { position: { x: 0, y: 0 } },
     asteroids: buildVersusAsteroids(seed),
@@ -84,8 +98,6 @@ export function makeAddedAsteroids(rng: () => number, taken: Set<string>, count:
   }));
 }
 
-const ITEM_KINDS: ItemKind[] = ['add', 'freeze'];
-
 /** A new attack item at a random open grid point, or null if none is free. */
 export function spawnItem(
   rng: () => number,
@@ -97,7 +109,7 @@ export function spawnItem(
     const y = Math.floor(rng() * 15) - 7;
     const key = `${x},${y}`;
     if ((x !== 0 || y !== 0) && !occupied.has(key)) {
-      const kind = ITEM_KINDS[Math.floor(rng() * ITEM_KINDS.length)];
+      const kind: ItemKind = rng() < 0.5 ? 'add' : 'freeze';
       return { id: `it-${now}-${tries}`, point: { x, y }, kind, expiresAt: now + ITEM_LIFETIME_MS };
     }
   }

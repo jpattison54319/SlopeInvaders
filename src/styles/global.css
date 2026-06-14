@@ -38,6 +38,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 #root {
   width: 100%;
   max-width: 1180px;
@@ -255,11 +267,6 @@ input:focus-visible {
   line-height: 1.18;
   color: var(--cyan);
   text-shadow: 0 0 18px rgba(94, 241, 255, 0.48), 4px 4px 0 #081129;
-}
-.menu__copy h1 span {
-  display: block;
-  color: var(--amber);
-  text-shadow: 0 0 18px rgba(255, 209, 102, 0.48), 4px 4px 0 #24160b;
 }
 .menu__copy p {
   max-width: 680px;
@@ -3357,6 +3364,198 @@ body {
   mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 82%);
 }
 
+/* ---------- Menu entrance: superhero impact landing ---------- */
+
+/* Default: elements stay invisible until .menu--loaded triggers them.
+   Using opacity avoids a flash of un-animated content. */
+.menu--tactical.menu--animate .menu__brand,
+.menu--tactical.menu--animate .menu__actions,
+.menu--tactical.menu--animate .menu__coach,
+.menu--tactical.menu--animate .level-select__header,
+.menu--tactical.menu--animate .level-card,
+.menu--tactical.menu--animate .menu__hero-art,
+.menu--tactical.menu--animate .menu__kicker,
+.menu--tactical.menu--animate .menu__copy > p {
+  opacity: 0;
+}
+
+.menu--tactical .menu__copy .menu__title-word {
+  display: block;
+  color: var(--cyan);
+  text-shadow: 0 0 18px rgba(94, 241, 255, 0.48), 4px 4px 0 #081129;
+}
+
+.menu--tactical .menu__copy .menu__title-word--amber {
+  color: var(--amber);
+  text-shadow: 0 0 18px rgba(255, 209, 102, 0.48), 4px 4px 0 #24160b;
+}
+
+.menu--tactical.menu--animate .menu__copy .menu__title-letter {
+  display: inline-block;
+  opacity: 0;
+  --letter-glow: rgba(94, 241, 255, 0.9);
+}
+
+.menu--tactical .menu__copy .menu__title-word--amber .menu__title-letter {
+  --letter-glow: rgba(255, 209, 102, 0.9);
+}
+
+@keyframes brandImpact {
+  0% { transform: translateX(-250%) rotate(-20deg) scale(0.7); opacity: 0; }
+  70% { transform: translateX(8%) rotate(2deg) scale(1.05); opacity: 1; }
+  85% { transform: translateX(-2%) scale(0.98); }
+  100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes navImpact {
+  0% { transform: translateX(250%) rotate(20deg) scale(0.7); opacity: 0; }
+  70% { transform: translateX(-8%) rotate(-2deg) scale(1.05); opacity: 1; }
+  85% { transform: translateX(2%) scale(0.98); }
+  100% { transform: translateX(0) rotate(0) scale(1); opacity: 1; }
+}
+
+@keyframes coachImpact {
+  0% { transform: translateX(-120%) rotate(-6deg); opacity: 0; }
+  70% { transform: translateX(4%) rotate(1deg); opacity: 1; }
+  100% { transform: translateX(0) rotate(0); opacity: 1; }
+}
+
+@keyframes bottomImpact {
+  0% { transform: translateY(120%) scale(0.85); opacity: 0; }
+  65% { transform: translateY(-10%) scale(1.03); opacity: 1; }
+  85% { transform: translateY(3%) scale(0.98); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes heroShipFlyIn {
+  0% {
+    transform: translate(130%, -100%) scale(0.12) rotate(-45deg);
+    opacity: 0;
+    filter: blur(2px);
+  }
+  60% {
+    transform: translate(-6%, 6%) scale(1.08) rotate(4deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+  80% {
+    transform: translate(3%, -3%) scale(0.97) rotate(-2deg);
+  }
+  100% {
+    transform: translate(0, 0) scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@keyframes heroThrusterBlast {
+  0%, 100% { opacity: 0.72; transform: scaleY(1); }
+  50% { opacity: 1; transform: scaleY(1.6); }
+}
+
+@keyframes titleLetterImpact {
+  0% {
+    transform: translateY(-420%) scale(3.2) rotate(-10deg);
+    opacity: 0;
+    text-shadow: 0 0 70px var(--letter-glow);
+  }
+  45% {
+    transform: translateY(0) scale(1.15) rotate(2deg);
+    opacity: 1;
+    text-shadow: 0 0 32px var(--letter-glow);
+  }
+  60% {
+    transform: translateY(0) scale(0.88) rotate(-2deg);
+  }
+  75% {
+    transform: translateY(0) scale(1.06) rotate(1deg);
+  }
+  100% {
+    transform: translateY(0) scale(1) rotate(0);
+    opacity: 1;
+    text-shadow: 0 0 18px var(--letter-glow);
+  }
+}
+
+@keyframes kickerFadeIn {
+  0% { opacity: 0; transform: translateY(-20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes paragraphFadeIn {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Impact timing */
+.menu--tactical.menu--animate.menu--loaded .menu__brand {
+  animation: brandImpact 0.65s cubic-bezier(0.22, 1.4, 0.36, 1) 0ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__actions {
+  animation: navImpact 0.65s cubic-bezier(0.22, 1.4, 0.36, 1) 80ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__coach {
+  animation: coachImpact 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) 260ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .level-select__header {
+  animation: bottomImpact 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) 360ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .level-card {
+  animation: bottomImpact 0.55s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__hero-art {
+  animation: heroShipFlyIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) 800ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__hero-thruster {
+  animation: heroThrusterBlast 0.22s ease-in-out 900ms 5;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__title-letter {
+  animation: titleLetterImpact 0.6s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__kicker {
+  animation: kickerFadeIn 0.5s ease-out 900ms both;
+}
+.menu--tactical.menu--animate.menu--loaded .menu__copy > p {
+  animation: paragraphFadeIn 0.5s ease-out 1100ms both;
+}
+
+/* Keep ship's idle hover delayed until after fly-in. */
+.menu--tactical .menu__hero-art img {
+  animation: heroShipIdle 5s ease-in-out infinite both;
+  animation-delay: 2s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu--tactical.menu--animate .menu__brand,
+  .menu--tactical.menu--animate .menu__actions,
+  .menu--tactical.menu--animate .menu__coach,
+  .menu--tactical.menu--animate .level-select__header,
+  .menu--tactical.menu--animate .level-card,
+  .menu--tactical.menu--animate .menu__hero-art,
+  .menu--tactical.menu--animate .menu__title-letter,
+  .menu--tactical.menu--animate .menu__kicker,
+  .menu--tactical.menu--animate .menu__copy > p {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+
+  .menu--tactical.menu--animate.menu--loaded .menu__brand,
+  .menu--tactical.menu--animate.menu--loaded .menu__actions,
+  .menu--tactical.menu--animate.menu--loaded .menu__coach,
+  .menu--tactical.menu--animate.menu--loaded .level-select__header,
+  .menu--tactical.menu--animate.menu--loaded .level-card,
+  .menu--tactical.menu--animate.menu--loaded .menu__hero-art,
+  .menu--tactical.menu--animate.menu--loaded .menu__title-letter,
+  .menu--tactical.menu--animate.menu--loaded .menu__kicker,
+  .menu--tactical.menu--animate.menu--loaded .menu__copy > p {
+    animation: none;
+  }
+
+  .menu--tactical .menu__hero-art img {
+    animation-delay: 0s;
+  }
+}
+
 /* Asset-backed commands */
 .tactical-button {
   position: relative;
@@ -4809,12 +5008,20 @@ body {
 
 /* --- Versus (live 1v1 duel) -------------------------------------------- */
 .versus {
-  min-height: 100vh;
-  padding: 0.8rem 1rem 2rem;
+  --versus-board-size: 400px;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  margin-top: -24px;
+  margin-bottom: -48px;
+  margin-left: calc(50% - 50vw);
+  padding: 0.55rem clamp(0.75rem, 2vw, 2rem) 0.7rem;
+  overflow: clip;
   background: linear-gradient(rgba(3, 7, 20, 0.6), rgba(3, 7, 20, 0.9));
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.55rem;
 }
 
 .versus__bar {
@@ -4834,22 +5041,279 @@ body {
 }
 
 .versus__arena {
-  display: flex;
-  gap: 1.2rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, var(--versus-board-size));
+  gap: clamp(0.75rem, 2vw, 1.5rem);
   justify-content: center;
-  flex-wrap: wrap;
+  align-items: start;
+  min-height: 0;
 }
 
 .versus__side {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  width: 400px;
+  gap: 0.45rem;
+  width: var(--versus-board-size);
   max-width: 100%;
+}
+
+.versus__side > .konvajs-content {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1;
+}
+
+.versus__side > .konvajs-content canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.versus .controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.45rem;
+}
+
+.versus .controls__equation {
+  min-width: 0;
+  padding: 0.4rem 0.35rem;
+  font-size: clamp(0.68rem, 1.2vw, 0.9rem);
+}
+
+.versus .controls__steppers {
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.versus .stepper {
+  min-width: 0;
+}
+
+.versus .stepper__label {
+  margin-bottom: 0.2rem;
+  font-size: 0.58rem;
+}
+
+.versus .stepper__row {
+  gap: 0.25rem;
+}
+
+.versus .stepper__btn {
+  width: 1.8rem;
+}
+
+.versus .stepper__input {
+  padding: 0.35rem 0.2rem;
+  font-size: 0.85rem;
+}
+
+.versus .direction-toggle {
+  margin-top: 0;
+}
+
+.versus .direction-toggle__label {
+  margin-bottom: 0.2rem;
+  font-size: 0.58rem;
+}
+
+.versus .direction-toggle__buttons {
+  min-width: 0;
+}
+
+.versus .direction-btn {
+  min-width: 0;
+  padding: 0.4rem 0.25rem;
+  font-size: 0.52rem;
+}
+
+.versus .controls__actions {
+  min-width: 0;
+}
+
+.versus .controls__actions .tactical-button {
+  min-width: 0;
+  min-height: 2.6rem;
+  gap: 0.25rem;
+  padding: 0.25rem;
+}
+
+.versus .controls__actions .tactical-button--large .tactical-button__art {
+  width: clamp(2.25rem, 3.5vw, 2.75rem);
+}
+
+.versus .controls__actions .tactical-button__label {
+  font-size: 0.5rem;
+  overflow-wrap: normal;
+}
+
+.versus .controls__actions .key-hint--button {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.2rem;
+  margin-left: 0;
 }
 
 .versus__side--mirror {
   opacity: 0.96;
+}
+
+.versus__side--attack-impact {
+  animation: versus-impact-pulse 0.7s ease-out;
+}
+
+.versus__side--frozen::after {
+  content: '';
+  position: absolute;
+  inset: 42px 0 0;
+  z-index: 5;
+  pointer-events: none;
+  border: 3px solid rgba(143, 248, 255, 0.82);
+  border-radius: 9px;
+  background:
+    linear-gradient(135deg, rgba(143, 248, 255, 0.16), transparent 38%),
+    repeating-linear-gradient(45deg, transparent 0 18px, rgba(143, 248, 255, 0.08) 18px 20px);
+  box-shadow: inset 0 0 35px rgba(143, 248, 255, 0.28), 0 0 25px rgba(143, 248, 255, 0.26);
+  animation: versus-freeze-flash 0.45s ease-out;
+}
+
+.versus__attack-flight {
+  position: absolute;
+  top: 205px;
+  left: calc(50% - 34px);
+  z-index: 18;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border: 3px solid currentColor;
+  border-radius: 50%;
+  background: rgba(4, 12, 31, 0.96);
+  box-shadow: 0 0 28px currentColor;
+  pointer-events: none;
+}
+
+.versus__attack-flight span {
+  font-family: var(--pixel-font);
+  font-size: 1.05rem;
+  font-weight: 900;
+}
+
+.versus__attack-flight--add {
+  color: var(--tactical-danger);
+}
+
+.versus__attack-flight--freeze {
+  color: var(--tactical-cyan);
+}
+
+.versus__attack-flight--outgoing {
+  animation: versus-flight-out 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.versus__attack-flight--incoming {
+  animation: versus-flight-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.versus__attack-banner {
+  position: absolute;
+  top: 54px;
+  left: 50%;
+  z-index: 12;
+  display: grid;
+  gap: 5px;
+  width: min(330px, calc(100% - 24px));
+  padding: 13px 16px;
+  transform: translateX(-50%);
+  border: 2px solid currentColor;
+  border-radius: 8px;
+  background: rgba(4, 12, 31, 0.94);
+  text-align: center;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.48), 0 0 22px currentColor;
+  pointer-events: none;
+  animation: versus-banner-in 0.22s ease-out both;
+}
+
+.versus__attack-banner strong {
+  font-family: var(--pixel-font);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+}
+
+.versus__attack-banner span {
+  color: var(--text);
+  font-size: 0.7rem;
+}
+
+.versus__attack-banner--add {
+  color: var(--tactical-danger);
+}
+
+.versus__attack-banner--freeze {
+  color: var(--tactical-cyan);
+}
+
+@keyframes versus-flight-out {
+  from {
+    opacity: 0;
+    transform: translateX(-330px) scale(0.55);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(330px) scale(1);
+  }
+}
+
+@keyframes versus-flight-in {
+  from {
+    opacity: 0;
+    transform: translateX(330px) scale(0.55);
+  }
+  35% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-330px) scale(1);
+  }
+}
+
+@keyframes versus-banner-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes versus-impact-pulse {
+  0%,
+  100% {
+    filter: none;
+  }
+  35% {
+    filter: brightness(1.7) saturate(1.5);
+  }
+}
+
+@keyframes versus-freeze-flash {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .versus__side-head {
@@ -4930,8 +5394,74 @@ body {
 }
 
 @media (max-width: 900px) {
+  .versus__attack-flight {
+    top: min(205px, calc(var(--versus-board-size) / 2));
+  }
+}
+
+@media (max-width: 700px) {
+  .versus {
+    width: auto;
+    height: auto;
+    min-height: calc(100dvh - 40px);
+    margin: 0;
+    padding: 0.65rem;
+    overflow: visible;
+  }
+
+  .versus__arena {
+    grid-template-columns: minmax(0, min(420px, 100%));
+  }
+
   .versus__side {
-    width: min(420px, 100%);
+    width: 100%;
+  }
+
+  .versus__attack-flight {
+    top: calc(50% - 34px);
+  }
+
+  .versus__attack-flight--outgoing {
+    animation-name: versus-flight-down;
+  }
+
+  .versus__attack-flight--incoming {
+    animation-name: versus-flight-up;
+  }
+
+  .versus .controls {
+    padding: 0.75rem;
+  }
+}
+
+@keyframes versus-flight-down {
+  from {
+    opacity: 0;
+    transform: translateY(-230px) scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(230px) scale(1);
+  }
+}
+
+@keyframes versus-flight-up {
+  from {
+    opacity: 0;
+    transform: translateY(230px) scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-230px) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .versus__attack-flight,
+  .versus__attack-banner,
+  .versus__side--attack-impact,
+  .versus__side--frozen::after {
+    animation-duration: 0.01ms;
   }
 }
 

@@ -88,7 +88,10 @@ update which also caps a match at 2 players). The duel (`VersusMatchScreen`,
 driven by `useVersusMatch`) shows both boards live side by side: you control
 yours, the opponent's is a read-only mirror updated over a Supabase Realtime
 broadcast channel. Both derive the same asteroid field from the match's shared
-`level_seed` (`src/game/versus/field.ts`). It's a race — first to clear all
+`level_seed` (`src/game/versus/field.ts`). Players can adjust slope, y-intercept,
+x-offset, and facing; persisted gameplay keybindings (A/D by default) move the
+cannon horizontally, and the broadcast snapshot mirrors its moved position and
+facing-adjusted line. It's a race — first to clear all
 asteroids without losing all 5 hearts wins. `+2` (garbage asteroids) and `❄`
 (freeze) attack pickups spawn on your grid; shooting one sends its effect to the
 opponent. Both boards hide the trajectory preview so learners must calculate the

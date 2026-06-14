@@ -527,6 +527,21 @@ describe('App shell', () => {
     expect(settings!.querySelector('.tactical-button__image--default')).toBeTruthy();
   });
 
+  test('plays the home entrance only on the first menu visit', async () => {
+    await renderApp();
+
+    const firstMenu = host.querySelector('main.menu--tactical');
+    expect(firstMenu?.classList.contains('menu--animate')).toBe(true);
+
+    await click('Campaign');
+    await click('Modes');
+
+    const returnedMenu = host.querySelector('main.menu--tactical');
+    expect(returnedMenu).toBeTruthy();
+    expect(returnedMenu?.classList.contains('menu--animate')).toBe(false);
+    expect(returnedMenu?.classList.contains('menu--loaded')).toBe(true);
+  });
+
   test('navigates mode → galaxy → mission → game, swaps to game music, and back', async () => {
     await renderApp();
 

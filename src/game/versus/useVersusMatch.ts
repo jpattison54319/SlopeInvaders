@@ -20,10 +20,19 @@ import {
   makeAddedAsteroids,
   mulberry32,
   spawnItem,
+  versusShotGeometry,
   VERSUS_BOUNDS,
   VERSUS_HEARTS,
 } from './field';
-import type { BoardSnapshot, ItemKind, MatchRole, MatchMessage, VersusItem } from './types';
+import type {
+  AttackAck,
+  AttackEvent,
+  AttackVisual,
+  BoardSnapshot,
+  MatchRole,
+  MatchMessage,
+  VersusItem,
+} from './types';
 
 const SHOT_MS = 600;
 const FREEZE_MS = 2500;
@@ -37,11 +46,14 @@ export type MatchResult = 'won' | 'lost' | null;
 export interface VersusMatchState {
   myLevel: LevelConfig;
   mirrorLevel: LevelConfig;
-  /** My dialed slope/intercept and the facing-mirrored slope the board draws. */
+  /** My dialed equation and the effective geometry the board draws/fires. */
   m: number;
   b: number;
+  xOffset: number;
   facing: Facing;
+  shipX: number;
   myFireM: number;
+  myFireB: number;
   destroyed: ReadonlySet<string>;
   items: VersusItem[];
   shot: ShotState | null;
@@ -50,6 +62,7 @@ export interface VersusMatchState {
   myTotal: number;
   myCleared: number;
   frozen: boolean;
+  attackVisuals: AttackVisual[];
   opponent: BoardSnapshot | null;
   oppShotSeg: { start: Point; end: Point } | null;
   oppName: string;
@@ -57,6 +70,7 @@ export interface VersusMatchState {
   result: MatchResult;
   setM: (v: number) => void;
   setB: (v: number) => void;
+  setXOffset: (v: number) => void;
   setFacing: (v: Facing) => void;
   fire: () => void;
   onExplosionDone: (id: string) => void;
@@ -77,6 +91,7 @@ export function useVersusMatch(
 
   const [m, setM] = useState(baseLevel.defaults.m);
   const [b, setB] = useState(baseLevel.defaults.b);
+  const [xOffset, setXOffset] = useState(baseLevel.defaults.xOffset ?? 0);
   const [facing, setFacing] = useState<Facing>(baseLevel.defaults.facing ?? 'right');
   const [destroyed, setDestroyed] = useState<ReadonlySet<string>>(() => new Set());
   const [addedAsteroids, setAddedAsteroids] = useState<AsteroidSpec[]>([]);
@@ -85,6 +100,7 @@ export function useVersusMatch(
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
   const [hearts, setHearts] = useState(VERSUS_HEARTS);
   const [frozen, setFrozen] = useState(false);
+  const [attackVisuals, setAttackVisuals] = useState<AttackVisual[]>([]);
 
   const [opponent, setOpponent] = useState<BoardSnapshot | null>(null);
   const [oppShotSeg, setOppShotSeg] = useState<{ start: Point; end: Point } | null>(null);
@@ -98,11 +114,19 @@ export function useVersusMatch(
   const shotRafRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
   const greetedRef = useRef(false);
+  const processedAttackIdsRef = useRef(new Set<string>());
+  const timerIdsRef = useRef<number[]>([]);
+  const freezeTimeoutRef = useRef<number | null>(null);
 
   const myAsteroids = useMemo(() => [...baseLevel.asteroids, ...addedAsteroids], [baseLevel, addedAsteroids]);
   const myTotal = myAsteroids.length;
   const myCleared = destroyed.size;
-  const myFireM = facing === 'right' ? m : -m;
+  const { shipX, fireM: myFireM, fireB: myFireB } = versusShotGeometry(
+    m,
+    b,
+    xOffset,
+    facing,
+  );
 
   const myLevel = useMemo<LevelConfig>(() => ({ ...baseLevel, asteroids: myAsteroids }), [baseLevel, myAsteroids]);
   const mirrorLevel = useMemo<LevelConfig>(
@@ -111,9 +135,9 @@ export function useVersusMatch(
   );
 
   // --- Live snapshot ref for the spawn timer / outgoing broadcasts ----------
-  const liveRef = useRef({ m, b, facing, destroyed, addedAsteroids, items, hearts });
+  const liveRef = useRef({ m, b, xOffset, facing, destroyed, addedAsteroids, items, hearts });
   useEffect(() => {
-    liveRef.current = { m, b, facing, destroyed, addedAsteroids, items, hearts };
+    liveRef.current = { m, b, xOffset, facing, destroyed, addedAsteroids, items, hearts };
   });
 
   const buildSnapshot = useCallback((): BoardSnapshot => {
@@ -121,6 +145,7 @@ export function useVersusMatch(
     return {
       m: live.m,
       b: live.b,
+      xOffset: live.xOffset,
       facing: live.facing,
       destroyedIds: [...live.destroyed],
       addedAsteroids: live.addedAsteroids,
@@ -132,11 +157,37 @@ export function useVersusMatch(
   }, [baseLevel]);
 
   // --- Incoming attacks ----------------------------------------------------
-  const applyIncomingAttack = useCallback((effect: ItemKind) => {
-    if (effect === 'freeze') {
+  const queueTimer = useCallback((callback: () => void, delay: number) => {
+    const id = window.setTimeout(callback, delay);
+    timerIdsRef.current.push(id);
+  }, []);
+
+  const removeAttackVisual = useCallback(
+    (attackId: string, direction: AttackVisual['direction']) => {
+      setAttackVisuals((prev) =>
+        prev.filter(
+          (visual) => visual.event.id !== attackId || visual.direction !== direction,
+        ),
+      );
+    },
+    [],
+  );
+
+  const applyIncomingAttack = useCallback((event: AttackEvent): AttackAck => {
+    if (event.effect === 'freeze') {
       setFrozen(true);
-      window.setTimeout(() => setFrozen(false), FREEZE_MS);
-      return;
+      if (freezeTimeoutRef.current !== null) {
+        window.clearTimeout(freezeTimeoutRef.current);
+      }
+      freezeTimeoutRef.current = window.setTimeout(() => {
+        setFrozen(false);
+        freezeTimeoutRef.current = null;
+      }, FREEZE_MS);
+      return {
+        attackId: event.id,
+        effect: event.effect,
+        appliedAt: Date.now(),
+      };
     }
     // 'add': drop garbage asteroids onto my field.
     setAddedAsteroids((prev) => {
@@ -147,7 +198,36 @@ export function useVersusMatch(
       for (const it of live.items) taken.add(pointKey(it.point));
       return [...prev, ...makeAddedAsteroids(rngRef.current, taken, ADD_COUNT)];
     });
+    return {
+      attackId: event.id,
+      effect: event.effect,
+      appliedAt: Date.now(),
+    };
   }, [baseLevel]);
+
+  const receiveAttack = useCallback(
+    (event: AttackEvent) => {
+      if (processedAttackIdsRef.current.has(event.id)) return;
+      processedAttackIdsRef.current.add(event.id);
+      setAttackVisuals((prev) => [
+        ...prev,
+        { event, direction: 'incoming', phase: 'travel' },
+      ]);
+      queueTimer(() => {
+        const ack = applyIncomingAttack(event);
+        setAttackVisuals((prev) =>
+          prev.map((visual) =>
+            visual.event.id === event.id && visual.direction === 'incoming'
+              ? { ...visual, phase: 'impact' }
+              : visual,
+          ),
+        );
+        channelRef.current?.send({ type: 'attack-ack', ack });
+        queueTimer(() => removeAttackVisual(event.id, 'incoming'), 1800);
+      }, 550);
+    },
+    [applyIncomingAttack, queueTimer, removeAttackVisual],
+  );
 
   // --- Realtime channel ----------------------------------------------------
   useEffect(() => {
@@ -162,7 +242,26 @@ export function useVersusMatch(
         setOpponent(msg.snapshot);
         setOppShotSeg(msg.shotSeg);
       } else if (msg.type === 'attack') {
-        applyIncomingAttack(msg.effect);
+        if (msg.event) {
+          receiveAttack(msg.event);
+        } else {
+          receiveAttack({
+            id: `legacy-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            effect: msg.effect,
+            sourceName: 'Rival',
+            sourcePoint: { x: 0, y: 0 },
+            sentAt: Date.now(),
+          });
+        }
+      } else if (msg.type === 'attack-ack') {
+        setAttackVisuals((prev) =>
+          prev.map((visual) =>
+            visual.event.id === msg.ack.attackId && visual.direction === 'outgoing'
+              ? { ...visual, phase: 'confirmed' }
+              : visual,
+          ),
+        );
+        queueTimer(() => removeAttackVisual(msg.ack.attackId, 'outgoing'), 1800);
       } else if (msg.type === 'over') {
         // The opponent reached a terminal state: if they won, we lost (vice versa).
         setResult((prev) => prev ?? (msg.senderWon ? 'lost' : 'won'));
@@ -177,7 +276,7 @@ export function useVersusMatch(
       channel.close();
       channelRef.current = null;
     };
-  }, [matchId, myName, applyIncomingAttack]);
+  }, [matchId, myName, queueTimer, receiveAttack, removeAttackVisual]);
 
   // Broadcast my board whenever it changes.
   useEffect(() => {
@@ -187,7 +286,7 @@ export function useVersusMatch(
       snapshot: buildSnapshot(),
       shotSeg: shot ? { start: shot.start, end: shot.end } : null,
     });
-  }, [connected, m, b, facing, destroyed, addedAsteroids, items, hearts, shot, buildSnapshot]);
+  }, [connected, m, b, xOffset, facing, destroyed, addedAsteroids, items, hearts, shot, buildSnapshot]);
 
   // --- Item economy (local) ------------------------------------------------
   useEffect(() => {
@@ -222,18 +321,26 @@ export function useVersusMatch(
   // --- Firing --------------------------------------------------------------
   const fire = useCallback(() => {
     if (result || shot || frozen) return;
-    const fireM = facing === 'right' ? m : -m;
-    const fireB = b;
     const aliveSpecs = myAsteroids.filter((a) => !destroyed.has(a.id));
-    const results = evaluateShot(fireM, fireB, aliveSpecs, 0, DEFAULT_HIT_TOLERANCE, facing, []);
+    const results = evaluateShot(
+      myFireM,
+      myFireB,
+      aliveSpecs,
+      shipX,
+      DEFAULT_HIT_TOLERANCE,
+      facing,
+      [],
+    );
     const { destroyedIds } = resolveDestroyed(results, aliveSpecs);
 
-    const facingOk = (p: Point) => (facing === 'right' ? p.x >= 0 : p.x <= 0);
+    const facingOk = (p: Point) => (facing === 'right' ? p.x >= shipX : p.x <= shipX);
     const hitItems = items.filter(
-      (it) => facingOk(it.point) && isPointOnLine(fireM, fireB, it.point, DEFAULT_HIT_TOLERANCE),
+      (it) =>
+        facingOk(it.point) &&
+        isPointOnLine(myFireM, myFireB, it.point, DEFAULT_HIT_TOLERANCE),
     );
 
-    const rawSeg = lineBoardSegment(fireM, fireB, VERSUS_BOUNDS, 0, facing);
+    const rawSeg = lineBoardSegment(myFireM, myFireB, VERSUS_BOUNDS, shipX, facing);
     if (!rawSeg) {
       const live = liveRef.current;
       setHearts((h) => h - 1);
@@ -268,7 +375,40 @@ export function useVersusMatch(
       if (hitItems.length > 0) {
         const hitIds = new Set(hitItems.map((it) => it.id));
         setItems((prev) => prev.filter((it) => !hitIds.has(it.id)));
-        for (const it of hitItems) channelRef.current?.send({ type: 'attack', effect: it.kind });
+        setExplosions((prev) => [
+          ...prev,
+          ...hitItems.map((item, index) => ({
+            id: `pickup-${now}-${index}`,
+            point: item.point,
+          })),
+        ]);
+        const sentAt = Date.now();
+        for (const item of hitItems) {
+          const event: AttackEvent = {
+            id: `${getOrCreateStudentId()}-${sentAt}-${item.id}`,
+            effect: item.kind,
+            sourceName: myName || 'Opponent',
+            sourcePoint: item.point,
+            sentAt,
+          };
+          setAttackVisuals((prev) => [
+            ...prev,
+            { event, direction: 'outgoing', phase: 'travel' },
+          ]);
+          channelRef.current?.send({ type: 'attack', effect: event.effect, event });
+          queueTimer(() => {
+            setAttackVisuals((prev) =>
+              prev.map((visual) =>
+                visual.event.id === event.id &&
+                visual.direction === 'outgoing' &&
+                visual.phase === 'travel'
+                  ? { ...visual, phase: 'impact' }
+                  : visual,
+              ),
+            );
+          }, 550);
+          queueTimer(() => removeAttackVisual(event.id, 'outgoing'), 3600);
+        }
       }
       const missed = destroyedIds.size === 0 && hitItems.length === 0;
       const live = liveRef.current;
@@ -287,11 +427,28 @@ export function useVersusMatch(
       }
     };
     shotRafRef.current = requestAnimationFrame(step);
-  }, [result, shot, frozen, facing, m, b, myAsteroids, destroyed, items, baseLevel]);
+  }, [
+    result,
+    shot,
+    frozen,
+    facing,
+    shipX,
+    myFireM,
+    myFireB,
+    myAsteroids,
+    destroyed,
+    items,
+    baseLevel,
+    myName,
+    queueTimer,
+    removeAttackVisual,
+  ]);
 
   useEffect(
     () => () => {
       if (shotRafRef.current != null) cancelAnimationFrame(shotRafRef.current);
+      for (const id of timerIdsRef.current) window.clearTimeout(id);
+      if (freezeTimeoutRef.current !== null) window.clearTimeout(freezeTimeoutRef.current);
     },
     [],
   );
@@ -305,8 +462,11 @@ export function useVersusMatch(
     mirrorLevel,
     m,
     b,
+    xOffset,
     facing,
+    shipX,
     myFireM,
+    myFireB,
     destroyed,
     items,
     shot,
@@ -315,6 +475,7 @@ export function useVersusMatch(
     myTotal,
     myCleared,
     frozen,
+    attackVisuals,
     opponent,
     oppShotSeg,
     oppName,
@@ -322,6 +483,7 @@ export function useVersusMatch(
     result,
     setM,
     setB,
+    setXOffset,
     setFacing,
     fire,
     onExplosionDone,
