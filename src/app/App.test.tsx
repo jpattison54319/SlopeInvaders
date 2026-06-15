@@ -6,7 +6,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { music, uiButtons } from '../assets/assetMap';
 import { useMusic } from '../game/audio/useMusic';
-import { orderedLevels } from '../game/campaign/zones';
+import { ARCADE_UNLOCK_ZONE_ID, orderedLevels } from '../game/campaign/zones';
 import App from './App';
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -310,7 +310,7 @@ afterEach(() => {
 });
 
 describe('App shell', () => {
-  test('starts with Arcade locked until Campaign is complete', async () => {
+  test('starts with Arcade locked until Zone 2 is complete', async () => {
     await renderApp();
 
     const buttonLabels = Array.from(host.querySelectorAll('button')).map((button) =>
@@ -323,7 +323,7 @@ describe('App shell', () => {
     expect(host.textContent).toContain('Arcade');
     expect(host.textContent).toContain('Versus');
     expect(host.textContent).not.toContain('Coming Soon');
-    expect(host.textContent).toContain('Beat Campaign to Unlock');
+    expect(host.textContent).toContain('Complete Zone 2 to Unlock');
     expect(host.textContent?.match(/Ready/g)?.length).toBe(2);
     const arcadeButton = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(
       (button) => button.textContent?.includes('Arcade'),
@@ -349,22 +349,32 @@ describe('App shell', () => {
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);
   });
 
-  test('does not offer an Arcade bypass before Campaign completion', async () => {
+  test('does not offer an Arcade bypass before Zone 2 completion', async () => {
+    seedCompletedLevels(
+      orderedLevels
+        .filter(({ zone }) => zone.number < 2)
+        .map(({ level }) => level.id),
+    );
     await renderApp();
 
     const arcadeButton = Array.from(host.querySelectorAll<HTMLButtonElement>('button')).find(
       (button) => button.textContent?.includes('Arcade'),
     );
     expect(arcadeButton?.disabled).toBe(true);
+    expect(host.textContent).toContain('Complete Zone 2 to Unlock');
     expect(host.textContent).not.toContain('Campaign Recommended');
     expect(host.textContent).not.toContain('Play Arcade Anyway');
   });
 
-  test('campaign graduates can enter Arcade and complete its app flow', async () => {
-    seedCompletedLevels(orderedLevels.map(({ level }) => level.id));
+  test('Zone 2 graduates can enter Arcade and complete its app flow', async () => {
+    seedCompletedLevels(
+      orderedLevels
+        .filter(({ zone }) => zone.id === ARCADE_UNLOCK_ZONE_ID)
+        .map(({ level }) => level.id),
+    );
     await renderApp();
 
-    expect(host.textContent).not.toContain('Beat Campaign to Unlock');
+    expect(host.textContent).not.toContain('Complete Zone 2 to Unlock');
     expect(host.textContent?.match(/Ready/g)?.length).toBe(3);
     await click('Arcade');
     expect(host.textContent).toContain('Arcade Run');

@@ -118,12 +118,12 @@ export function MenuScreen({
 
         <div className="level-grid">
           {modes.map((mode, i) => {
-            const requiresCampaign = mode.id === 'arcade' && !arcadeUnlocked;
-            const playable = mode.status === 'available' && !requiresCampaign;
+            const requiresArcadeUnlock = mode.id === 'arcade' && !arcadeUnlocked;
+            const playable = mode.status === 'available' && !requiresArcadeUnlock;
             const status = playable
               ? 'Ready'
-              : requiresCampaign
-                ? 'Beat Campaign to Unlock'
+              : requiresArcadeUnlock
+                ? 'Complete Zone 2 to Unlock'
                 : 'Coming Soon';
             return (
               <button

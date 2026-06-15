@@ -47,7 +47,8 @@ Current product flow:
   five descending vertices, can be hit mid-fall through swept collision, and
   breach one of three shields if they leave the grid. Hold time decreases from
   `5.0s` to a `2.75s` floor; waves 1–2 show one target and Wave 3 onward can show
-  two. Incomplete Campaign players receive a recommendation notice but may play.
+  two. Arcade unlocks after Zone 2 is complete, once slope and y-intercept
+  instruction are finished; later Campaign zones are not required.
 - Arcade records are private/local (`slope-invaders:arcade-records-v1`) and
   appear in Pilot Profile. Arcade does not award Campaign XP, stars, badges, or
   adaptive data.
