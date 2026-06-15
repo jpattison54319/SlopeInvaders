@@ -10,6 +10,7 @@ Quick orientation:
 - Arcade uses a separate pure simulation under `src/game/arcade/`: falling
   asteroids pause at vertices, swept collision permits mid-fall hits, three
   breaches end a run, and wave pressure has a `2.75s` reasoning-time floor.
+  It unlocks after Zone 2 is complete; full Campaign completion is not required.
   Personal records persist in `slope-invaders:arcade-records-v1` and appear in
   Pilot Profile; Arcade never awards Campaign XP/stars/badges. See
   `docs/agent/11-arcade-mode.md`.

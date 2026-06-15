@@ -189,7 +189,7 @@ After the Zone 9 debrief, the player sees the Campaign completion screen with:
 - Total shots
 - A non-destructive Campaign replay option
 
-Campaign completion unlocks Arcade.
+Completing Zone 2 unlocks Arcade. Full Campaign completion still leads to the Campaign finale but is not required for Arcade.
 
 ## 5. Core Mathematical Game Model
 
@@ -1031,7 +1031,7 @@ The game is highly visual by design, so the coordinate-grid action still depends
 ```mermaid
 flowchart TD
     Menu["Main Menu"] --> Campaign["Campaign Galaxy"]
-    Menu --> ArcadeGate{"Campaign complete?"}
+    Menu --> ArcadeGate{"Zone 2 complete?"}
     Menu --> VersusLobby["Versus Lobby"]
     Menu --> Classroom["Classroom"]
     Menu --> Profile["Pilot Profile"]

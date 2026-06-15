@@ -6,6 +6,7 @@ import { useButtonClickSfx } from '../game/audio/buttonClick';
 import { modes, type GameModeId } from '../game/modes';
 import {
   zones,
+  ARCADE_UNLOCK_ZONE_ID,
   findZone,
   findCampaignLevel,
   nextLevelInZone,
@@ -155,9 +156,7 @@ export default function App() {
     root.style.setProperty('--space-0', theme.gradient[0]);
     root.style.setProperty('--space-1', theme.gradient[1]);
   }, [theme]);
-  const campaignComplete = zones
-    .filter((zone) => zone.status === 'available')
-    .every((zone) => progress.isZoneComplete(zone.id));
+  const arcadeUnlocked = progress.isZoneComplete(ARCADE_UNLOCK_ZONE_ID);
 
   const inGame =
     screen.name === 'game' || screen.name === 'versus-match' || screen.name === 'arcade-game';
@@ -206,7 +205,7 @@ export default function App() {
   const selectMode = (id: GameModeId) => {
     if (id === 'campaign') setScreen({ name: 'galaxy' });
     else if (id === 'versus') setScreen({ name: 'versus' });
-    else if (id === 'arcade' && campaignComplete) setScreen({ name: 'arcade-briefing' });
+    else if (id === 'arcade' && arcadeUnlocked) setScreen({ name: 'arcade-briefing' });
   };
 
   const advance = (levelId: string) => {
@@ -239,7 +238,7 @@ export default function App() {
         return (
           <MenuScreen
             modes={modes}
-            arcadeUnlocked={campaignComplete}
+            arcadeUnlocked={arcadeUnlocked}
             animateEntrance={!menuEntrancePlayed}
             onEntrancePlayed={markMenuEntrancePlayed}
             onSelectMode={selectMode}

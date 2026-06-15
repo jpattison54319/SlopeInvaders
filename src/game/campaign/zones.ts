@@ -36,6 +36,9 @@ export const zones: Zone[] = [
   zoneNine,
 ];
 
+/** Arcade opens once slope and y-intercept instruction is complete. */
+export const ARCADE_UNLOCK_ZONE_ID = zoneTwo.id;
+
 /** Flat, ordered list of every playable level across available zones. */
 export const orderedLevels: { zone: Zone; level: CampaignLevel }[] = zones
   .filter((z) => z.status === 'available')

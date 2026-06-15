@@ -49,8 +49,8 @@ Current user-facing flow:
 separately under `src/game/arcade/`. Asteroids pause at five descending
 vertices, can be intercepted mid-fall through swept collision, and damage one
 of three shields only when they breach the bottom. Vertex hold starts at `5.0s`
-and has a hard `2.75s` floor. Learners may enter immediately, but unfinished
-Campaign progress triggers a recommendation notice. Private local records use
+and has a hard `2.75s` floor. Arcade remains locked until Zone 2 is complete;
+later Campaign zones are not required. Private local records use
 `slope-invaders:arcade-records-v1` and appear in Pilot Profile; Arcade awards no
 Campaign XP, stars, badges, unlocks, or adaptive-tier data. See
 `docs/agent/11-arcade-mode.md`.

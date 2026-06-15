@@ -12,11 +12,11 @@ the same integrated learning loop as Campaign:
 4. Use mathematical feedback.
 5. Repeat under gradually increasing pressure.
 
-Arcade unlocks only after every level in the available Campaign is complete.
-Before then, its main-menu tile is disabled and reads
-`Beat Campaign to Unlock`. There is no bypass modal because Arcade assumes the
-full equation, all four quadrants, and facing-direction knowledge taught by
-Campaign.
+Arcade unlocks after every level in Zone 2 is complete. Before then, its
+main-menu tile is disabled and reads `Complete Zone 2 to Unlock`. There is no
+bypass modal. Completing Zone 2 means the learner has finished the dedicated
+slope and y-intercept instruction required for the core `y = mx + b` Arcade
+loop; later Campaign concepts remain valuable but are not required to enter.
 
 ## Revision 1 Rules
 
