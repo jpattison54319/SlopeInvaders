@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScreenChrome } from './ScreenChrome';
 import { CoachPanel } from '../game/components/CoachPanel';
 import { TacticalButton } from '../game/components/TacticalButton';
 import { TacticalPanel } from '../game/components/TacticalPanel';
 import { isCloudEnabled } from '../cloud/supabaseClient';
-import { joinClassroom } from '../cloud/classroom';
+import { getClassGoal, joinClassroom } from '../cloud/classroom';
+import { classGoalProgress, type ClassGoal } from '../cloud/classGoal';
 import {
   clearJoinedClassroom,
   getCadetName,
@@ -42,6 +43,27 @@ export function ClassroomScreen({
   const [code, setCode] = useState(initialJoinCode ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [goal, setGoal] = useState<ClassGoal | null>(null);
+
+  // Load the cooperative class goal (collective totals only) when in a class.
+  // (Clearing on leave happens in handleLeave, not here, to avoid a synchronous
+  // setState in the effect body.)
+  useEffect(() => {
+    if (!cloudOn || !joined) return;
+    let live = true;
+    getClassGoal(joined.joinCode)
+      .then((g) => {
+        if (live) setGoal(g);
+      })
+      .catch(() => {
+        /* best-effort: a missing goal never blocks the screen */
+      });
+    return () => {
+      live = false;
+    };
+  }, [cloudOn, joined]);
+
+  const goalProgress = classGoalProgress(goal);
 
   const handleJoin = async () => {
     setError(null);
@@ -81,6 +103,7 @@ export function ClassroomScreen({
   const handleLeave = () => {
     clearJoinedClassroom();
     setJoined(null);
+    setGoal(null);
   };
 
   const handleNameSave = () => {
@@ -114,6 +137,19 @@ export function ClassroomScreen({
             <p className="classroom__code-line">
               Class code <strong>{joined.joinCode}</strong>
             </p>
+            {goalProgress.active && (
+              <div className="class-goal" role="group" aria-label="Squadron goal">
+                <span className="menu__panel-label">Squadron Goal</span>
+                <p className="class-goal__caption">
+                  {goalProgress.label}: {goalProgress.current} / {goalProgress.target}
+                  {goalProgress.reached && ' — goal reached! 🎉'}
+                </p>
+                <div className="class-goal__track" aria-hidden>
+                  <div className="class-goal__fill" style={{ width: `${goalProgress.percent}%` }} />
+                </div>
+                <p className="class-goal__hint">Everyone&rsquo;s progress counts — fly together.</p>
+              </div>
+            )}
             <label className="classroom__field">
               <span>Cadet name</span>
               <input

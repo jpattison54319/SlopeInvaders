@@ -4,8 +4,29 @@ import { CoachPanel } from '../game/components/CoachPanel';
 import { TacticalButton } from '../game/components/TacticalButton';
 import { TacticalPanel } from '../game/components/TacticalPanel';
 import { isCloudEnabled } from '../cloud/supabaseClient';
-import { createClassroom, getDashboard, type DashboardData } from '../cloud/classroom';
+import { createClassroom, getDashboard, setClassGoal, type DashboardData } from '../cloud/classroom';
+import type { ClassGoalKind } from '../cloud/classGoal';
+import { orderedLevels } from '../game/campaign/zones';
 import { addTeacherClass, getTeacherClasses, type TeacherClass } from '../cloud/identity';
+
+type RosterSort = 'name' | 'stars' | 'accuracy' | 'levels' | 'xp';
+
+// Campaign scale, for the teacher's goal reference. Each level awards up to 3
+// stars, so a single cadet's full-completion ceiling is LEVELS and LEVELS × 3.
+const TOTAL_LEVELS = orderedLevels.length;
+const MAX_STARS_PER_CADET = TOTAL_LEVELS * 3;
+
+const SORTS: { id: RosterSort; label: string }[] = [
+  { id: 'name', label: 'Name' },
+  { id: 'stars', label: 'Stars' },
+  { id: 'accuracy', label: 'Accuracy' },
+  { id: 'levels', label: 'Levels' },
+  { id: 'xp', label: 'XP' },
+];
+
+function accuracyOf(s: { totalShots: number; totalHits: number }): number {
+  return s.totalShots > 0 ? s.totalHits / s.totalShots : 1;
+}
 
 interface TeacherDashboardScreenProps {
   /** Teacher key from a `?teacher=` deep link. */
@@ -44,6 +65,10 @@ export function TeacherDashboardScreen({
   const [busy, setBusy] = useState(false);
   const [openStudent, setOpenStudent] = useState<string | null>(null);
   const [saved, setSaved] = useState<TeacherClass[]>(() => getTeacherClasses());
+  const [sortBy, setSortBy] = useState<RosterSort>('name');
+  const [goalKind, setGoalKind] = useState<ClassGoalKind>('stars');
+  const [goalTarget, setGoalTarget] = useState('100');
+  const [goalMsg, setGoalMsg] = useState<string | null>(null);
 
   // Loading is derived (no extra state set inside the effect): we're fetching
   // whenever a class is selected but neither its data nor an error is in yet.
@@ -98,7 +123,48 @@ export function TeacherDashboardScreen({
     }
   };
 
+  const handleSaveGoal = async () => {
+    if (!activeKey) return;
+    setGoalMsg(null);
+    try {
+      await setClassGoal(activeKey, goalKind, Math.max(0, parseInt(goalTarget, 10) || 0));
+      setGoalMsg('Squadron goal saved — cadets will see the shared progress bar.');
+    } catch {
+      setGoalMsg('Could not save the goal. Try again.');
+    }
+  };
+
+  const handleClearGoal = async () => {
+    if (!activeKey) return;
+    setGoalMsg(null);
+    try {
+      await setClassGoal(activeKey, null, 0);
+      setGoalMsg('Goal cleared.');
+    } catch {
+      setGoalMsg('Could not clear the goal. Try again.');
+    }
+  };
+
   const activeSaved = saved.find((c) => c.teacherKey === activeKey);
+
+  // Teacher-only leaderboard sort (client-side over already-synced totals).
+  // Never shown to students — the learner view stays comparison-free.
+  const rosterStudents = data
+    ? [...data.students].sort((a, b) => {
+        switch (sortBy) {
+          case 'stars':
+            return b.totalStars - a.totalStars;
+          case 'accuracy':
+            return accuracyOf(b) - accuracyOf(a);
+          case 'levels':
+            return b.levelsCompleted - a.levelsCompleted;
+          case 'xp':
+            return b.totalXp - a.totalXp;
+          default:
+            return a.cadetName.localeCompare(b.cadetName);
+        }
+      })
+    : [];
 
   return (
     <ScreenChrome onBack={onBack} backLabel="Back" onOpenSettings={onOpenSettings}>
@@ -194,6 +260,66 @@ export function TeacherDashboardScreen({
               </TacticalPanel>
             )}
 
+            {data && (
+              <TacticalPanel className="teacher__goal">
+                <span className="menu__panel-label">Squadron Goal (cooperative)</span>
+                <p className="teacher__goal-blurb">
+                  Set one shared goal the whole class works toward together. Cadets see the
+                  combined class total — never a ranking against each other.
+                </p>
+                <p className="teacher__goal-ref">
+                  <strong>Scale reference:</strong> the campaign has {TOTAL_LEVELS} levels, so each
+                  cadet can earn up to {MAX_STARS_PER_CADET} stars (3★ per level).
+                  {data.students.length > 0 ? (
+                    <>
+                      {' '}With {data.students.length} cadet{data.students.length === 1 ? '' : 's'} joined,
+                      everyone finishing the whole game ≈{' '}
+                      <strong>
+                        {(goalKind === 'levels' ? TOTAL_LEVELS : MAX_STARS_PER_CADET) *
+                          data.students.length}{' '}
+                        {goalKind === 'levels' ? 'levels' : 'stars'}
+                      </strong>
+                      . Set the target a bit lower for a stretch-but-reachable goal.
+                    </>
+                  ) : (
+                    ' Multiply by your class size, then aim a bit lower for a reachable goal.'
+                  )}
+                </p>
+                <div className="teacher__goal-row">
+                  <select
+                    aria-label="Goal type"
+                    value={goalKind}
+                    onChange={(e) => setGoalKind(e.target.value as ClassGoalKind)}
+                  >
+                    <option value="stars">Stars earned together</option>
+                    <option value="levels">Levels cleared together</option>
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    aria-label="Goal target"
+                    value={goalTarget}
+                    onChange={(e) => setGoalTarget(e.target.value)}
+                  />
+                  <TacticalButton
+                    asset="confirm"
+                    label="Save goal"
+                    text="Save"
+                    size="small"
+                    onClick={handleSaveGoal}
+                  />
+                  <TacticalButton
+                    asset="close"
+                    label="Clear goal"
+                    text="Clear"
+                    size="small"
+                    onClick={handleClearGoal}
+                  />
+                </div>
+                {goalMsg && <p className="teacher__goal-msg">{goalMsg}</p>}
+              </TacticalPanel>
+            )}
+
             {loading && <p className="teacher__status">Loading class…</p>}
             {error && (
               <p className="classroom__error" role="alert">
@@ -210,6 +336,20 @@ export function TeacherDashboardScreen({
 
             {data && data.students.length > 0 && (
               <div className="teacher__roster" role="table" aria-label="Class roster">
+                <div className="teacher__sortbar" role="group" aria-label="Sort roster">
+                  <span className="teacher__sortbar-label">Sort by</span>
+                  {SORTS.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className={`teacher__sort ${sortBy === s.id ? 'teacher__sort--active' : ''}`.trim()}
+                      aria-pressed={sortBy === s.id}
+                      onClick={() => setSortBy(s.id)}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
                 <div className="teacher__roster-head" role="row">
                   <span role="columnheader">Cadet</span>
                   <span role="columnheader">Last active</span>
@@ -218,7 +358,7 @@ export function TeacherDashboardScreen({
                   <span role="columnheader">XP / Rank</span>
                   <span role="columnheader">Accuracy</span>
                 </div>
-                {data.students.map((s) => {
+                {rosterStudents.map((s) => {
                   const accuracy =
                     s.totalShots > 0 ? Math.round((s.totalHits / s.totalShots) * 100) : 100;
                   const isOpen = openStudent === s.studentId;

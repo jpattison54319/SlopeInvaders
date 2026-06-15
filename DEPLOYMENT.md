@@ -19,15 +19,20 @@ or even `file://` — `vite.config.ts` uses a relative `base`).
 ## 2. Enable the classroom cloud (optional, do this whenever)
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. In the project's **SQL Editor**, paste and run
+2. In the project's **SQL Editor**, paste and run, in order:
    [`supabase/migrations/0001_classroom.sql`](supabase/migrations/0001_classroom.sql),
    then [`supabase/migrations/0002_versus.sql`](supabase/migrations/0002_versus.sql),
-   then [`supabase/migrations/0003_dashboard_adaptivity.sql`](supabase/migrations/0003_dashboard_adaptivity.sql).
+   then [`supabase/migrations/0003_dashboard_adaptivity.sql`](supabase/migrations/0003_dashboard_adaptivity.sql),
+   then [`supabase/migrations/0004_class_goals.sql`](supabase/migrations/0004_class_goals.sql).
    The first creates the `classrooms`, `students`, and `level_results` tables; the
    second adds the `matches` table for live Versus; the third updates the teacher
    dashboard RPC to return each level's synced stats (including the adaptivity
-   tier + reason shown to teachers). All lock their tables with RLS
-   (default-deny) and expose only `SECURITY DEFINER` RPCs to the anon role.
+   tier + reason shown to teachers); the fourth adds the cooperative class goal
+   (`set_class_goal`/`get_class_goal` + `goal_kind`/`goal_target` on `classrooms`).
+   All lock their tables with RLS (default-deny) and expose only
+   `SECURITY DEFINER` RPCs to the anon role. **If you set up the cloud before
+   `0004` existed, just run `0004` now** — it only adds the goal columns/RPCs and
+   is safe to run on an existing project (it uses `add column if not exists`).
 3. In **Project Settings → API**, copy the **Project URL** and the
    **Publishable key** (`sb_publishable_…`; on older projects this is the **anon
    public** key).

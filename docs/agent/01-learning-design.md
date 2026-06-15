@@ -68,6 +68,22 @@ At x = 6, your line gave y = 3, but the asteroid was at y = 5.
 Your line was 2 units too low.
 ```
 
+### Escalating feedback and help-seeking
+
+Feedback should grow with repeated struggle rather than repeating the same line.
+Implemented (`escalateMissFeedback`, `src/game/logic/hints.ts`): the first miss
+gives the message above; a second miss on the same target names the exact lever
+to move ("Training Assist"); a third names the concrete value to reach and brings
+the aiming line back ("Slope Scanner") — a contingent-scaffolding (ZPD) climb that
+fades as the student succeeds. The escalation is positively framed and never
+mentions the difficulty tier (tier is teacher-only, `docs/agent/02`).
+
+Help-seeking is treated as a self-regulated-learning skill, supported by free,
+always-available surfaces that never affect score: an on-demand **Hint** button
+(coaches the current aim) and a **Help drawer** (objective recap + a per-zone math
+refresher + controls/tech help). Make support discoverable and low-friction so a
+stuck learner asks for help instead of disengaging.
+
 ## Reflection design
 
 Do not require a long reflection after every level.
