@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { assets, uiBackgrounds, uiShips } from '../assets/assetMap';
+import { assets, uiBackgrounds, uiButtons, uiShips, type UiButtonKey } from '../assets/assetMap';
 import { CoachPanel } from '../game/components/CoachPanel';
 import { Modal } from '../game/components/Modal';
 import { TacticalButton } from '../game/components/TacticalButton';
@@ -35,6 +35,59 @@ export function MenuScreen({
   const availableCount = modes.filter(
     (mode) => mode.status === 'available' && (mode.id !== 'arcade' || arcadeUnlocked),
   ).length;
+  const modeDetails = {
+    campaign: {
+      asset: 'planet',
+      label: 'Story Route',
+      detail: 'Zone map, guided missions, mastery stars',
+    },
+    arcade: {
+      asset: 'play',
+      label: 'Score Run',
+      detail: arcadeUnlocked ? 'Endless waves and personal records' : 'Unlocks after Zone 2',
+    },
+    versus: {
+      asset: 'trophy',
+      label: 'Head-to-Head',
+      detail: 'Classroom duels, pickups, live boards',
+    },
+  } satisfies Record<
+    GameModeId,
+    {
+      asset: UiButtonKey;
+      label: string;
+      detail: string;
+    }
+  >;
+  const supportActions = [
+    {
+      asset: 'info',
+      label: 'Mission briefing',
+      title: 'Briefing',
+      description: 'Review the mission rules and keyboard controls.',
+      onClick: () => setBriefingOpen(true),
+    },
+    {
+      asset: 'hangar',
+      label: 'Hangar',
+      title: 'Hangar',
+      description: 'Equip ship hulls, trails, and cockpit themes.',
+      onClick: onOpenHangar,
+    },
+    {
+      asset: 'classroom',
+      label: 'Classroom',
+      title: 'Classroom',
+      description: 'Join your squadron or connect with teacher missions.',
+      onClick: onOpenClassroom,
+    },
+  ] satisfies Array<{
+    asset: UiButtonKey;
+    label: string;
+    title: string;
+    description: string;
+    onClick: () => void;
+  }>;
 
   useEffect(() => {
     if (!shouldAnimate) return;
@@ -57,9 +110,6 @@ export function MenuScreen({
           <img src={assets.ship} alt="" draggable={false} />
         </div>
         <div className="menu__actions">
-          <TacticalButton asset="info" label="Mission briefing" text="Briefing" size="small" onClick={() => setBriefingOpen(true)} />
-          <TacticalButton asset="trophy" label="Hangar" text="Hangar" size="small" onClick={onOpenHangar} />
-          <TacticalButton asset="hangar" label="Classroom" text="Classroom" size="small" onClick={onOpenClassroom} />
           <TacticalButton asset="profile" label="Pilot Profile" text="Profile" size="small" onClick={onOpenProfile} />
           <TacticalButton asset="settings" label="Settings" text="Settings" size="small" onClick={onOpenSettings} />
         </div>
@@ -67,7 +117,6 @@ export function MenuScreen({
 
       <section className="menu__hero" aria-labelledby="menu-title">
         <div className="menu__copy">
-          <span className="menu__kicker">Equation Defense Command</span>
           <h1 id="menu-title" className="menu__title" aria-label="Slope Invaders">
             <span className="visually-hidden">Slope Invaders</span>
             <span className="menu__title-word" aria-hidden>
@@ -110,7 +159,6 @@ export function MenuScreen({
       <section className="level-select" aria-labelledby="modes-title">
         <div className="level-select__header">
           <div>
-            <span className="menu__panel-label">Game Modes</span>
             <h2 id="modes-title">Choose a Mode</h2>
           </div>
           <p>{availableCount} available now</p>
@@ -120,6 +168,7 @@ export function MenuScreen({
           {modes.map((mode, i) => {
             const requiresArcadeUnlock = mode.id === 'arcade' && !arcadeUnlocked;
             const playable = mode.status === 'available' && !requiresArcadeUnlock;
+            const details = modeDetails[mode.id];
             const status = playable
               ? 'Ready'
               : requiresArcadeUnlock
@@ -134,19 +183,81 @@ export function MenuScreen({
                 onClick={() => onSelectMode(mode.id)}
                 style={{ animationDelay: `${460 + i * 100}ms` }}
               >
-                <span className="level-card__number" aria-hidden>
-                  {playable ? '01' : '—'}
+                <span className="level-card__icon" aria-hidden="true">
+                  <img
+                    className="level-card__icon-image level-card__icon-image--default"
+                    src={uiButtons[details.asset].default}
+                    alt=""
+                    draggable={false}
+                  />
+                  <img
+                    className="level-card__icon-image level-card__icon-image--active"
+                    src={uiButtons[details.asset].active}
+                    alt=""
+                    draggable={false}
+                  />
                 </span>
                 <span className="level-card__body">
+                  <span className="level-card__type">{details.label}</span>
                   <strong>{mode.name}</strong>
                   <span>{mode.tagline}</span>
+                  <span className="level-card__description">{details.detail}</span>
                 </span>
-                <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
-                  {status}
+                <span className="level-card__footer">
+                  <span className={`level-card__status ${playable ? 'level-card__status--ready' : ''}`}>
+                    {status}
+                  </span>
+                  <span className={`level-card__cta ${playable ? 'level-card__cta--ready' : ''}`}>
+                    {playable ? 'Launch' : 'Locked'}
+                  </span>
                 </span>
               </button>
             );
           })}
+        </div>
+      </section>
+
+      <section className="support-select" aria-labelledby="support-title">
+        <div className="support-select__header">
+          <div>
+            <h2 id="support-title">Tools &amp; Support</h2>
+          </div>
+        </div>
+
+        <div className="menu-support" aria-label="Tools and support">
+          {supportActions.map((action, i) => (
+            <button
+              type="button"
+              key={action.label}
+              className="menu-support__card"
+              aria-label={action.label}
+              onClick={action.onClick}
+              style={{ animationDelay: `${780 + i * 100}ms` }}
+            >
+              <span className="menu-support__icon" aria-hidden="true">
+                <span className="tactical-button tactical-button--small tactical-button--icon">
+                  <span className="tactical-button__art">
+                    <img
+                      className="tactical-button__image tactical-button__image--default"
+                      src={uiButtons[action.asset].default}
+                      alt=""
+                      draggable={false}
+                    />
+                    <img
+                      className="tactical-button__image tactical-button__image--active"
+                      src={uiButtons[action.asset].active}
+                      alt=""
+                      draggable={false}
+                    />
+                  </span>
+                </span>
+              </span>
+              <span className="menu-support__body">
+                <strong>{action.title}</strong>
+                <span>{action.description}</span>
+              </span>
+            </button>
+          ))}
         </div>
       </section>
 
