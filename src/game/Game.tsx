@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import type { AsteroidSpec, Facing, LevelConfig } from './levels/types';
+import type { AsteroidSpec, Facing, LevelConfig, TrajectoryMode } from './levels/types';
 import {
   DEFAULT_KEYBINDINGS,
   findActionForKey,
@@ -17,7 +17,7 @@ import {
 import type { Point } from './logic/lineMath';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
-import { buildFeedback, type ShotFeedback } from './logic/hints';
+import { buildFeedback, escalateMissFeedback, type ShotFeedback } from './logic/hints';
 import {
   GameBoard,
   type ExplosionInstance,
@@ -30,6 +30,7 @@ import { EquationControls } from './components/EquationControls';
 import { Calculator } from './components/Calculator';
 import { GuidedTour, type TourStep } from './components/GuidedTour';
 import { MissionBriefing } from './components/MissionBriefing';
+import { HelpDrawer } from './components/HelpDrawer';
 import { CalculatorIcon } from './components/CalculatorIcon';
 import { VictoryOverlay } from './components/VictoryOverlay';
 import { CoachPanel } from './components/CoachPanel';
@@ -157,6 +158,8 @@ interface GameProps {
   hasNext: boolean;
   /** Difficulty tier this level is being played at (recorded into stats). */
   tier?: DifficultyTier;
+  /** Campaign zone id (for the Help drawer's math refresher). */
+  zoneId?: string;
   /** Current key map for keyboard controls. */
   keyBindings?: KeyBindings;
   /** Disable keyboard controls (e.g. while the settings modal is open). */
@@ -182,6 +185,7 @@ export function Game({
   levelNumberLabel,
   hasNext,
   tier = 'standard',
+  zoneId,
   keyBindings = DEFAULT_KEYBINDINGS,
   keyboardEnabled = true,
   shipSkin,
@@ -211,6 +215,9 @@ export function Game({
   const [shotsFired, setShotsFired] = useState(0);
   const [hearts, setHearts] = useState(level.hearts ?? Infinity);
   const [feedback, setFeedback] = useState<ShotFeedback | null>(null);
+  // Mid-level scaffold: when a struggling student earns the "Slope Scanner",
+  // this overrides the level's preview for the next shot(s). null = use level's.
+  const [previewOverride, setPreviewOverride] = useState<TrajectoryMode | null>(null);
   const [shot, setShot] = useState<ShotState | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [explosions, setExplosions] = useState<ExplosionInstance[]>([]);
@@ -237,6 +244,14 @@ export function Game({
     markBriefingSeen(level.id);
   }, [level.id]);
 
+  // Help-seeking surface (free, never scored). Replaying the walkthrough closes
+  // Help and re-runs the guided tour.
+  const [showHelp, setShowHelp] = useState(false);
+  const replayTour = useCallback(() => {
+    setShowHelp(false);
+    setShowTour(true);
+  }, []);
+
   const shotCtx = useRef<ShotContext | null>(null);
   const rafId = useRef<number | null>(null);
 
@@ -245,6 +260,10 @@ export function Game({
   const shotsRef = useRef(0);
   const hitsRef = useRef(0);
   const missesRef = useRef(0);
+  // Misses in a row on the current target; drives the escalating hint ladder.
+  // Reset on a hit, on target change, and on level reset.
+  const consecutiveMissesRef = useRef(0);
+  const hintOpensRef = useRef(0);
   const offBoardRef = useRef(0);
   const multiHitRef = useRef(0);
   const heartsLostRef = useRef(0);
@@ -384,10 +403,16 @@ export function Game({
         const base = destroyedSpecs.reduce((s, a) => s + pointsForAsteroid(a), 0);
         setScore((s) => s + (scoreShot(destroyedSpecs) - base));
       }
-      // A shot that destroyed nothing is a miss → costs a heart.
+      // A shot that destroyed nothing is a miss → costs a heart and lengthens
+      // the consecutive-miss streak; any destroy resets the streak and clears
+      // the mid-level preview scaffold.
       if (destroyedSpecs.length === 0) {
         missesRef.current += 1;
+        consecutiveMissesRef.current += 1;
         loseHeart();
+      } else {
+        consecutiveMissesRef.current = 0;
+        setPreviewOverride(null);
       }
       // Feedback precedence when nothing was destroyed: a friendly ship in the
       // line, then a wall, then a half-cleared chain, then the generic hint.
@@ -414,12 +439,23 @@ export function Game({
             'Those rocks are linked — one line has to pass through every chained rock at once. You only lined up part of the chain.',
         };
       } else {
-        feedbackForShot = buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById);
+        const base = buildFeedback(ctx.m, ctx.b, ctx.results, asteroidsById);
+        const esc = escalateMissFeedback(base, {
+          m: ctx.m,
+          b: ctx.b,
+          results: ctx.results,
+          consecutiveMisses: consecutiveMissesRef.current,
+          equationForm: level.equationForm,
+          allowedControls: level.allowedControls,
+          previewLocked: !!level.lockTrajectoryPreview,
+        });
+        feedbackForShot = esc.feedback;
+        if (esc.restorePreview) setPreviewOverride('always');
       }
       setFeedback(feedbackForShot);
       setShotsFired((s) => s + 1);
     },
-    [asteroidsById, loseHeart],
+    [asteroidsById, loseHeart, level.equationForm, level.allowedControls, level.lockTrajectoryPreview],
   );
 
   const startLoop = useCallback(() => {
@@ -496,6 +532,7 @@ export function Game({
       setShotsFired((s) => s + 1);
       offBoardRef.current += 1;
       missesRef.current += 1;
+      consecutiveMissesRef.current += 1;
       if (firstShotHitRef.current === null) firstShotHitRef.current = false;
       loseHeart();
       return;
@@ -577,6 +614,8 @@ export function Game({
       setShotsFired(0);
       setHearts(level.hearts ?? Infinity);
       setFeedback(null);
+      setPreviewOverride(null);
+      consecutiveMissesRef.current = 0;
       setShot(null);
       setExplosions([]);
       setEarnedStars(0);
@@ -620,8 +659,8 @@ export function Game({
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
-      // Pause gameplay keys while a modal walkthrough/briefing owns the screen.
-      if (showTour || showBriefing) return;
+      // Pause gameplay keys while a modal walkthrough/briefing/help owns the screen.
+      if (showTour || showBriefing || showHelp) return;
       if (firing || outcome !== 'playing') return;
       const action = findActionForKey(keyBindings, normalizeKey(e));
       if (!action) return;
@@ -664,6 +703,7 @@ export function Game({
     keyBindings,
     showTour,
     showBriefing,
+    showHelp,
     firing,
     outcome,
     m,
@@ -683,6 +723,55 @@ export function Game({
       return !open;
     });
   }, []);
+
+  // On-demand help (help-seeking): coach the current aim toward the nearest
+  // remaining target without firing. Free, never scored — like the calculator.
+  const requestHint = useCallback(() => {
+    if (firing || outcome !== 'playing') return;
+    hintOpensRef.current += 1;
+    const alive = level.asteroids.filter((a) => !destroyed.has(a.id));
+    const targetable =
+      level.sequentialTargets && activeTargetId
+        ? alive.filter((a) => a.id === activeTargetId)
+        : alive;
+    if (targetable.length === 0) return;
+    const results = evaluateShot(
+      fireM,
+      fireB,
+      targetable,
+      shipX,
+      DEFAULT_HIT_TOLERANCE,
+      facing,
+      level.walls,
+    );
+    const base = buildFeedback(m, b, results, asteroidsById);
+    const esc = escalateMissFeedback(base, {
+      m,
+      b,
+      results,
+      // A deliberate hint request always lands at least at the "name the lever"
+      // rung; if they've already missed a lot, it gives the strongest rung.
+      consecutiveMisses: Math.max(2, consecutiveMissesRef.current + 1),
+      equationForm: level.equationForm,
+      allowedControls: level.allowedControls,
+      previewLocked: !!level.lockTrajectoryPreview,
+    });
+    if (esc.restorePreview) setPreviewOverride('always');
+    setFeedback(esc.feedback);
+  }, [
+    firing,
+    outcome,
+    level,
+    destroyed,
+    activeTargetId,
+    fireM,
+    fireB,
+    shipX,
+    facing,
+    m,
+    b,
+    asteroidsById,
+  ]);
 
   const handleExplosionDone = useCallback((id: string) => {
     setExplosions((prev) => prev.filter((e) => e.id !== id));
@@ -740,7 +829,7 @@ export function Game({
             shot={shot}
             explosions={explosions}
             onExplosionDone={handleExplosionDone}
-            trajectoryPreview={level.trajectoryPreview}
+            trajectoryPreview={previewOverride ?? level.trajectoryPreview}
             trajectoryStyle={level.trajectoryStyle}
             showCoordinates={level.showCoordinates}
             activeTargetId={activeTargetId}
@@ -795,6 +884,26 @@ export function Game({
             hearts={hasHearts ? hearts : undefined}
             maxHearts={hasHearts ? level.hearts : undefined}
           />
+          <div className="support-actions" role="group" aria-label="Get unstuck">
+            <button
+              type="button"
+              className="support-btn support-btn--hint"
+              data-tour="hint-btn"
+              aria-label="Get a hint"
+              onClick={requestHint}
+              disabled={firing || outcome !== 'playing'}
+            >
+              <span aria-hidden>💡</span> Hint
+            </button>
+            <button
+              type="button"
+              className="support-btn support-btn--help"
+              aria-label="Help and support"
+              onClick={() => setShowHelp(true)}
+            >
+              <span aria-hidden>?</span> Help
+            </button>
+          </div>
           <EquationControls
             key={resetKey}
             m={m}
@@ -828,6 +937,18 @@ export function Game({
           levelNumberLabel={levelNumberLabel}
           title={title}
           onBegin={beginFromBriefing}
+        />
+      )}
+      {showHelp && (
+        <HelpDrawer
+          objective={level.learningGoal}
+          levelNumberLabel={levelNumberLabel}
+          title={title}
+          zoneId={zoneId ?? ''}
+          allowedControls={level.allowedControls}
+          keyBindings={keyBindings}
+          onReplayTour={replayTour}
+          onClose={() => setShowHelp(false)}
         />
       )}
     </div>

@@ -160,3 +160,14 @@ For the first prototype, implement only simple rules:
 2. After a level failure, offer practice mode or restore preview.
 3. After a no-miss clear, offer bonus/no-preview mode.
 4. Store concept progress in local state or a simple profile object.
+
+**Status — within-level escalation is now implemented.** Rule 1 is live: miss
+feedback escalates by consecutive misses on the same target (`escalateMissFeedback`
+in `src/game/logic/hints.ts`, driven by a per-target streak in `Game.tsx`). Rung 2
+names the exact lever as an opt-in "Training Assist"; rung 3+ reveals the needed
+slope (only where unambiguous — slope-only zones) and temporarily restores the
+trajectory preview ("Slope Scanner"), which is suppressed on no-preview/locked
+levels so it cannot bypass a mastery check. A free **Hint** button gives the same
+help on demand (help-seeking). All of this is positively framed and **never**
+references the difficulty tier — tier remains teacher-only and invisible to the
+student, exactly as the transparency rule above requires.

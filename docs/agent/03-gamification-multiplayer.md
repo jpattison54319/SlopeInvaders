@@ -188,3 +188,14 @@ Good leaderboard categories:
 - Best Comeback
 - Highest Team Score
 - Most Concepts Mastered
+
+### Implemented: cooperative class goal + teacher-only leaderboard
+
+Reconciling an instructor request for a "leaderboard / collaborative challenge"
+with the rules above (no student-facing comparison): students get a **cooperative
+class goal** — one shared target (stars or levels earned *together*) shown only as
+a collective class total, never a per-student ranking. The competitive
+**leaderboard lives in the teacher dashboard only** (sortable by stars / accuracy /
+levels / XP). See `docs/agent/10-classroom-cloud.md` for the data model
+(`0004_class_goals.sql`, `src/cloud/classGoal.ts`). Keep any future social feature
+on this side of the line: collective/cooperative for learners, comparison teacher-only.

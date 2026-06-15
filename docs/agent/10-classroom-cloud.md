@@ -21,6 +21,25 @@ exactly as before on `localStorage` (see `docs/agent/02` and `04`).
   comparison-free. Class ranking/visibility is a *teacher* tool, not shown to
   students.
 
+## Cooperative class goals + teacher leaderboard (migration `0004_class_goals.sql`)
+
+This reconciles an instructor request for a "leaderboard / collaborative
+challenge" with the comparison-free principle above:
+
+- **Students get a cooperative goal, never a ranking.** A class has at most one
+  shared goal — total stars or total levels earned *together*. Students see only
+  the collective class total vs. the target as a progress bar
+  (`ClassroomScreen`); `get_class_goal` returns aggregate totals only — no
+  per-student rows ever reach a learner. This is positive interdependence
+  (everyone contributes), not social comparison. Pure display math lives in
+  `src/cloud/classGoal.ts`.
+- **The leaderboard is teacher-only.** `TeacherDashboardScreen` adds a sortable
+  roster (stars / accuracy / levels / XP), derived client-side from the totals
+  already synced — it is never shown to students. The teacher also sets/clears
+  the cooperative goal there (`set_class_goal`, gated by the teacher key).
+- Cloud-gated and additive like the rest: with no Supabase env it no-ops behind
+  the offline notice and never touches scoring/adaptivity.
+
 ## Backend: Supabase
 
 Hosted Postgres + Realtime + RLS. The public **anon key ships in the frontend**;

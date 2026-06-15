@@ -470,6 +470,7 @@ export default function App() {
             key={level.id}
             level={configForTier(level, tier)}
             tier={tier}
+            zoneId={zone.id}
             title={level.name}
             levelNumberLabel={label}
             hasNext={!!nextLevelInZone(level.id)}

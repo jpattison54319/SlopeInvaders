@@ -19,6 +19,7 @@ import type {
   LevelResultPayload,
   ProgressPayload,
 } from './progressPayload';
+import type { ClassGoal, ClassGoalKind } from './classGoal';
 
 export interface ClassroomInfo {
   classroomId: string;
@@ -171,5 +172,43 @@ export async function getDashboard(teacherKey: string): Promise<DashboardData> {
       completedAt: (r.completed_at as string | null) ?? null,
       adaptivity: parseAdaptivity(r.stats),
     })),
+  };
+}
+
+/** Teacher sets (or clears, with kind = null) the class's cooperative goal. */
+export async function setClassGoal(
+  teacherKey: string,
+  kind: ClassGoalKind | null,
+  target: number,
+): Promise<void> {
+  const supabase = getSupabase();
+  if (!supabase) throw new CloudDisabledError();
+  const { error } = await supabase.rpc('set_class_goal', {
+    p_teacher_key: teacherKey,
+    p_kind: kind,
+    p_target: Math.max(0, Math.round(target)),
+  });
+  if (error) throw error;
+}
+
+/**
+ * Read the class's collective goal progress by join code. Returns only class
+ * totals (no per-student data). Best-effort: returns null when cloud is off.
+ */
+export async function getClassGoal(joinCode: string): Promise<ClassGoal | null> {
+  const supabase = getSupabase();
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc('get_class_goal', {
+    p_join_code: joinCode.trim().toUpperCase(),
+  });
+  if (error) throw error;
+  const d = (data ?? {}) as Record<string, unknown>;
+  const kind = d.kind === 'stars' || d.kind === 'levels' ? d.kind : null;
+  return {
+    name: String(d.name ?? ''),
+    kind,
+    target: d.target == null ? null : Number(d.target),
+    current: Number(d.current ?? 0),
+    members: Number(d.members ?? 0),
   };
 }

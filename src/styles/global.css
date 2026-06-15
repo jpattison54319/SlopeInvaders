@@ -194,6 +194,12 @@ input:focus-visible {
   height: 30px;
   image-rendering: pixelated;
 }
+.modal__icon--node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  image-rendering: auto;
+}
 .modal__header h2 {
   margin: 0;
   font-family: var(--pixel-font);
@@ -783,7 +789,13 @@ input:focus-visible {
 
 .app__board {
   position: relative;
-  align-self: start;
+  /* Stretch the framed board to the row height (the sidebar's height) and center
+     the square coordinate plane inside it, so the left and right columns always
+     read as equal-height. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   width: min(584px, calc(100vw - 40px));
   padding: 10px;
   background: var(--panel);
@@ -1604,6 +1616,49 @@ input:focus-visible {
   align-items: center;
   justify-self: end;
 }
+/* "Get unstuck" support pair — sits in the command sidebar between the feedback
+   panel and the equation controls, right where a stuck player is looking. */
+.support-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.support-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
+  font-family: var(--pixel-font);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  --button-shadow: 0 3px 0 #05091c;
+  --button-shadow-pressed: 0 1px 0 #05091c;
+}
+.support-btn--hint {
+  color: var(--amber);
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.45);
+}
+.support-btn--hint:hover:not(:disabled) {
+  background: rgba(255, 209, 102, 0.18);
+}
+.support-btn--help {
+  color: var(--cyan);
+  background: rgba(94, 241, 255, 0.08);
+  border: 1px solid var(--panel-border);
+}
+.support-btn--help:hover:not(:disabled) {
+  background: rgba(94, 241, 255, 0.16);
+}
+.support-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Calculator button: no box — just the icon, sized like the Settings button. */
 .calc-btn__icon {
   display: block;
@@ -6086,4 +6141,211 @@ select:focus-visible {
   .key-hint--button {
     margin-left: 6px;
   }
+}
+
+/* ---------- Help drawer (in-game help-seeking surface) ---------- */
+.help-drawer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: left;
+}
+.help-drawer__section {
+  border-top: 1px solid var(--panel-border);
+  padding-top: 12px;
+}
+.help-drawer__section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.help-drawer__heading {
+  margin: 0 0 8px;
+  font-family: var(--pixel-font);
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.help-drawer__level {
+  margin: 0 0 4px;
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.help-drawer__objective {
+  margin: 0 0 10px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-drawer__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.help-drawer__list strong {
+  color: var(--cyan);
+  font-weight: 600;
+}
+.help-drawer__action {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--amber);
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.5);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+.help-drawer__action:hover {
+  background: rgba(255, 209, 102, 0.18);
+}
+/* Compact wrapping chips: the key sits right next to its action label, so there
+   is no stretched gap between e.g. "Fire" and its "Space" key. */
+.help-drawer__keys {
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.help-drawer__keys li {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(94, 241, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 4px 6px 4px 11px;
+}
+.help-drawer__keys kbd {
+  flex: 0 0 auto;
+  min-width: 20px;
+  text-align: center;
+  font-family: var(--pixel-font);
+  font-size: 9px;
+  line-height: 1;
+  color: var(--cyan);
+  background: rgba(3, 8, 24, 0.85);
+  border: 1px solid var(--panel-border);
+  border-radius: 5px;
+  padding: 4px 6px;
+}
+
+/* ---------- Cooperative class goal (student) + teacher goal/leaderboard ---------- */
+.class-goal {
+  margin: 12px 0;
+  padding: 12px;
+  border: 1px solid rgba(124, 255, 178, 0.4);
+  border-radius: 10px;
+  background: rgba(124, 255, 178, 0.06);
+}
+.class-goal__caption {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--text);
+}
+.class-goal__track {
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(3, 8, 24, 0.7);
+  border: 1px solid var(--panel-border);
+  overflow: hidden;
+}
+.class-goal__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38d98a, #8effc0);
+  transition: width 0.4s ease;
+}
+.class-goal__hint {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.teacher__goal-blurb {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.teacher__goal-ref {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  background: rgba(94, 241, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+.teacher__goal-ref strong {
+  color: var(--cyan);
+}
+.teacher__goal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.teacher__goal-row select,
+.teacher__goal-row input {
+  padding: 6px 8px;
+  background: #0d1430;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 7px;
+}
+.teacher__goal-row input {
+  width: 90px;
+}
+.teacher__goal-msg {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--green);
+}
+.teacher__sortbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.teacher__sortbar-label {
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.teacher__sort {
+  font-family: var(--pixel-font);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: rgba(94, 241, 255, 0.06);
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  padding: 5px 9px;
+  cursor: pointer;
+}
+.teacher__sort--active {
+  color: var(--cyan);
+  border-color: rgba(94, 241, 255, 0.6);
+  background: rgba(94, 241, 255, 0.16);
 }

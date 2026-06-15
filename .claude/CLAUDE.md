@@ -81,6 +81,14 @@ device UUID + cadet name; teachers hold an unguessable secret dashboard link
 (`?teacher=<key>` opens it, `?class=<code>` prefills join). Progress sync is
 best-effort and never affects scoring/adaptivity. See
 `docs/agent/10-classroom-cloud.md` and `DEPLOYMENT.md`.
+5h-i. **Cooperative class goal + teacher leaderboard** (cloud-gated, migration
+`0004_class_goals.sql`): a teacher sets ONE shared goal (stars or levels earned
+together) in `TeacherDashboardScreen`; students see only the collective class
+total vs. the target as a progress bar in `ClassroomScreen` — never a per-student
+ranking, keeping the learner view comparison-free. The teacher dashboard also has
+a **teacher-only** roster leaderboard (sort by stars/accuracy/levels/XP), derived
+client-side from already-synced totals and never shown to students. `get_class_goal`
+returns aggregate totals only; pure display math lives in `src/cloud/classGoal.ts`.
 5i. **Live 1v1 Versus** (Phase 2, cloud-gated) is built. From the menu, Versus
 opens `VersusLobbyScreen` (create a match or join a classmate's open match — only
 same-class students appear, enforced by `0002_versus.sql`'s `join_match` atomic
@@ -174,6 +182,8 @@ npm run build
 - `src/app/VersusLobbyScreen.tsx` (create/join a match) and `src/app/VersusMatchScreen.tsx` (the live dual-board duel) are the cloud-gated Versus screens; `App` routes `versus` and `versus-match`.
 - `src/cloud/versus.ts` is the matchmaking RPC wrappers (`create_match`/`list_open_matches`/`join_match`/`get_match`/`cancel_match`/`finish_match`) + `openMatchChannel()` (Supabase Realtime broadcast). `src/game/versus/` holds the pure deterministic field/items (`field.ts`), the protocol types (`types.ts`), and the `useVersusMatch` controller (board state, realtime sync, item economy, win/lose).
 - `supabase/migrations/0002_versus.sql` adds the `matches` table + matchmaking RPCs (atomic `join_match` enforces the 2-player cap + same class); run it after `0001`.
+- `supabase/migrations/0004_class_goals.sql` adds the cooperative class goal (`goal_kind`/`goal_target` on `classrooms` + `set_class_goal`/`get_class_goal` RPCs; aggregate-only reads). `src/cloud/classGoal.ts` holds the goal type + pure `classGoalProgress` display math. Run after `0001`.
+- `src/game/components/HelpDrawer.tsx` is the in-game help-seeking drawer (objective recap, per-zone math refresher, controls/tech), and `src/game/campaign/conceptHelp.ts` holds the per-zone refresher content. `src/game/logic/hints.ts` adds `escalateMissFeedback`/`neededSlope` for the consecutive-miss hint ladder.
 - `vitest.setup.ts` shims konva's optional native `canvas` dependency (Node build) so the jsdom component tests run without it; wired via `vitest.config.ts` `setupFiles`.
 - The `direction`/`facing` control mechanic: `Game.tsx` derives the effective fired line (`fireM = facing === 'right' ? m : -m`, `fireB` through the ship) and feeds it to hit detection, the board, and the equation; it also orients the shot segment to start at the ship so the projectile flies outward. `hitDetection.ts` and `coordinateTransform.ts` take a `facing` param (right reaches `x ≥ fromX`, left reaches `x ≤ fromX`). `EquationLine.tsx` draws the two-tone preview, `EquationControls.tsx` the toggle (and shows the facing-mirrored slope in the equation), and `Ship.tsx` flips the sprite.
 - `src/game/campaign/zones.ts` is the campaign zone registry and navigation helper source.
@@ -238,6 +248,12 @@ advances. Badge emblems must also remain unique.
 - On a level's first open the objective is also surfaced in a one-time **Mission Briefing** modal (`MissionBriefing`) the player must dismiss with "Begin Mission" before playing, so the instructions are read rather than ignored. It is suppressed on guided-tour levels (e.g. the Tutorial), whose tour already covers the objective, and its seen-state persists per level alongside the tour.
 - A level can opt into a one-time spotlight walkthrough that runs on first open (the Tutorial uses it). The walkthrough explicitly covers the calculator and keyboard controls in addition to the grid, mission, hearts, stats, and feedback. See `GuidedTour` and `Game.tsx` for how steps and targets are wired.
 - Gameplay control buttons print their keyboard shortcut as a small `<kbd>` chip (driven by the current key map, so remaps are reflected). The chips are shown only on fine-pointer/hover devices so touch users do not see meaningless key hints; they never appear in the typed-equation entry mode (Zone 9 has no steppers).
+
+## In-level support: adaptive hints + help-seeking
+
+- Feedback escalates with how many times in a row a student misses the SAME target (`escalateMissFeedback` in `src/game/logic/hints.ts`, driven by a `consecutiveMissesRef` in `Game.tsx`): rung 1 is the normal miss feedback, rung 2 names the exact lever + direction as an optional "Training Assist", and rung 3+ reveals the needed slope (only where it's unambiguous — slope-only zones, via `neededSlope`) and temporarily turns the trajectory preview back on ("Slope Scanner"). The preview restore is suppressed on no-preview/locked levels. The streak resets on a hit or a level reset. This implements the long-documented `docs/agent/02` "simple adaptive rules" and stays positively framed — it never references the (teacher-only) difficulty tier.
+- A free **Hint** button in the game bar (`requestHint`) coaches the current aim toward the nearest remaining target on demand — help-seeking as a self-regulated-learning skill. Like the calculator, it never affects score or adaptivity.
+- A **Help drawer** (`src/game/components/HelpDrawer.tsx`, opened from the game bar) is an always-available help-seeking surface with three sections: the mission objective + a "Replay walkthrough" button, a per-zone math refresher (`src/game/campaign/conceptHelp.ts`, keyed by zone id), and a controls/tech section (keyboard map from the live key bindings, calculator, settings, reset). It is free and never scored.
 
 ## UI and Design Guidance
 
