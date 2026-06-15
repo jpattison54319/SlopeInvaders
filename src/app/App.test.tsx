@@ -331,6 +331,7 @@ describe('App shell', () => {
     expect(arcadeButton?.disabled).toBe(true);
     const settingsButton = host.querySelector<HTMLButtonElement>('button[aria-label="Settings"]');
     const profileButton = host.querySelector<HTMLButtonElement>('button[aria-label="Pilot Profile"]');
+    const nav = host.querySelector('nav[aria-label="Main menu"]');
     const settingsIcon = settingsButton?.querySelector<HTMLImageElement>(
       '.tactical-button__image--default',
     );
@@ -344,6 +345,33 @@ describe('App shell', () => {
     expect(profileIcon?.className).toBe(settingsIcon?.className);
     expect(profileIcon?.getAttribute('src')).toBe(uiButtons.profile.default);
     expect(settingsIcon?.getAttribute('src')).toBe(uiButtons.settings.default);
+    expect(nav?.textContent).toContain('Profile');
+    expect(nav?.textContent).toContain('Settings');
+    expect(nav?.textContent).not.toContain('Briefing');
+    expect(nav?.textContent).not.toContain('Hangar');
+    expect(nav?.textContent).not.toContain('Classroom');
+    const hangarCard = host.querySelector<HTMLButtonElement>('button[aria-label="Hangar"]');
+    const classroomCard = host.querySelector<HTMLButtonElement>('button[aria-label="Classroom"]');
+    const briefingCard = host.querySelector<HTMLButtonElement>('button[aria-label="Mission briefing"]');
+    expect(briefingCard?.closest('.menu-support')).toBeTruthy();
+    expect(hangarCard?.closest('.menu-support')).toBeTruthy();
+    expect(classroomCard?.closest('.menu-support')).toBeTruthy();
+    expect(briefingCard?.closest('.support-select')).toBeTruthy();
+    expect(hangarCard?.closest('.support-select')).toBeTruthy();
+    expect(classroomCard?.closest('.support-select')).toBeTruthy();
+    expect(host.textContent).toContain('Tools & Support');
+    expect(host.querySelector('.level-card__number')).toBeNull();
+    expect(host.querySelectorAll('.level-card__icon').length).toBe(3);
+    expect(
+      hangarCard
+        ?.querySelector<HTMLImageElement>('.tactical-button__image--default')
+        ?.getAttribute('src'),
+    ).toBe(uiButtons.hangar.default);
+    expect(
+      classroomCard
+        ?.querySelector<HTMLImageElement>('.tactical-button__image--default')
+        ?.getAttribute('src'),
+    ).toBe(uiButtons.classroom.default);
     expect(buttonLabels.some((l) => l === 'Settings')).toBe(true);
     expect(buttonLabels.some((l) => l === 'Stats')).toBe(false);
     expect(vi.mocked(useMusic)).toHaveBeenLastCalledWith(music.menu, 0.65, false);

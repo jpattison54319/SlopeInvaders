@@ -118,6 +118,8 @@ import uiButtonTrophyUrl from './ui/buttons/rating.png';
 import uiButtonTrophyActiveUrl from './ui/buttons/rating-active.png';
 import uiButtonHangarUrl from './ui/buttons/hangar.png';
 import uiButtonHangarActiveUrl from './ui/buttons/hangar-active.png';
+import uiButtonClassroomUrl from './ui/buttons/classroom.svg';
+import uiButtonClassroomActiveUrl from './ui/buttons/classroom-active.svg';
 
 import uiCoachDialogUrl from './ui/panels/coach-dialog.png';
 import uiSettingsFrameUrl from './ui/panels/settings-frame.png';
@@ -238,6 +240,7 @@ export const uiButtons = {
   confirm: { default: uiButtonConfirmUrl, active: uiButtonConfirmActiveUrl },
   trophy: { default: uiButtonTrophyUrl, active: uiButtonTrophyActiveUrl },
   hangar: { default: uiButtonHangarUrl, active: uiButtonHangarActiveUrl },
+  classroom: { default: uiButtonClassroomUrl, active: uiButtonClassroomActiveUrl },
 } as const;
 
 /** Decorative frames used behind responsive HTML content. */
