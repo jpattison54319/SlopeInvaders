@@ -15,6 +15,8 @@ import {
   type KeyBindings,
 } from '../controls/keybindings';
 import type { Facing } from '../levels/types';
+import type { NumberFormat } from '../logic/rational';
+import { readNumberFormat, writeNumberFormat } from '../logic/numberFormatStorage';
 import { lineBoardSegment } from '../logic/coordinateTransform';
 import { useSfx } from '../audio/sfxContext';
 import { ArcadeBoard } from './ArcadeBoard';
@@ -96,6 +98,11 @@ export function ArcadeGame({
   const [b, setB] = useState(0);
   const [facing, setFacing] = useState<Facing>('right');
   const [xOffset, setXOffset] = useState(0);
+  const [notation, setNotation] = useState<NumberFormat>(readNumberFormat);
+  const handleChangeNotation = useCallback((value: NumberFormat) => {
+    setNotation(value);
+    writeNumberFormat(value);
+  }, []);
   const [shot, setShot] = useState<ArcadeShot | null>(null);
   const [explosions, setExplosions] = useState<ArcadeExplosion[]>([]);
   const [scorePopups, setScorePopups] = useState<ArcadeScorePopup[]>([]);
@@ -608,6 +615,8 @@ export function ArcadeGame({
             secondaryText="End Run"
             secondaryAsset="back"
             secondaryClassName="arcade-control-end"
+            notation={notation}
+            onChangeNotation={handleChangeNotation}
           />
         </aside>
       </main>

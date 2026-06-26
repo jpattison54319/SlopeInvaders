@@ -5,6 +5,8 @@ import { TacticalButton } from '../game/components/TacticalButton';
 import { sprites } from '../assets/assetMap';
 import { useVersusMatch } from '../game/versus/useVersusMatch';
 import { versusShotGeometry } from '../game/versus/field';
+import type { NumberFormat } from '../game/logic/rational';
+import { readNumberFormat, writeNumberFormat } from '../game/logic/numberFormatStorage';
 import {
   DEFAULT_KEYBINDINGS,
   findActionForKey,
@@ -76,6 +78,11 @@ export function VersusMatchScreen({
 }: VersusMatchScreenProps) {
   const boardSize = useVersusBoardSize();
   const match = useVersusMatch(matchId, seed, role, myName, opponentStudentId);
+  const [notation, setNotation] = useState<NumberFormat>(readNumberFormat);
+  const handleChangeNotation = (value: NumberFormat) => {
+    setNotation(value);
+    writeNumberFormat(value);
+  };
   const {
     myLevel,
     mirrorLevel,
@@ -262,6 +269,8 @@ export function VersusMatchScreen({
             controls={myLevel.allowedControls}
             equationForm={myLevel.equationForm}
             keyBindings={keyBindings}
+            notation={notation}
+            onChangeNotation={handleChangeNotation}
           />
         </section>
 
