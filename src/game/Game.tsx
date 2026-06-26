@@ -67,14 +67,14 @@ const TOUR_STEPS: TourStep[] = [
     body: 'Change the equation here to aim the dashed line, press Fire to shoot, and use Reset Level to start the level over any time.',
   },
   {
+    selector: '[data-tour="notation"]',
+    title: 'Fractions or Decimals',
+    body: 'Slope is rise over run, so you can show it as a stacked fraction or a decimal — they mean the same line. Tap this button to switch, or just type the style you prefer (1/2 or 0.5).',
+  },
+  {
     selector: '[data-tour="command"]',
     title: 'Keyboard Controls',
     body: 'You can play with the keyboard too — each button shows its key (Space fires, R/F change the slope). Press ? any time for the full list, or remap them in Settings.',
-  },
-  {
-    selector: '[data-tour="notation"]',
-    title: 'Fractions or Decimals',
-    body: 'Slope is rise over run, so you can type a fraction like 1/2 — or a decimal like 0.5. They mean the same line. Tap this button to switch how numbers show, or just type the style you prefer.',
   },
   {
     selector: '[data-tour="calc"]',

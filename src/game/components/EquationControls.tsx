@@ -3,6 +3,7 @@ import type { ControlKey, EquationForm, Facing } from '../levels/types';
 import type { UiButtonKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
 import { EquationSlots } from './EquationSlots';
+import { EquationView, StackedFraction } from './EquationView';
 import { equationString } from '../logic/lineMath';
 import {
   detectFormat,
@@ -203,12 +204,17 @@ export function EquationControls({
         <>
           <div className="controls__equation-row">
             <div className="controls__equation" aria-live="polite">
-              {equationString(shownM, b, xOffset, equationForm, notation)}
+              <span className="visually-hidden">
+                {equationString(shownM, b, xOffset, equationForm, notation)}
+              </span>
+              <span aria-hidden="true">
+                <EquationView m={shownM} b={b} h={xOffset} form={equationForm} notation={notation} />
+              </span>
             </div>
             {showNotationToggle && (
               <button
                 type="button"
-                className="notation-toggle"
+                className={`notation-toggle notation-toggle--${notation}`}
                 data-tour="notation"
                 title={
                   notation === 'fraction'
@@ -222,7 +228,13 @@ export function EquationControls({
                 disabled={disabled}
                 onClick={() => onChangeNotation(notation === 'fraction' ? 'decimal' : 'fraction')}
               >
-                {notation === 'fraction' ? '½' : '.5'}
+                {notation === 'fraction' ? (
+                  <StackedFraction n={1} d={2} />
+                ) : (
+                  <span className="notation-toggle__decimal" aria-hidden="true">
+                    0.5
+                  </span>
+                )}
               </button>
             )}
           </div>

@@ -104,6 +104,14 @@ function NotationHarness({ initial = 'fraction' as NumberFormat }) {
 function slopeInput(): HTMLInputElement {
   return container.querySelector('input[aria-label="slope"]') as HTMLInputElement;
 }
+/** The screen-reader text form of the live equation. */
+function equationText(): string | undefined {
+  return container.querySelector('.controls__equation .visually-hidden')?.textContent ?? undefined;
+}
+/** True when the equation is drawing a vertical stacked fraction. */
+function equationHasStack(): boolean {
+  return !!container.querySelector('.controls__equation .frac');
+}
 function setValue(el: HTMLInputElement, value: string) {
   const setter = Object.getOwnPropertyDescriptor(
     window.HTMLInputElement.prototype,
@@ -114,9 +122,10 @@ function setValue(el: HTMLInputElement, value: string) {
 }
 
 describe('EquationControls notation', () => {
-  it('renders slope as a fraction by default', async () => {
+  it('renders slope as a stacked fraction by default', async () => {
     await act(async () => root.render(<NotationHarness />));
-    expect(container.querySelector('.controls__equation')?.textContent).toBe('y = 1/2 x');
+    expect(equationText()).toBe('y = 1/2x');
+    expect(equationHasStack()).toBe(true);
     expect(slopeInput().value).toBe('1/2');
   });
 
@@ -129,7 +138,8 @@ describe('EquationControls notation', () => {
     });
     await act(async () => input.blur());
     expect(slopeInput().value).toBe('3/4');
-    expect(container.querySelector('.controls__equation')?.textContent).toBe('y = 3/4 x');
+    expect(equationText()).toBe('y = 3/4x');
+    expect(equationHasStack()).toBe(true);
   });
 
   it('switches to decimal when the student types a decimal', async () => {
@@ -141,15 +151,19 @@ describe('EquationControls notation', () => {
     });
     await act(async () => input.blur());
     expect(slopeInput().value).toBe('0.5');
-    expect(container.querySelector('.controls__equation')?.textContent).toBe('y = 0.5x');
+    expect(equationText()).toBe('y = 0.5x');
+    expect(equationHasStack()).toBe(false);
   });
 
   it('toggles display notation via the button', async () => {
     await act(async () => root.render(<NotationHarness />));
     const toggle = container.querySelector('.notation-toggle') as HTMLButtonElement;
-    expect(toggle.textContent).toBe('½');
+    // Fraction mode shows the stacked-fraction icon, not text.
+    expect(toggle.querySelector('.frac')).not.toBeNull();
     await act(async () => toggle.click());
-    expect(container.querySelector('.controls__equation')?.textContent).toBe('y = 0.5x');
+    expect(equationText()).toBe('y = 0.5x');
+    expect(equationHasStack()).toBe(false);
+    expect(toggle.querySelector('.notation-toggle__decimal')?.textContent).toBe('0.5');
     expect(slopeInput().value).toBe('0.5');
   });
 });

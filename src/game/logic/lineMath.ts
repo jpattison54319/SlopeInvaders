@@ -5,7 +5,7 @@
  * can be unit-tested in isolation and reused by hit detection, hints, etc.
  */
 import type { EquationForm } from '../levels/types';
-import { formatValue, type NumberFormat } from './rational';
+import { formatValue, toRational, type NumberFormat } from './rational';
 
 /** A point on the math coordinate plane (y up, as in algebra class). */
 export interface Point {
@@ -57,21 +57,73 @@ export function calculateInterceptFromPoint(m: number, point: Point): number {
   return point.y - m * point.x;
 }
 
-/** Coefficient prefix for an x-term: 1 -> "", -1 -> "-", else the formatted number. */
-function coef(m: number, notation: NumberFormat): string {
-  if (m === 1) return '';
-  if (m === -1) return '-';
-  return formatValue(m, notation);
+/**
+ * A piece of a rendered equation: literal text, or a fraction that the UI can
+ * draw as a vertical stack (numerator over a bar over denominator). Fractions
+ * only appear in fraction notation; decimal/integer values stay `text`.
+ */
+export type EquationToken =
+  | { kind: 'text'; text: string }
+  | { kind: 'frac'; sign: '' | '-'; n: number; d: number };
+
+/** A single coefficient/intercept value as a token in the chosen notation. */
+function valueToken(x: number, notation: NumberFormat): EquationToken {
+  if (notation === 'fraction' && !Number.isInteger(x)) {
+    const { n, d } = toRational(x);
+    return n < 0 ? { kind: 'frac', sign: '-', n: -n, d } : { kind: 'frac', sign: '', n, d };
+  }
+  return { kind: 'text', text: formatValue(x, notation) };
 }
 
 /**
- * Build the live equation string.
+ * Break the live equation into render tokens.
  *   • no x-offset:  y = mx + b           (e.g. "y = x", "y = 2x + 1")
  *   • with offset h: y = m(x - h) + b     (e.g. "y = (x - 3)", "y = 2(x - 3) + 1")
  * The y=mx form hides the intercept. `notation` controls fraction vs decimal
- * rendering of the coefficients (defaults to decimal); fractional coefficients
- * get a space ("1/2 x") so they don't read as "1 over 2x".
+ * rendering of the coefficients (defaults to decimal).
  */
+export function equationTokens(
+  m: number,
+  b: number,
+  h: number,
+  form: EquationForm,
+  notation: NumberFormat = 'decimal',
+): EquationToken[] {
+  const showB = form !== 'y=mx';
+  const tokens: EquationToken[] = [{ kind: 'text', text: 'y = ' }];
+
+  // Horizontal line: no x term at all.
+  if (m === 0) {
+    tokens.push(showB ? valueToken(b, notation) : { kind: 'text', text: '0' });
+    return tokens;
+  }
+
+  // x-coefficient: 1 -> "", -1 -> "-", else the value.
+  if (m === -1) tokens.push({ kind: 'text', text: '-' });
+  else if (m !== 1) tokens.push(valueToken(m, notation));
+
+  if (h === 0) {
+    tokens.push({ kind: 'text', text: 'x' });
+  } else {
+    tokens.push({ kind: 'text', text: '(x ' });
+    tokens.push({ kind: 'text', text: h < 0 ? '+ ' : '- ' });
+    tokens.push(valueToken(Math.abs(h), notation));
+    tokens.push({ kind: 'text', text: ')' });
+  }
+
+  if (showB && b !== 0) {
+    tokens.push({ kind: 'text', text: b < 0 ? ' - ' : ' + ' });
+    tokens.push(valueToken(Math.abs(b), notation));
+  }
+  return tokens;
+}
+
+/** Plain-text form of a token (fractions become "n/d"). */
+function tokenToString(t: EquationToken): string {
+  return t.kind === 'text' ? t.text : `${t.sign}${t.n}/${t.d}`;
+}
+
+/** Build the live equation as a single string (used for ARIA + typed-entry readouts). */
 export function equationString(
   m: number,
   b: number,
@@ -79,20 +131,5 @@ export function equationString(
   form: EquationForm,
   notation: NumberFormat = 'decimal',
 ): string {
-  const showB = form !== 'y=mx';
-  const fmt = (n: number) => formatValue(n, notation);
-
-  // Horizontal line: no x term at all.
-  if (m === 0) return `y = ${showB ? fmt(b) : '0'}`;
-
-  const c = coef(m, notation);
-  const xCoef = c.includes('/') ? `${c} x` : `${c}x`;
-  const xPart =
-    h === 0 ? xCoef : `${xCoef.replace(/x$/, '')}(x ${h < 0 ? '+' : '-'} ${fmt(Math.abs(h))})`;
-
-  let s = `y = ${xPart}`;
-  if (showB && b !== 0) {
-    s += ` ${b < 0 ? '-' : '+'} ${fmt(Math.abs(b))}`;
-  }
-  return s;
+  return equationTokens(m, b, h, form, notation).map(tokenToString).join('');
 }
