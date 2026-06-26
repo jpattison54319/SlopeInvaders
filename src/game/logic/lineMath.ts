@@ -5,6 +5,7 @@
  * can be unit-tested in isolation and reused by hit detection, hints, etc.
  */
 import type { EquationForm } from '../levels/types';
+import { formatValue, type NumberFormat } from './rational';
 
 /** A point on the math coordinate plane (y up, as in algebra class). */
 export interface Point {
@@ -56,32 +57,38 @@ export function calculateInterceptFromPoint(m: number, point: Point): number {
   return point.y - m * point.x;
 }
 
-function fmt(n: number): string {
-  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
-}
-
-function coef(m: number): string {
+/** Coefficient prefix for an x-term: 1 -> "", -1 -> "-", else the formatted number. */
+function coef(m: number, notation: NumberFormat): string {
   if (m === 1) return '';
   if (m === -1) return '-';
-  return fmt(m);
+  return formatValue(m, notation);
 }
 
 /**
  * Build the live equation string.
  *   • no x-offset:  y = mx + b           (e.g. "y = x", "y = 2x + 1")
  *   • with offset h: y = m(x - h) + b     (e.g. "y = (x - 3)", "y = 2(x - 3) + 1")
- * The y=mx form hides the intercept.
+ * The y=mx form hides the intercept. `notation` controls fraction vs decimal
+ * rendering of the coefficients (defaults to decimal); fractional coefficients
+ * get a space ("1/2 x") so they don't read as "1 over 2x".
  */
-export function equationString(m: number, b: number, h: number, form: EquationForm): string {
+export function equationString(
+  m: number,
+  b: number,
+  h: number,
+  form: EquationForm,
+  notation: NumberFormat = 'decimal',
+): string {
   const showB = form !== 'y=mx';
+  const fmt = (n: number) => formatValue(n, notation);
 
   // Horizontal line: no x term at all.
   if (m === 0) return `y = ${showB ? fmt(b) : '0'}`;
 
+  const c = coef(m, notation);
+  const xCoef = c.includes('/') ? `${c} x` : `${c}x`;
   const xPart =
-    h === 0
-      ? `${coef(m)}x`
-      : `${coef(m)}(x ${h < 0 ? '+' : '-'} ${fmt(Math.abs(h))})`;
+    h === 0 ? xCoef : `${xCoef.replace(/x$/, '')}(x ${h < 0 ? '+' : '-'} ${fmt(Math.abs(h))})`;
 
   let s = `y = ${xPart}`;
   if (showB && b !== 0) {

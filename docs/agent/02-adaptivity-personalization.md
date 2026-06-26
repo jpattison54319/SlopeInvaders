@@ -152,6 +152,27 @@ Recommended teacher settings:
 - Micro-reflections on/off
 - End-zone debrief required/optional
 
+## Notation preference (fractions vs decimals)
+
+Slope is rise-over-run, so a fraction is its native representation, and many
+classrooms teach (and many students think in) fractions before decimals. The
+game therefore lets the learner choose how slope/y-intercept are shown and
+typed: fractions (`1/2`, `3/4`) or decimals (`0.5`, `0.75`), defaulting to
+fractions. This is **customization, not adaptivity** — a surface preference the
+student controls, never an invisible difficulty change and never stigmatizing.
+
+Design rules:
+
+- It is presentation + input only. The underlying value stays a number, so
+  scoring, adaptivity, XP, badges, and hit detection are identical in either
+  mode. Never key rewards or tier selection on the chosen notation.
+- The student stays in control two ways: an explicit toggle button beside the
+  equation, and inference from what they type (`1/2` → fractions, `.5` →
+  decimals; a bare integer is ambiguous and leaves the mode unchanged).
+- The two notations are mathematically equal (`1/2 = 0.5` hit the same line);
+  surface that equivalence as a teaching beat rather than gating one behind the
+  other as a "harder" tier — switching notation is not new math.
+
 ## Prototype-level adaptivity
 
 For the first prototype, implement only simple rules:

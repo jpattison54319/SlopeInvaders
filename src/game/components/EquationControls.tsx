@@ -4,6 +4,13 @@ import type { UiButtonKey } from '../../assets/assetMap';
 import { TacticalButton } from './TacticalButton';
 import { EquationSlots } from './EquationSlots';
 import { equationString } from '../logic/lineMath';
+import {
+  detectFormat,
+  formatValue,
+  isPartialNumberEntry,
+  parseValue,
+  type NumberFormat,
+} from '../logic/rational';
 import { DEFAULT_KEYBINDINGS, keyLabel, type KeyBindings } from '../controls/keybindings';
 
 /** Display label for an action's bound key, or undefined when unassigned. */
@@ -35,13 +42,10 @@ interface EquationControlsProps {
   entryMode?: 'stepper' | 'typed';
   /** Current key map, used to print each control's shortcut on its button. */
   keyBindings?: KeyBindings;
+  /** Fraction vs decimal notation for slope / y-intercept display and entry. */
+  notation: NumberFormat;
+  onChangeNotation: (value: NumberFormat) => void;
 }
-
-function fmt(n: number): string {
-  return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
-}
-
-/** Coefficient prefix for an x-term: 1 -> "", -1 -> "-", else the number. */
 
 interface StepperProps {
   label: string;
@@ -49,7 +53,10 @@ interface StepperProps {
   value: number;
   step: number;
   disabled: boolean;
+  notation: NumberFormat;
   onChange: (v: number) => void;
+  /** Called when the typed text reveals a notation preference (e.g. "1/2"). */
+  onDetectFormat: (value: NumberFormat) => void;
   /** Keyboard-shortcut labels for the −/+ buttons (mouse devices only). */
   decKey?: string;
   incKey?: string;
@@ -57,39 +64,52 @@ interface StepperProps {
 
 /**
  * A numeric control the student can drive two ways: the +/− buttons for quick
- * nudges, or by typing a value directly (decimals like 0.5 and negatives like
- * -1 included). Typing is backed by local text state so intermediate entries
- * ("", "-", "0.") don't get clobbered mid-edit.
+ * nudges, or by typing a value directly — fractions ("1/2", "-3/4"), decimals
+ * (".5"), and negatives all welcome. While the field is focused we show the raw
+ * draft so mid-edit entries ("", "-", "1/") aren't clobbered; otherwise we
+ * render the committed value in the active notation.
  */
-function Stepper({ label, symbol, value, step, disabled, onChange, decKey, incKey }: StepperProps) {
-  const [draft, setDraft] = useState(() => ({ text: fmt(value), numericValue: value }));
-  const round = (v: number) => Math.round(v * 100) / 100;
-  const text = draft.numericValue === value ? draft.text : fmt(value);
+function Stepper({
+  label,
+  symbol,
+  value,
+  step,
+  disabled,
+  notation,
+  onChange,
+  onDetectFormat,
+  decKey,
+  incKey,
+}: StepperProps) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+  // Keep enough precision to recover typed fractions (1/3) while killing float drift.
+  const round = (v: number) => Math.round(v * 1e6) / 1e6;
+  const text = focused ? draft : formatValue(value, notation);
 
   const handleType = (raw: string) => {
     // Permit only number-ish input, including in-progress states.
-    if (raw !== '' && !/^-?\d*\.?\d*$/.test(raw)) return;
-    const v = parseFloat(raw);
-    if (Number.isFinite(v)) {
-      setDraft({ text: raw, numericValue: v });
-      onChange(v); // commit valid numbers live
-    } else {
-      setDraft({ text: raw, numericValue: value });
-    }
+    if (raw !== '' && !isPartialNumberEntry(raw)) return;
+    setDraft(raw);
+    const detected = detectFormat(raw);
+    if (detected) onDetectFormat(detected); // follow the student's chosen style
+    const v = parseValue(raw);
+    if (v !== null) onChange(round(v)); // commit valid numbers live
+  };
+
+  const handleFocus = () => {
+    setDraft(formatValue(value, notation));
+    setFocused(true);
   };
 
   const handleBlur = () => {
-    // Normalize on blur; revert to the last value if the field is incomplete.
-    const v = parseFloat(text);
-    const next = Number.isFinite(v) ? round(v) : value;
-    onChange(next);
-    setDraft({ text: fmt(next), numericValue: next });
+    setFocused(false);
+    const v = parseValue(draft);
+    if (v !== null) onChange(round(v));
   };
 
   const bump = (delta: number) => {
-    const next = round(value + delta);
-    onChange(next);
-    setDraft({ text: fmt(next), numericValue: next });
+    onChange(round(value + delta));
   };
 
   return (
@@ -111,10 +131,11 @@ function Stepper({ label, symbol, value, step, disabled, onChange, decKey, incKe
         <input
           className="stepper__input"
           type="text"
-          inputMode="decimal"
+          inputMode="text"
           aria-label={label}
           value={text}
           disabled={disabled}
+          onFocus={handleFocus}
           onChange={(e) => handleType(e.target.value)}
           onBlur={handleBlur}
         />
@@ -155,6 +176,8 @@ export function EquationControls({
   secondaryClassName = 'btn--reset',
   entryMode = 'stepper',
   keyBindings = DEFAULT_KEYBINDINGS,
+  notation,
+  onChangeNotation,
 }: EquationControlsProps) {
   const [slotsValid, setSlotsValid] = useState(false);
 
@@ -162,6 +185,8 @@ export function EquationControls({
   // dashed aim line it matches) shows the negated slope while the slope stepper
   // keeps showing the value the player dialed.
   const shownM = controls.includes('direction') && facing === 'left' ? -m : m;
+  // Notation only matters where a value can be fractional (slope / y-intercept).
+  const showNotationToggle = controls.includes('slope') || controls.includes('yIntercept');
   return (
     <div className="controls" data-tour="command">
       {entryMode === 'typed' ? (
@@ -176,8 +201,30 @@ export function EquationControls({
         />
       ) : (
         <>
-          <div className="controls__equation" aria-live="polite">
-            {equationString(shownM, b, xOffset, equationForm)}
+          <div className="controls__equation-row">
+            <div className="controls__equation" aria-live="polite">
+              {equationString(shownM, b, xOffset, equationForm, notation)}
+            </div>
+            {showNotationToggle && (
+              <button
+                type="button"
+                className="notation-toggle"
+                data-tour="notation"
+                title={
+                  notation === 'fraction'
+                    ? 'Showing fractions — switch to decimals'
+                    : 'Showing decimals — switch to fractions'
+                }
+                aria-label={`Number format: ${notation}. Switch to ${
+                  notation === 'fraction' ? 'decimals' : 'fractions'
+                }.`}
+                aria-pressed={notation === 'fraction'}
+                disabled={disabled}
+                onClick={() => onChangeNotation(notation === 'fraction' ? 'decimal' : 'fraction')}
+              >
+                {notation === 'fraction' ? '½' : '.5'}
+              </button>
+            )}
           </div>
 
           <div className="controls__steppers">
@@ -188,7 +235,9 @@ export function EquationControls({
                 value={m}
                 step={0.5}
                 disabled={disabled}
+                notation={notation}
                 onChange={onChangeM}
+                onDetectFormat={onChangeNotation}
                 decKey={hint(keyBindings, 'slopeDown')}
                 incKey={hint(keyBindings, 'slopeUp')}
               />
@@ -200,7 +249,9 @@ export function EquationControls({
                 value={b}
                 step={0.5}
                 disabled={disabled}
+                notation={notation}
                 onChange={onChangeB}
+                onDetectFormat={onChangeNotation}
                 decKey={hint(keyBindings, 'yInterceptDown')}
                 incKey={hint(keyBindings, 'yInterceptUp')}
               />
@@ -213,7 +264,9 @@ export function EquationControls({
                 value={xOffset}
                 step={1}
                 disabled={disabled}
+                notation={notation}
                 onChange={onChangeXOffset}
+                onDetectFormat={onChangeNotation}
                 decKey={hint(keyBindings, 'xOffsetDown')}
                 incKey={hint(keyBindings, 'xOffsetUp')}
               />

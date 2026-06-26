@@ -15,6 +15,8 @@ import {
   DEFAULT_HIT_TOLERANCE,
 } from './logic/hitDetection';
 import type { Point } from './logic/lineMath';
+import type { NumberFormat } from './logic/rational';
+import { readNumberFormat, writeNumberFormat } from './logic/numberFormatStorage';
 import { lineBoardSegment } from './logic/coordinateTransform';
 import { pointsForAsteroid, scoreShot } from './logic/scoring';
 import { buildFeedback, escalateMissFeedback, type ShotFeedback } from './logic/hints';
@@ -68,6 +70,11 @@ const TOUR_STEPS: TourStep[] = [
     selector: '[data-tour="command"]',
     title: 'Keyboard Controls',
     body: 'You can play with the keyboard too — each button shows its key (Space fires, R/F change the slope). Press ? any time for the full list, or remap them in Settings.',
+  },
+  {
+    selector: '[data-tour="notation"]',
+    title: 'Fractions or Decimals',
+    body: 'Slope is rise over run, so you can type a fraction like 1/2 — or a decimal like 0.5. They mean the same line. Tap this button to switch how numbers show, or just type the style you prefer.',
   },
   {
     selector: '[data-tour="calc"]',
@@ -210,6 +217,8 @@ export function Game({
   const [xOffset, setXOffset] = useState(level.defaults.xOffset ?? 0);
   // Facing direction: the shot only travels this way (Zone 4). Defaults right.
   const [facing, setFacing] = useState<Facing>(level.defaults.facing ?? 'right');
+  // Fraction vs decimal notation for slope / y-intercept (display + entry only).
+  const [notation, setNotation] = useState<NumberFormat>(readNumberFormat);
   const [destroyed, setDestroyed] = useState<ReadonlySet<string>>(new Set());
   const [score, setScore] = useState(0);
   const [shotsFired, setShotsFired] = useState(0);
@@ -648,6 +657,12 @@ export function Game({
     tweaksRef.current += 1;
     setFacing(v);
   }, []);
+  // Notation is a display/entry preference: persist it, but never count it as a
+  // tweak — it must not touch scoring or adaptivity.
+  const handleChangeNotation = useCallback((v: NumberFormat) => {
+    setNotation(v);
+    writeNumberFormat(v);
+  }, []);
 
   // Keyboard controls: drive the equation/facing handlers from the bound keys.
   // Ignored while typing in an input, while a shot animates / the level is over,
@@ -922,6 +937,8 @@ export function Game({
             equationForm={level.equationForm}
             entryMode={level.equationEntry ?? 'stepper'}
             keyBindings={keyBindings}
+            notation={notation}
+            onChangeNotation={handleChangeNotation}
           />
         </aside>
       </main>

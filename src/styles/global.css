@@ -1108,7 +1108,14 @@ input:focus-visible {
   gap: 16px;
 }
 
+.controls__equation-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
 .controls__equation {
+  flex: 1 1 auto;
   font-family: var(--pixel-font);
   font-size: 18px;
   text-align: center;
@@ -1118,6 +1125,33 @@ input:focus-visible {
   border-radius: 8px;
   padding: 14px 8px;
   text-shadow: 0 0 10px rgba(255, 209, 102, 0.4);
+}
+
+/* Fraction/decimal notation toggle — small chrome button beside the equation. */
+.notation-toggle {
+  flex: 0 0 auto;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pixel-font);
+  font-size: 16px;
+  color: var(--amber);
+  background: #060a1e;
+  border: 1px solid rgba(255, 209, 102, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.12s ease, box-shadow 0.12s ease;
+}
+
+.notation-toggle:hover:not(:disabled) {
+  background: #0c1330;
+  box-shadow: 0 0 8px rgba(255, 209, 102, 0.35);
+}
+
+.notation-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .controls__steppers {
