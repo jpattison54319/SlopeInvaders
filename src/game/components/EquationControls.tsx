@@ -229,10 +229,10 @@ export function EquationControls({
                 onClick={() => onChangeNotation(notation === 'fraction' ? 'decimal' : 'fraction')}
               >
                 {notation === 'fraction' ? (
-                  <StackedFraction n={1} d={2} />
+                  <StackedFraction n="x" d="y" />
                 ) : (
                   <span className="notation-toggle__decimal" aria-hidden="true">
-                    0.5
+                    0.0
                   </span>
                 )}
               </button>

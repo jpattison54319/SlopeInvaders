@@ -163,7 +163,7 @@ describe('EquationControls notation', () => {
     await act(async () => toggle.click());
     expect(equationText()).toBe('y = 0.5x');
     expect(equationHasStack()).toBe(false);
-    expect(toggle.querySelector('.notation-toggle__decimal')?.textContent).toBe('0.5');
+    expect(toggle.querySelector('.notation-toggle__decimal')?.textContent).toBe('0.0');
     expect(slopeInput().value).toBe('0.5');
   });
 });

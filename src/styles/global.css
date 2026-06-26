@@ -1167,8 +1167,9 @@ input:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 2px;
+  overflow: hidden;
   font-family: var(--pixel-font);
-  font-size: 17px;
   color: var(--amber);
   background: #060a1e;
   border: 1px solid rgba(255, 209, 102, 0.5);
@@ -1187,14 +1188,17 @@ input:focus-visible {
   cursor: default;
 }
 
-/* The toggle's mini fraction icon should read as a clear glyph at button size. */
+/* The toggle's icons must always fit inside the box (the pixel font is wide, so
+   the decimal "0.0" needs a smaller size than the stacked x/y). */
 .notation-toggle .frac {
-  font-size: 15px;
+  font-size: 14px;
   margin: 0;
 }
 
 .notation-toggle__decimal {
-  letter-spacing: 0.5px;
+  font-size: 11px;
+  letter-spacing: 0;
+  white-space: nowrap;
 }
 
 .controls__steppers {

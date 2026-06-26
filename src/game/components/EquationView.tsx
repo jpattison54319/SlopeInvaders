@@ -3,7 +3,7 @@ import { equationTokens } from '../logic/lineMath';
 import type { NumberFormat } from '../logic/rational';
 
 /** A fraction drawn vertically: numerator over a bar over denominator. */
-export function StackedFraction({ n, d }: { n: number; d: number }) {
+export function StackedFraction({ n, d }: { n: number | string; d: number | string }) {
   return (
     <span className="frac" aria-hidden="true">
       <span className="frac__num">{n}</span>
